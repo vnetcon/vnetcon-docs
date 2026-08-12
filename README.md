@@ -8,6 +8,53 @@ saadaan yhdellä komennolla (`/vnetcon-init`) itseohjautuva dokumentaatio­järj
 ja tikettien toteutusympäristö. Menettely on kehitetty suurissa
 tuotantokoodipohjissa ja yleistetty tässä projektiriippumattomaksi.
 
+## Arvioi oma koodipohjasi ilmaiseksi
+
+**Jos tulit tänne arvioimaan omaa projektiasi, aloita tästä.** Kolme ensimmäistä
+komentoa ovat paikallisia Node-skriptejä: **ei tekoälyä, ei verkkoyhteyttä, ei
+tilejä, ei käyttöoikeuksia kenellekään.** Koodisi ei liiku mihinkään.
+
+Esivaatimukset: `git`, **Node 18+**, `bash`. Windowsilla **WSL2** tai Git Bash —
+PowerShell ei riitä.
+
+```bash
+git clone https://github.com/vnetcon/vnetcon-docs.git
+vnetcon-docs/tyokalut/asenna.sh /polku/projektiisi
+cd /polku/projektiisi/vnetcon-docs
+```
+
+Sen jälkeen:
+
+| Komento | Mitä se kertoo |
+|---------|----------------|
+| `./tyokalut/vnetcon-ai/vnetcon-ai moduulit` | Mitä moduuleja koodipohjassa on, kuinka isoja ne ovat ja mikä kannattaisi dokumentoida ensin. Toimii ennen käyttöönottoa |
+| `./tyokalut/vnetcon-ai/vnetcon-ai kalibroi` | Kirjoittaa `kalibrointiraportti.md`:n: laajuusarvio tunteina ja AI-kustannuksena, katvealueet, dokumentaation tila. **Koodivapaa** — voit lähettää sen eteenpäin |
+| `./tyokalut/vnetcon-ai/vnetcon-ai doctor` | Mitä on asennettu ja konfiguroitu. Aja tämä jos jokin ei toimi |
+
+### Mitä odottaa ensimmäisellä ajolla
+
+Raportti sanoo **”3 estoa: käyttöönotto kesken”**. Se on odotettu ensimmäinen
+tila, ei virhe — se tarkoittaa, ettei moduulijakoa ole vielä vahvistettu, joten
+kartoitus käyttää vain geneerisiä hakuja. Laajuusarvio, moduulikoot ja
+katvealueet ovat silti käytettävissä.
+
+Raportti kertoo myös ne kysymykset, joihin se **ei itse pysty vastaamaan**:
+nolla osumaa jollakin hakualueella tarkoittaa joko sitä, ettei aluetta ole, tai
+sitä että se on toteutettu tavalla jota geneerinen haku ei tunnista. Jälkimmäinen
+on se tapaus, joka tuottaa vaillinaista dokumentaatiota huomaamatta — ja se
+ratkaistaan lukemalla koodia, ei ajamalla työkalua uudelleen.
+
+### Seuraava askel vaatii AI-tilin
+
+Kun haluat oikean moduulijaon geneeristen ehdokkaiden sijaan, käynnistä agentti
+tässä hakemistossa ja aja `/vnetcon-init` (ks. [Käyttöönotto](#käyttöönotto-kohdeprojektissa)).
+Se on mitatusti noin **$16 omalla AI-tililläsi** 60 000 rivin projektissa.
+
+Selattava näyte siitä, miltä valmis dokumentaatio näyttää:
+[vnetcon.com/nayte](https://vnetcon.com/nayte/).
+
+---
+
 Kokonaisuus tukee **kahta agenttia**: dokumentointi ajetaan tyypillisesti
 Claudella ja tikettien toteutus Codexilla, mutta kumpi tahansa osaa kummankin.
 Oletuksena käytetään **asiakkaan omaa AI-tiliä** — koodi ei kulje kolmannen

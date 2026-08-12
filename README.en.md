@@ -15,6 +15,58 @@ documentation system and ticket implementation environment. The method was
 developed against large production codebases and generalised here to be
 project-agnostic.
 
+## Assess your own codebase for free
+
+**If you came here to evaluate your own project, start here.** The first three
+commands are plain local Node scripts: **no AI, no network, no accounts, no access
+granted to anyone.** Your code does not go anywhere.
+
+Prerequisites: `git`, **Node 18+**, `bash`. On Windows use **WSL2** or Git Bash —
+PowerShell is not enough.
+
+```bash
+git clone https://github.com/vnetcon/vnetcon-docs.git
+vnetcon-docs/tyokalut/asenna.sh /path/to/your-project
+cd /path/to/your-project/vnetcon-docs
+```
+
+Then:
+
+| Command | What it tells you |
+|---------|-------------------|
+| `./tyokalut/vnetcon-ai/vnetcon-ai moduulit` | What modules the codebase has, how large they are, and what to document first. Works before onboarding |
+| `./tyokalut/vnetcon-ai/vnetcon-ai kalibroi` | Writes `kalibrointiraportti.md`: scope estimate in hours and AI cost, blind spots, documentation state. **Contains no code** — you can forward it |
+| `./tyokalut/vnetcon-ai/vnetcon-ai doctor` | What is installed and configured. Run this if something fails |
+
+> The output and the report are in Finnish by default. Set
+> `dokumentaatio.kieli: en` in `vnetcon.config.yaml` for English documentation
+> output — see [Language](#language).
+
+### What to expect on the first run
+
+The report will say **"3 estoa: käyttöönotto kesken"** (3 blockers: onboarding
+incomplete). That is the expected first state, not an error — it means the module
+split has not been confirmed yet, so the survey uses only generic searches. The
+scope estimate, module sizes and blind spots are usable regardless.
+
+The report also states the questions it **cannot answer itself**: zero hits in a
+search area means either that the area does not exist, or that it is implemented
+in a way a generic search does not recognise. The latter is the case that produces
+incomplete documentation unnoticed — and it is resolved by reading code, not by
+running the tool again.
+
+### The next step needs an AI account
+
+When you want the real module split instead of generic candidates, start an agent
+in this directory and run `/vnetcon-init` (see
+[Installing into a target project](#installing-into-a-target-project)). Measured
+cost: about **$16 on your own AI account** for a 60,000-line project.
+
+A browsable sample of what finished documentation looks like:
+[vnetcon.com/nayte](https://vnetcon.com/nayte/).
+
+---
+
 The system supports **two agents**: documentation is typically run with Claude and
 ticket implementation with Codex, but either can do both. By default it uses the
 **customer's own AI account** — code never passes through a third party. Other
