@@ -1,0 +1,14 @@
+# Johdettu tuotos — generoidaan md:stä (/generoi-html)
+html/
+html.zip
+
+# Riippuvuudet
+tyokalut/**/node_modules/
+
+# Henkilökohtaiset overridet ja paikallinen tila
+.claude/settings.local.json
+.paikallinen/
+tila/kaytto.jsonl
+
+# Käyttöjärjestelmä
+.DS_Store

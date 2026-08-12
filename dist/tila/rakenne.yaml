@@ -1,0 +1,35 @@
+# Dokumentaation informaatioarkkitehtuuri (IA)
+#
+# Määrittelee osa-alueet (domainit) ja niihin kuuluvat moduulit. HTML-generaattori
+# rakentaa tästä vasemman navigaatiopuun ryhmittelyn ja etusivun
+# järjestelmäkartan. Moduuli = moduulit/-hakemiston nimi. Moduulit, joita ei ole
+# listattu missään osa-alueessa, näkyvät ryhmässä "Muut".
+#
+# Osa-alue on myös dokumentoinnin ANNOSTELUYKSIKKÖ: `/dokumentoi-kaikki <tunnus>`
+# tekee yhden osa-alueen kerrallaan. Siksi 2–8 osa-aluetta, kussakin
+# mielekäs määrä moduuleja.
+#
+# Ks. ../metodi/generointi-tyonkulku.md (HTML) ja ../metodi/jarjestelmaprosessi-tyonkulku.md
+# (kytkennat).
+
+paivitetty: TÄYTTÄMÄTÖN
+
+etusivu:
+  jarjestelmakartta: true   # generoi Mermaid-kartta osa-alueista etusivulle
+
+osa-alueet: []
+  # - tunnus: ydin
+  #   nimi: "Ydinpalvelut"
+  #   kuvaus: "Tilaukset ja laskutus."
+  #   moduulit: [tilauspalvelu, laskutuspalvelu]
+  #
+  # - tunnus: kayttoliittymat
+  #   nimi: "Käyttöliittymät"
+  #   kuvaus: "Selainsovellukset."
+  #   moduulit: [asiakasportaali]
+
+# Moduulien väliset kytkennät (järjestelmäkartan nuolet). Täyttyy sitä mukaa kun
+# järjestelmäprosesseja kuvataan — jokainen löydetty hyppy lisätään tänne.
+kytkennat: []
+  # - { from: asiakasportaali, to: tilauspalvelu, kuvaus: "REST" }
+  # - { from: tilauspalvelu, to: laskutuspalvelu, kuvaus: "tilaus-valmis-eventti (SQS)" }

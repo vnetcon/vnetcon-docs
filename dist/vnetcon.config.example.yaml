@@ -1,0 +1,87 @@
+# vnetcon-docs — projektikohtainen konfiguraatio
+#
+# TÄMÄ ON MALLI. `/vnetcon-init` kirjoittaa varsinaisen tiedoston
+# `vnetcon.config.yaml` tämän pohjalta. Voit myös kopioida ja täyttää käsin:
+#   cp vnetcon.config.example.yaml vnetcon.config.yaml
+#
+# Tiedostoa lukevat: kaikki skillit/menettelyt, html-generaattori ja
+# tyokalut/vnetcon-ai. ÄLÄ laita tähän salaisuuksia — tunnisteet ovat
+# tiedostossa ~/.vnetcon/credentials.env (ks. agentit.*.token_lahde).
+
+versio: 1
+
+projekti:
+  nimi: "<Projektin nimi>"
+  juuri: ".."                 # projektin juuri suhteessa tähän hakemistoon
+  versionhallinta: git        # git | none
+  paahaara: main              # dokumentoinnin skooppi (esim. main | master)
+  vain_versioitu: true        # dokumentoi vain git-tracked-tiedostot
+
+dokumentaatio:
+  kieli: fi                   # millä kielellä dokumentit kirjoitetaan
+  otsikko: "<Projektin nimi> — dokumentaatio"
+  johdanto_tiedosto: johdanto.md   # HTML-etusivun johdanto (valinnainen)
+  # Näyttönimet: hakemistorakenne on aina moduulit/, mutta label voi olla
+  # projektin oma sanasto (esim. "Palvelut", "Sovellukset", "Komponentit").
+  moduulit_label: "Moduulit"
+  moduuli_yksikko: "moduuli"
+  moduuli_monikko: "moduulit"
+
+# Mistä ja miten koodi kartoitetaan. /vnetcon-init täyttää nämä ja kirjoittaa
+# yksityiskohtaiset hakukomennot tiedostoon metodi/kartoitus.md.
+pino:
+  profiilit: [yleinen]        # metodi/pinot/<profiili>.md — esim. node-ts, python, jvm
+  kielet: []                  # esim. [typescript, sql]
+  kehykset: []                # esim. [nestjs, react]
+  tietokanta: ""              # esim. postgresql
+  skeemalahteet: []           # esim. [openapi.yaml, prisma/schema.prisma, db/migrations]
+  testikomento: ""            # esim. "npm test"
+  buildkomento: ""            # esim. "npm run build"
+
+agentit:
+  # Kuka tekee mitä. Arvot: claude | codex
+  dokumentointi: claude
+  toteutus: codex
+  paivitys: codex
+
+  # TARJOAJA — suositusjärjestys (ks. metodi/agentit.md):
+  #   1. oma                 asiakkaan oma kirjautuminen. OLETUS. Koodi ei kulje
+  #                          kenenkään kolmannen läpi, ei lisäsopimuksia.
+  #   2. bedrock | vertex |  asiakkaan oma pilvitili/API-avain. Avaimet ja
+  #      anthropic-api |     liikenne pysyvät asiakkaan tenantissa; konfiguroinnin
+  #      openai-api          ja kustannusseurannan voi ostaa palveluna.
+  #   3. vnetcon-pilvi       liikenne Vnetconin gatewayn kautta. VAIN pilotti-
+  #                          vaiheeseen: promptissa on koodia, joten tämä vaatii
+  #                          tietosuojasopimuksen ja tietoturva-arvion.
+  claude:
+    komento: claude
+    malli: ""                 # tyhjä = agentin oletus
+    tarjoaja: oma
+    base_url: ""              # vain kun tarjoaja = vnetcon-pilvi | anthropic-api
+    token_lahde: ""           # esim. "~/.vnetcon/credentials.env:VNETCON_ANTHROPIC_TOKEN"
+    # tarjoaja: bedrock  → alue: eu-central-1
+    # tarjoaja: vertex   → alue: europe-west1, projekti_id: <gcp-projekti>
+    alue: ""
+    projekti_id: ""
+
+  codex:
+    komento: codex
+    malli: ""                 # tyhjä = agentin oletus
+    tarjoaja: oma
+    # Azure OpenAI: tarjoaja: openai-api + base_url azure-endpointiin.
+    base_url: ""              # esim. "https://<resurssi>.openai.azure.com/openai/v1"
+    token_lahde: ""           # esim. "~/.vnetcon/credentials.env:VNETCON_OPENAI_TOKEN"
+    wire_api: chat            # chat | responses (gatewaysta riippuen)
+    tarjoajan_tunnus: vnetcon # nimi, jolla tarjoaja rekisteröidään Codexille
+
+laskutus:
+  asiakas: ""                 # laskutustunniste (näkyy käyttölokissa)
+  kaytto_loki: tila/kaytto.jsonl   # tyhjä = ei lokia
+  otel_endpoint: ""           # OTLP-endpoint token-käytön keräykseen (valinnainen)
+
+html:
+  ryhmat: [liiketoimintaprosessit, jarjestelmaprosessit, moduulit, datamallit, metodi, tiketit]
+  lukijan_taso: [liiketoimintaprosessit, jarjestelmaprosessit, moduulit, datamallit]
+  koneiston_taso: [metodi, tiketit]
+  jarjestelmakartta: true     # Mermaid-kartta osa-alueista etusivulle
+  otsikot: {}                 # ryhmän näyttönimen ylikirjoitus, esim. { moduulit: "Palvelut" }

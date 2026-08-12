@@ -1,0 +1,27 @@
+# Menettelyn versio ja muutosloki
+#
+# Kun mallipohjat/konventiot muuttuvat niin, että jo kirjoitetut dokumentit
+# pitää yhdenmukaistaa uuteen malliin:
+#   1) kasvata `metodi_versio`,
+#   2) lisää muutos `muutokset`-listaan (mitä muuttui, mitä dokkityyppejä koskee),
+#   3) päivitä mallipohjien frontmatterin `metodi-versio` samaan lukuun.
+#
+# /yhdenmukaista-dokumentaatio päivittää dokit, joiden frontmatterin
+# `metodi-versio` on pienempi kuin tämä (tai puuttuu). Ks.
+# ../metodi/yhdenmukaistus-tyonkulku.md
+
+metodi_versio: 1
+paivitetty: 2026-08-10
+
+# Uusin ylimmäs.
+muutokset:
+  - versio: 1
+    pvm: 2026-08-10
+    kuvaus: >-
+      Perusmenettely (vnetcon-docs 1.0): liiketoimintaprosessi,
+      järjestelmäprosessi, moduuli-yleiskuvaus, prosessi, datavirta,
+      datarakenne, datamalli; frontmatter (lahteet/paivitetty/git-viite/
+      metodi-versio), pysyvät vaihe-tunnisteet, datavirrat kenttätasolla
+      (hallitseva skeema per solmu), sarjallistettujen kenttien avaaminen ja
+      linkitys jaettuihin datamalleihin.
+    vaikuttaa: [kaikki]

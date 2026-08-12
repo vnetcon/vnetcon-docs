@@ -1,0 +1,215 @@
+# vnetcon-docs — projektin dokumentaatio ja tikettityö tekoälyllä
+
+Tämä hakemisto on **itseohjautuva dokumentaatiojärjestelmä** ympäröivälle
+projektille (`../`). Se tuottaa ja ylläpitää kuvauksia siitä, *mitä projekti
+tekee* (liiketoimintaprosessit), *miten se sen teknisesti tekee*
+(järjestelmä- ja moduuliprosessit) ja *millä datalla* (datavirrat,
+datarakenteet, datamallit).
+
+Sama dokumentaatio toimii **kontekstipohjana**, kun tikettejä (rajattuja
+koodimuutoksia) toteutetaan tekoälyavusteisesti — kehittäjän ei tarvitse itse
+koota tietoja eikä muistaa menettelyä. Ohjeet ovat tiedostoissa, eivät promptissa.
+
+> **Uusi projekti?** Aja `/vnetcon-init` (ks. alla). Se kartoittaa projektin ja
+> konfiguroi tämän hakemiston sen mukaan. Ilman sitä muut komennot eivät tiedä,
+> mistä projektista on kysymys.
+
+---
+
+## Aloittaminen (lue tämä ensin)
+
+Tämä työkalu toimii **tekoälyagentin** sisällä — käytössä on **Claude Code**
+ja/tai **Codex**. Kummatkin ovat päätteessä (terminaalissa) toimivia ohjelmia.
+Alla olevat kauttaviivalla alkavat komennot (`/vnetcon-init`, `/dokumentoi`, …)
+**eivät** ole pääte- tai git-komentoja — ne kirjoitetaan **agentin omaan
+syötekenttään** sen jälkeen kun agentti on käynnistetty.
+
+### Esivaatimukset
+
+| Mitä | Tarvitaan | Miksi |
+|------|-----------|-------|
+| **Pääte + bash** | aina | Tämän hakemiston skriptit (`tyokalut/vnetcon-ai/…`) ovat bash-skriptejä. macOS ja Linux: valmiina. **Windows: WSL2** (suositus) tai Git Bash — PowerShellissä ne eivät toimi, eikä Claude Code tue Windowsia muuten kuin WSL:n kautta. Aja koko työ WSL:n sisällä, myös `git`. |
+| **`claude` ja/tai `codex`** | aina | `/`-komennot ajetaan agentin sisällä. Yksi agentti riittää alkuun; oletustyönjako on dokumentointi Claudella, toteutus Codexilla. |
+| **Kirjautuminen agenttiin** | aina | Oletuksena oma tili (`claude`, `codex login`) — mitään ei tarvitse konfiguroida. Muut tarjoajat: ks. [Mitä AI-tiliä käytetään](#mitä-ai-tiliä-käytetään). |
+| **Node.js 18+** (suositus 20 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
+| **git** | vahvasti suositeltu | Dokumentoinnin skooppi on `git ls-files`, ja `/synkronoi-dokumentaatio` perustuu commit-diffiin. Ilman gitiä aseta `projekti.versionhallinta: none` — silloin päivitykset tehdään käsin. |
+| **`npm install`** html-generaattorissa | vain `/generoi-html` | Kertaluontoinen, vaatii verkon. Ilman sitä HTML syntyy, mutta haku ja Mermaid-kaaviot eivät toimi. |
+| **`~/.vnetcon/credentials.env`** | vain pilvitarjoajilla | Tunnisteet, kun agentti osoitetaan omaan pilvitiliin tai Vnetconin gatewayhin. |
+
+Pythonia, Dockeria, tietokantaa tai web-palvelinta ei tarvita. Tarkistus yhdellä
+komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
+
+### Vaiheet
+
+1. **Avaa pääte** (macOS/Linux: *Terminal*. Windows: **WSL2**-pääte tai Git Bash
+   — ks. [Esivaatimukset](#esivaatimukset) alla; PowerShell ei riitä).
+2. **Siirry tähän hakemistoon:**
+   ```
+   cd <polku-projektiin>/vnetcon-docs
+   ```
+3. **Käynnistä agentti:**
+   ```
+   claude
+   ```
+   Odota, että näet syötekentän.
+   > Jos `claude`-komentoa ei löydy tai kirjautuminen puuttuu, aja
+   > `./tyokalut/vnetcon-ai/vnetcon-ai doctor` — se kertoo mitä puuttuu.
+   > Vnetconin pilviympäristöä käytettäessä käynnistä
+   > `./tyokalut/vnetcon-ai/vnetcon-ai claude` (asettaa palvelun osoitteen
+   > ja tunnisteen puolestasi).
+4. **Kirjoita komento syötekenttään**, esim.:
+   ```
+   /vnetcon-init
+   ```
+5. **Vastaa agentin kysymyksiin** normaalisti kirjoittamalla.
+
+**Tärkeää**
+
+- Agentti käynnistetään **tässä hakemistossa** (`vnetcon-docs`), ei projektin
+  juuressa. Vain täältä komennot löytyvät. Agentti näkee silti koko projektin
+  (`..` on sallittu lukusuunta, ks. `.claude/settings.json`).
+- Jos komennot eivät ilmesty `/`-merkillä, sulje agentti ja käynnistä uudelleen —
+  komennot luetaan vain käynnistyksessä.
+- Komentoja ei ole pakko muistaa: voit kirjoittaa tavallista suomea, esim.
+  *"dokumentoi moduuli maksupalvelu vnetcon-docs-ohjeiden mukaan"*.
+
+## Komennot
+
+| Kun kirjoitat… | Agentti tekee näin |
+|----------------|--------------------|
+| `/vnetcon-init` | **Käyttöönotto.** Kartoittaa projektin (kieli, kehys, moduulit, testikomennot), kysyy muutaman asian ja kirjoittaa `vnetcon.config.yaml`, `tila/projekti.yaml`, `tila/rekisteri.yaml`, `tila/rakenne.yaml` sekä pinokohtaisen `metodi/kartoitus.md`:n. Aja tämä ensin. |
+| `/kalibroi` | **Lähtötilanne ja laatu.** Kertoo kuinka hyvin geneerinen pohja osuu tähän projektiin, mikä jää katveeseen, paljonko työtä on jäljellä ja mitä kannattaa korjata ensin. Halpa ja nopea — aja milloin tahansa. |
+| `/dokumentoi [moduuli]` | Valitsee seuraavan tekemättömän moduulin (tai nimeämäsi), kartoittaa koodin ja kirjoittaa/päivittää dokumentit. |
+| `/dokumentoi-kaikki [osa-alue]` | **Orkestroija:** rakentaa kattavan dokumentaation oikeassa järjestyksessä (datamallit → moduulit rinnakkain → end-to-end → liiketoiminta → HTML). Iso operaatio — suositus: osa-alue kerrallaan. |
+| `/dokumentoi-jarjestelmaprosessi [aihe]` | Kuvaa **end-to-end** -kulun moduulirajojen yli: mitä moduuleja läpäisee, missä järjestyksessä ja mikä data siirtyy. |
+| `/generoi-datamallit` | Kuvaa projektin jaetut skeemat (OpenAPI / JSON Schema / SQL / EDN / tyypit) kertaalleen `datamallit/`-kansioon, johon muut dokit linkittävät. |
+| `/generoi-html` | Muodostaa `.md`-dokumenteista selattavan **HTML-version** hakemistoon `html/` (navigaatio, Mermaid-kaaviot, koko tekstin haku; toimii ilman verkkoa). |
+| `/valmistele-tiketti` | **Claude:** ottaa tiketin vastaan, kokoaa kontekstin dokumentaatiosta, suunnittelee ja iteroi kanssasi — ja kirjoittaa valmiin toteutuskehotteen Codexille. Ei koske koodiin. |
+| `/toteuta-tiketti` | Toteuttaa rajatun koodimuutoksen dokumentaatio kontekstipohjana ja päivittää lopuksi dokit. Käytettävissä sekä Claudessa että Codexissa. |
+| `/synkronoi-dokumentaatio` | Päivittää dokumentaation vastaamaan koodimuutoksia, jotka tehtiin **ilman** tikettiprosessia (suorat commitit, merget). |
+| `/yhdenmukaista-dokumentaatio` | Päivittää vanhat dokit nykyisten mallipohjien mukaisiksi, kun **menettely** on muuttunut. |
+| `/agentit` | Konfiguroi kumpi agentti tekee mitä ja mitä pilvipalvelua vasten (Vnetconin pilvi vai oma tili). |
+
+Kunkin täydellinen menettely on kansiossa [`metodi/`](metodi/).
+
+### Komennot ilman agenttia
+
+Nämä ovat **pääte**komentoja (eivät `/`-komentoja): ne eivät käytä tekoälyä eikä
+tilejä, ja toimivat myös ennen käyttöönottoa. Ajetaan tässä hakemistossa.
+
+```bash
+./tyokalut/vnetcon-ai/vnetcon-ai moduulit          # moduulit, tila ja mikä seuraavaksi
+./tyokalut/vnetcon-ai/vnetcon-ai kalibroi          # lähtötilanne, katveet, laajuusarvio
+./tyokalut/vnetcon-ai/vnetcon-ai linkit --lahteet  # rikkinäiset linkit ja lähdepolut
+./tyokalut/vnetcon-ai/vnetcon-ai doctor            # mitä on asennettu ja konfiguroitu
+```
+
+`moduulit` on nopein tapa nähdä tilanne — ks. [Rakenne](#rakenne) alla.
+
+## Työnjako: Claude ja Codex
+
+Oletus (muutettavissa `/agentit`-komennolla tai `vnetcon.config.yaml`:sta):
+
+- **Dokumentointi → Claude.** Laaja kartoitus ja kirjoittaminen.
+- **Toteutus → Codex.** Tiketin koodimuutos.
+- **Dokumentaation päivitys toteutuksen jälkeen → Codex** (sama sessio jatkaa)
+  tai Claude erikseen `/synkronoi-dokumentaatio`lla.
+
+Kädenojennus agenttien välillä tapahtuu tiedostojen kautta: Claude kirjoittaa
+`tiketit/<tunnus>/` (tiketti, konteksti, suunnitelma, `codex-kehote.md`), ja
+Codex käynnistetään sillä kehotteella:
+
+```
+./tyokalut/vnetcon-ai/vnetcon-ai toteuta <tunnus>
+```
+
+Ks. [`metodi/agentit.md`](metodi/agentit.md).
+
+## Mitä AI-tiliä käytetään
+
+**Oletus: oma tili.** Jos `claude` tai `codex` on koneellasi kirjautunut, mitään
+ei tarvitse konfiguroida — koodi ei kulje kenenkään kolmannen osapuolen
+infrastruktuurin läpi.
+
+Muut vaihtoehdot (`/agentit` konfiguroi ne):
+
+| Malli | Kuka omistaa tilin | Kenelle |
+|-------|--------------------|---------|
+| **Oma tili** (oletus) | sinä | Toimii heti |
+| **Oma pilvitili** (Bedrock, Vertex, Azure OpenAI, suora API-avain) | sinä | Yritys-/julkishallintokäyttö: avaimet ja liikenne pysyvät omassa tenantissa, kustannus on omaa pilvikulutusta |
+| **Vnetconin pilvi** | Vnetcon | Vain pilottivaihe, jos oma hankinta kestäisi. Huom: promptissa on koodia, joten tämä vaatii tietosuojasopimuksen |
+
+Tunnisteet **eivät koskaan ole tässä hakemistossa** vaan tiedostossa
+`~/.vnetcon/credentials.env`. Ks.
+[`tyokalut/vnetcon-ai/README.md`](tyokalut/vnetcon-ai/README.md) ja
+[`metodi/agentit.md`](metodi/agentit.md).
+
+```
+./tyokalut/vnetcon-ai/vnetcon-ai doctor        # mitä on asennettu ja konfiguroitu
+```
+
+## Rakenne
+
+```
+metodi/                 Moottori: miten dokumentoidaan (ohjeet + mallipohjat)  ← ei projektikohtainen
+tila/                   Projektin faktat, rekisteri (mitä tehty/tekemättä), sessioloki
+liiketoimintaprosessit/ Ei-tekninen kerros; voi ylittää moduulirajat; sisääntulo
+jarjestelmaprosessit/   End-to-end -kulut moduulirajojen yli (tekninen)
+moduulit/<moduuli>/     Tekninen tuotos: yleiskuvaus, prosessit, datavirrat, datarakenteet
+datamallit/             Jaetut skeemat, joihin moduulit linkittävät
+tiketit/<tunnus>/       Tikettityön jälki (vaiheet 0–5) — myös agenttien kädenojennus
+tyokalut/               html-generaattori, vnetcon-ai (agenttien käynnistys), tarkista-linkit.mjs
+html/                   Generoitu selattava HTML (johdettu md:stä; ei versioida)
+```
+
+Kunnon voi tarkistaa milloin tahansa **ilman agenttia ja ilman riippuvuuksia** —
+ks. [Komennot ilman agenttia](#komennot-ilman-agenttia) yllä.
+
+`moduulit` on nopein tapa nähdä tilanne: se listaa moduulit osa-alueittain,
+näyttää tilan (`tekematta` / `kesken` / `valmis` / `rajattu-pois`), koodirivit ja
+dokumenttimäärän — ja ehdottaa mitä kannattaa dokumentoida seuraavaksi. Liput:
+`--tekematta`, `--osa-alue <tunnus>`, `--json`, `--nopea`.
+
+Lista rakentuu kolmesta lähteestä: `tila/rekisteri.yaml` on **virallinen** jako,
+`tila/rakenne.yaml` antaa osa-alueryhmittelyn ja koodista päätelty
+`tila/kalibrointi.json` tuo rivimäärät ja puuttuvat ehdokkaat.
+
+> **Ennen käyttöönottoa lista on vain ehdotus.** Ilman `tila/rekisteri.yaml`:ia
+> moduulit päätellään koodin sijainnista: ehdokkaaksi kelpaa hakemisto, jossa on
+> koodia (dokumentaatio-, testi- ja esimerkkikansiot on rajattu pois). Tilat on
+> silloin päätelty dokumenttien olemassaolosta (`valmis?`), eivät rekisteristä.
+> `/vnetcon-init` vahvistaa oikean jaon.
+
+**Moduuli ei aina ole hakemisto.** Jos yhdessä hakemistossa on kymmeniä tuhansia
+rivejä, se jaetaan rekisterissä loogisiin moduuleihin, jotka jakavat saman
+`polku`n; silloin moduulin `tiedostot`-lista ratkaisee rajauksen ja koodirivit
+lasketaan sen mukaan. Listaus merkitsee `ei rekisterissä` jokaisen
+koodihakemiston, joka ei kuulu yhteenkään moduuliin — **se on koodia, joka jäisi
+muuten hiljaisesti dokumentoimatta.** Sama tieto on kalibrointiraportissa
+otsikolla *Rekisterin ulkopuolelle jäävä koodi*.
+
+`kalibroi` kirjoittaa `kalibrointiraportti.md`:n: kuinka hyvin geneerinen pohja
+osuu tähän projektiin, mitkä alueet jäivät katveeseen, kuinka paljon työtä on
+jäljellä ja mitkä ovat esteet. **Raportti ei sisällä koodia**, joten se on
+lähetettävissä eteenpäin, jos haluat arvion työmäärästä ulkopuolelta.
+
+Projektikohtaiset korjaukset kuuluvat aina **laajennuspisteisiin** — ks.
+[`metodi/laajennuspisteet.md`](metodi/laajennuspisteet.md). Näin paketin
+päivitys ei ylikirjoita niitä.
+
+## Ajantasaisuus
+
+Jokaisessa dokumentissa on frontmatterissa `lahteet:` (mistä koodista johdettu),
+`paivitetty:` ja `git-viite:`. Kun lähdekoodi muuttuu, dokumentti **päivitetään
+paikallaan** — sitä ei luoda uudelleen alusta.
+
+## Versionhallinta
+
+Kaikki `git add`/`commit`/`push` **hyväksytetään aina kehittäjältä** — tätä
+varten tässä hakemistossa on `ask`-permission-säännöt
+(`.claude/settings.json`). Ks. [`metodi/konventiot.md`](metodi/konventiot.md)
+kohta 8.
+
+| Committoidaan | Ei committoida |
+|---------------|----------------|
+| `vnetcon-docs/**` paitsi alla olevat | `html/`, `node_modules/`, `**/settings.local.json`, `.paikallinen/` |

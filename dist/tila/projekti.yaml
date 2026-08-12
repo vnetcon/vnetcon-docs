@@ -1,0 +1,64 @@
+# Projektin faktat — jokainen sessio lukee tämän ensin
+#
+# /vnetcon-init täyttää tämän kartoituksen perusteella. Pidä lyhyenä (< 100
+# riviä) mutta täsmällisenä: tämä on se, mistä agentti tietää missä mikä on,
+# ilman että sen tarvitsee arvata.
+#
+# Tätä EI generoida automaattisesti uudelleen. Jos projektin rakenne muuttuu
+# (uusi moduuli, kehysvaihdos), päivitä tämä käsin tai aja /vnetcon-init uudelleen.
+
+paivitetty: TÄYTTÄMÄTÖN
+
+projekti:
+  nimi: TÄYTTÄMÄTÖN
+  kuvaus: ""              # 1–2 lausetta: mitä projekti tekee
+  juuri: ".."
+  versionhallinta: git
+  paahaara: main
+
+pino:
+  profiilit: []           # metodi/pinot/<nimi>.md — mitkä kartoitusprofiilit ovat käytössä
+  kielet: []
+  kehykset: []
+  tietokanta: ""
+  viestinvalitys: ""      # esim. sqs, kafka, rabbitmq, ei mitään
+  ajoympäristö: ""        # esim. AWS Lambda, Kubernetes, palvelin
+
+# Miten moduuli tunnistetaan tässä projektissa ja mitä jätetään pois.
+moduulijako:
+  tunnistus: ""           # esim. "hakemisto, jossa on package.json"
+  poisrajaukset: []       # esim. [node_modules, generated, kokeilut/]
+  perustelu: ""           # miksi juuri tämä jako
+
+# Missä mikä on. Vain merkittävät — ei koko hakemistopuuta.
+hakemistokartta: []
+  # - polku: src/api
+  #   vastuu: HTTP-rajapinta ja reititys
+  # - polku: db/migrations
+  #   vastuu: tietokantaskeema (Flyway)
+
+# Mistä datan muoto määräytyy — datamallien lähteet.
+skeemalahteet: []
+  # - polku: openapi.yaml
+  #   tyyppi: openapi
+  # - polku: prisma/schema.prisma
+  #   tyyppi: orm
+
+# Sisääntulopistetyypit, joita projektissa esiintyy.
+sisaantulot: []           # esim. [rest, viestijono, ajastus, cli]
+
+# Komennot, joita tiketin toteutus (vaihe 4) käyttää.
+komennot:
+  testi: ""
+  build: ""
+  lint: ""
+  paikallinen_ajo: ""
+  huomio: ""              # esim. "testit vaativat käynnissä olevan Postgresin (docker compose up db)"
+
+# Olemassa oleva dokumentaatio, johon linkitetään (ei duplikoida).
+olemassa_oleva_dokumentaatio: []
+  # - polku: docs/adr
+  #   sisalto: arkkitehtuuripäätökset
+
+# Asiat, jotka toistuvasti hämäävät — kirjaa ne heti kun huomaat.
+huomiot: []

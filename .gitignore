@@ -1,0 +1,15 @@
+# Paketoinnin tuotos (tyokalut/paketoi.sh)
+vnetcon-docs-*.zip
+
+# Riippuvuudet
+node_modules/
+
+# Henkilökohtaiset overridet — sisältävät paikallisia polkuja
+.claude/settings.local.json
+
+# Editorit
+.idea/
+.vscode/
+
+# Käyttöjärjestelmä
+.DS_Store

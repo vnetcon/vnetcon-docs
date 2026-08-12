@@ -1,0 +1,21 @@
+{
+  "name": "vnetcon-docs-html-generaattori",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Generoi vnetcon-docs-dokumentaation md-tiedostoista staattisen HTML-version html/-hakemistoon.",
+  "bin": {
+    "generoi-html": "generoi.mjs"
+  },
+  "scripts": {
+    "generoi": "node generoi.mjs"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "mermaid": "^11.4.0",
+    "minisearch": "^7.1.0"
+  }
+}

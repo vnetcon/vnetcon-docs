@@ -1,0 +1,499 @@
+#!/usr/bin/env bash
+# vnetcon-ai — käynnistää tekoälyagentit (Claude / Codex) tälle projektille
+# konfiguroidulla tavalla, myös Vnetconin pilviympäristöä vasten.
+#
+# Asetukset: vnetcon-docs/vnetcon.config.yaml (osiot agentit, laskutus)
+# Tunnisteet: ~/.vnetcon/credentials.env  (EI koskaan tähän hakemistoon)
+#
+# Ks. ../../metodi/agentit.md ja README.md
+
+set -euo pipefail
+
+TYOKALU_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JUURI="$(cd "$TYOKALU_DIR/../.." && pwd)"          # vnetcon-docs/
+KONF="$JUURI/vnetcon.config.yaml"
+TUNNISTEET="${VNETCON_CREDENTIALS:-$HOME/.vnetcon/credentials.env}"
+
+# --- Tuloste ---------------------------------------------------------------
+
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  C_OK=$'\033[32m'; C_VAR=$'\033[33m'; C_VIRHE=$'\033[31m'; C_HIM=$'\033[2m'; C_0=$'\033[0m'
+else
+  C_OK=''; C_VAR=''; C_VIRHE=''; C_HIM=''; C_0=''
+fi
+ok()    { printf '%s✓%s %s\n' "$C_OK" "$C_0" "$*"; }
+varo()  { printf '%s!%s %s\n' "$C_VAR" "$C_0" "$*"; }
+virhe() { printf '%s✗%s %s\n' "$C_VIRHE" "$C_0" "$*" >&2; }
+him()   { printf '%s%s%s\n' "$C_HIM" "$*" "$C_0"; }
+kuole() { virhe "$*"; exit 1; }
+
+# --- Konfiguraation luku ---------------------------------------------------
+# Minimaalinen YAML-lukija: tukee sisennettyjä skalaariavaimia (2 välilyöntiä
+# per taso), joka riittää vnetcon.config.yaml:lle. Polku pisteillä:
+#   konf agentit.claude.base_url
+
+konf() {
+  local want="$1"
+  [ -f "$KONF" ] || return 0
+  awk -v want="$want" '
+    /^[[:space:]]*#/ { next }
+    /^[[:space:]]*$/ { next }
+    {
+      line = $0
+      match(line, /^ */); ind = RLENGTH
+      sub(/[[:space:]]+#.*$/, "", line)
+      if (match(line, /^ *[A-Za-z0-9_.-]+:/) == 0) next
+      key = line; sub(/^ */, "", key); sub(/:.*$/, "", key)
+      val = line; sub(/^ *[A-Za-z0-9_.-]+:[[:space:]]*/, "", val)
+      lvl = int(ind / 2)
+      path[lvl] = key
+      full = path[0]
+      for (i = 1; i <= lvl; i++) full = full "." path[i]
+      if (full == want) {
+        gsub(/^"|"$/, "", val); gsub(/^'"'"'|'"'"'$/, "", val)
+        if (val != "" && val != "[]" && val != "{}") { print val; exit }
+      }
+    }
+  ' "$KONF"
+}
+
+konf_tai() { local v; v="$(konf "$1" || true)"; [ -n "$v" ] && printf '%s' "$v" || printf '%s' "$2"; }
+
+# Projektin juuri: konfiguraatiosta jos annettu, muuten vnetcon-docsin yläkansio.
+_juuri_konf="$(konf projekti.juuri || true)"
+if [ -n "$_juuri_konf" ] && [ -d "$JUURI/$_juuri_konf" ]; then
+  PROJEKTI="$(cd "$JUURI/$_juuri_konf" && pwd)"
+else
+  PROJEKTI="$(cd "$JUURI/.." && pwd)"
+fi
+
+# Tunnisteen haku: token_lahde muodoss "~/.vnetcon/credentials.env:MUUTTUJA"
+# tai pelkkä "MUUTTUJA" (luetaan oletustiedostosta / ympäristöstä).
+tunniste_muuttuja() {
+  local lahde="$1"
+  case "$lahde" in
+    *:*) printf '%s' "${lahde##*:}" ;;
+    *)   printf '%s' "$lahde" ;;
+  esac
+}
+
+tunniste_tiedosto() {
+  local lahde="$1" f
+  # Eksplisiittinen ympäristöoverride voittaa konfiguraation polun (CI, testit).
+  if [ -n "${VNETCON_CREDENTIALS:-}" ]; then printf '%s' "$VNETCON_CREDENTIALS"; return 0; fi
+  case "$lahde" in
+    *:*) f="${lahde%%:*}" ;;
+    *)   f="$TUNNISTEET" ;;
+  esac
+  printf '%s' "${f/#\~/$HOME}"
+}
+
+hae_tunniste() {   # $1 = token_lahde  →  tulostaa arvon tai tyhjän
+  local lahde="$1" muuttuja f arvo
+  [ -n "$lahde" ] || return 0
+  muuttuja="$(tunniste_muuttuja "$lahde")"
+  [ -n "$muuttuja" ] || return 0
+  # 1) ympäristö voittaa (CI, väliaikainen override)
+  arvo="$(printenv "$muuttuja" || true)"
+  if [ -n "$arvo" ]; then printf '%s' "$arvo"; return 0; fi
+  # 2) tunnistetiedosto
+  f="$(tunniste_tiedosto "$lahde")"
+  [ -f "$f" ] || return 0
+  arvo="$(sed -n "s/^[[:space:]]*\(export[[:space:]]\+\)\{0,1\}${muuttuja}=//p" "$f" | tail -n1)"
+  arvo="${arvo%\"}"; arvo="${arvo#\"}"; arvo="${arvo%\'}"; arvo="${arvo#\'}"
+  printf '%s' "$arvo"
+}
+
+# --- Käyttölokitus (laskutus) ---------------------------------------------
+
+kirjaa_kaytto() {   # $1 komento, $2 agentti, $3 kesto_s, $4 tulos
+  local loki asiakas rel
+  loki="$(konf laskutus.kaytto_loki || true)"
+  [ -n "$loki" ] || return 0
+  asiakas="$(konf_tai laskutus.asiakas "")"
+  case "$loki" in /*) rel="$loki" ;; *) rel="$JUURI/$loki" ;; esac
+  mkdir -p "$(dirname "$rel")" 2>/dev/null || return 0
+  printf '{"aika":"%s","asiakas":"%s","projekti":"%s","komento":"%s","agentti":"%s","kesto_s":%s,"tulos":"%s"}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$asiakas" "$(basename "$PROJEKTI")" "$1" "$2" "$3" "$4" >> "$rel" 2>/dev/null || true
+}
+
+# --- Agenttien ympäristö ---------------------------------------------------
+
+# Asettaa Claude Coden ympäristömuuttujat tarjoajan mukaan.
+# Tulostaa puuttuvat asiat varoituksina; ei kaadu.
+valmistele_claude() {
+  local tarjoaja malli base token_lahde alue projekti_id token otel
+  tarjoaja="$(konf_tai agentit.claude.tarjoaja oma)"
+  malli="$(konf agentit.claude.malli || true)"
+  base="$(konf agentit.claude.base_url || true)"
+  token_lahde="$(konf agentit.claude.token_lahde || true)"
+  alue="$(konf agentit.claude.alue || true)"
+  projekti_id="$(konf agentit.claude.projekti_id || true)"
+
+  case "$tarjoaja" in
+    oma) : ;;
+    vnetcon-pilvi|gateway)
+      [ -n "$base" ] || kuole "agentit.claude.base_url puuttuu (tarjoaja=$tarjoaja). Aja /agentit."
+      export ANTHROPIC_BASE_URL="$base"
+      token="$(hae_tunniste "$token_lahde")"
+      if [ -n "$token" ]; then export ANTHROPIC_AUTH_TOKEN="$token"
+      else varo "Claude-tunniste puuttuu ($token_lahde). Aja: vnetcon-ai tunnisteet --alusta"; fi
+      ;;
+    anthropic-api)
+      token="$(hae_tunniste "$token_lahde")"
+      [ -n "$base" ] && export ANTHROPIC_BASE_URL="$base"
+      if [ -n "$token" ]; then export ANTHROPIC_API_KEY="$token"
+      else varo "Anthropic API -avain puuttuu ($token_lahde)."; fi
+      ;;
+    bedrock)
+      export CLAUDE_CODE_USE_BEDROCK=1
+      [ -n "$alue" ] && export AWS_REGION="$alue"
+      ;;
+    vertex)
+      export CLAUDE_CODE_USE_VERTEX=1
+      [ -n "$alue" ] && export CLOUD_ML_REGION="$alue"
+      [ -n "$projekti_id" ] && export ANTHROPIC_VERTEX_PROJECT_ID="$projekti_id"
+      ;;
+    *) varo "Tuntematon agentit.claude.tarjoaja: $tarjoaja — käytetään omaa kirjautumista." ;;
+  esac
+
+  [ -n "$malli" ] && export ANTHROPIC_MODEL="$malli"
+
+  otel="$(konf laskutus.otel_endpoint || true)"
+  if [ -n "$otel" ]; then
+    export CLAUDE_CODE_ENABLE_TELEMETRY=1
+    export OTEL_METRICS_EXPORTER="${OTEL_METRICS_EXPORTER:-otlp}"
+    export OTEL_EXPORTER_OTLP_PROTOCOL="${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}"
+    export OTEL_EXPORTER_OTLP_ENDPOINT="$otel"
+  fi
+  return 0
+}
+
+# Codexin tarjoaja annetaan -c-parametreina, jotta käyttäjän ~/.codex/config.toml
+# pysyy koskemattomana. Tulostaa parametrit CODEX_ARGS-taulukkoon.
+CODEX_ARGS=()
+valmistele_codex() {
+  CODEX_ARGS=()
+  local tarjoaja malli base token_lahde wire tunnus token muuttuja
+  tarjoaja="$(konf_tai agentit.codex.tarjoaja oma)"
+  malli="$(konf agentit.codex.malli || true)"
+  base="$(konf agentit.codex.base_url || true)"
+  token_lahde="$(konf agentit.codex.token_lahde || true)"
+  wire="$(konf_tai agentit.codex.wire_api chat)"
+  tunnus="$(konf_tai agentit.codex.tarjoajan_tunnus vnetcon)"
+
+  case "$tarjoaja" in
+    oma) : ;;
+    vnetcon-pilvi|gateway|openai-api|azure)
+      muuttuja="$(tunniste_muuttuja "$token_lahde")"
+      token="$(hae_tunniste "$token_lahde")"
+      if [ -n "$token" ] && [ -n "$muuttuja" ]; then export "$muuttuja=$token"
+      else varo "Codex-tunniste puuttuu ($token_lahde). Aja: vnetcon-ai tunnisteet --alusta"; fi
+      if [ -n "$base" ]; then
+        [ -n "$muuttuja" ] || kuole "agentit.codex.token_lahde puuttuu (tarvitaan env_key)."
+        # Arvot lainausmerkeissä, jotta ne jäsentyvät TOML-merkkijonoiksi.
+        CODEX_ARGS+=( -c "model_provider=\"$tunnus\"" )
+        CODEX_ARGS+=( -c "model_providers.$tunnus.name=\"Vnetcon\"" )
+        CODEX_ARGS+=( -c "model_providers.$tunnus.base_url=\"$base\"" )
+        CODEX_ARGS+=( -c "model_providers.$tunnus.env_key=\"$muuttuja\"" )
+        CODEX_ARGS+=( -c "model_providers.$tunnus.wire_api=\"$wire\"" )
+      fi
+      ;;
+    *) varo "Tuntematon agentit.codex.tarjoaja: $tarjoaja — käytetään omaa kirjautumista." ;;
+  esac
+
+  [ -n "$malli" ] && CODEX_ARGS+=( -m "$malli" )
+  return 0
+}
+
+komento_claude() { konf_tai agentit.claude.komento claude; }
+komento_codex()  { konf_tai agentit.codex.komento codex; }
+
+# --- Agentin ajo -----------------------------------------------------------
+
+# aja_agentti <agentti> <tyohakemisto> [kehote] [lisäargumentit...]
+aja_agentti() {
+  local agentti="$1" hakemisto="$2" kehote="${3:-}"; shift 3 || shift $#
+  local alku loppu tulos=ok bin
+  alku="$(date +%s)"
+  case "$agentti" in
+    claude)
+      bin="$(komento_claude)"
+      command -v "$bin" >/dev/null 2>&1 || kuole "Komentoa '$bin' ei löydy. Asenna Claude Code tai aseta agentit.claude.komento."
+      valmistele_claude
+      him "→ $bin  (hakemisto: $hakemisto)"
+      if [ -n "$kehote" ]; then ( cd "$hakemisto" && "$bin" "$@" "$kehote" ) || tulos=virhe
+      else ( cd "$hakemisto" && "$bin" "$@" ) || tulos=virhe; fi
+      ;;
+    codex)
+      bin="$(komento_codex)"
+      command -v "$bin" >/dev/null 2>&1 || kuole "Komentoa '$bin' ei löydy. Asenna Codex CLI tai aseta agentit.codex.komento."
+      valmistele_codex
+      him "→ $bin ${CODEX_ARGS[*]:-}  (hakemisto: $hakemisto)"
+      if [ -n "$kehote" ]; then ( cd "$hakemisto" && "$bin" ${CODEX_ARGS[@]+"${CODEX_ARGS[@]}"} "$@" "$kehote" ) || tulos=virhe
+      else ( cd "$hakemisto" && "$bin" ${CODEX_ARGS[@]+"${CODEX_ARGS[@]}"} "$@" ) || tulos=virhe; fi
+      ;;
+    *) kuole "Tuntematon agentti: $agentti (odotettiin claude tai codex)" ;;
+  esac
+  loppu="$(date +%s)"
+  kirjaa_kaytto "${VNETCON_KOMENTO:-aja}" "$agentti" "$((loppu - alku))" "$tulos"
+  [ "$tulos" = ok ] || exit 1
+}
+
+# --- Komennot --------------------------------------------------------------
+
+cmd_doctor() {
+  printf '%s\n' "vnetcon-docs — tarkistus"
+  him "projekti:      $PROJEKTI"
+  him "vnetcon-docs:  $JUURI"
+  echo
+
+  if [ -f "$KONF" ]; then ok "vnetcon.config.yaml löytyy"
+    local nimi; nimi="$(konf projekti.nimi || true)"
+    [ -n "$nimi" ] && him "  projekti.nimi: $nimi"
+  else varo "vnetcon.config.yaml PUUTTUU — aja Claudessa /vnetcon-init"; fi
+
+  if [ -f "$JUURI/tila/projekti.yaml" ] && ! grep -q 'TÄYTTÄMÄTÖN' "$JUURI/tila/projekti.yaml" 2>/dev/null; then
+    ok "tila/projekti.yaml täytetty"
+  else varo "tila/projekti.yaml on täyttämätön — käyttöönotto kesken (/vnetcon-init)"; fi
+
+  if [ -d "$PROJEKTI/.git" ] || git -C "$PROJEKTI" rev-parse --git-dir >/dev/null 2>&1; then
+    ok "projekti on git-repo ($(git -C "$PROJEKTI" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?'))"
+  else varo "projekti EI ole git-repo — aseta projekti.versionhallinta: none"; fi
+  echo
+
+  local a t bin
+  for a in claude codex; do
+    bin="$( [ "$a" = claude ] && komento_claude || komento_codex )"
+    if command -v "$bin" >/dev/null 2>&1; then
+      ok "$a asennettu: $(command -v "$bin")  $("$bin" --version 2>/dev/null | head -n1 || true)"
+    else
+      varo "$a EI asennettu (komento: $bin)"
+    fi
+    local tarjoaja; tarjoaja="$(konf_tai "agentit.$a.tarjoaja" oma)"
+    him "  tarjoaja: $tarjoaja"
+    local base; base="$(konf "agentit.$a.base_url" || true)"
+    [ -n "$base" ] && him "  base_url: $base"
+    local malli; malli="$(konf "agentit.$a.malli" || true)"
+    [ -n "$malli" ] && him "  malli:    $malli"
+    if [ "$tarjoaja" != oma ]; then
+      local lahde; lahde="$(konf "agentit.$a.token_lahde" || true)"
+      if [ -z "$lahde" ]; then varo "  token_lahde puuttuu konfiguraatiosta"
+      else
+        t="$(hae_tunniste "$lahde")"
+        if [ -n "$t" ]; then ok "  tunniste löytyy ($(tunniste_muuttuja "$lahde"), ${#t} merkkiä)"
+        else varo "  tunniste PUUTTUU: $lahde"; fi
+      fi
+    fi
+  done
+  echo
+
+  him "työnjako:"
+  him "  dokumentointi: $(konf_tai agentit.dokumentointi claude)"
+  him "  toteutus:      $(konf_tai agentit.toteutus codex)"
+  him "  päivitys:      $(konf_tai agentit.paivitys codex)"
+  echo
+
+  if [ -f "$JUURI/kalibrointiraportti.md" ]; then
+    ok "kalibrointiraportti.md löytyy"
+  else
+    varo "kalibrointiraporttia ei ole — aja: vnetcon-ai kalibroi"
+  fi
+
+  if command -v node >/dev/null 2>&1; then ok "node $(node -v)"
+  else varo "node puuttuu — HTML-generointi ja kalibrointi eivät toimi"; fi
+  if [ -d "$TYOKALU_DIR/../html-generaattori/node_modules" ]; then ok "html-generaattorin riippuvuudet asennettu"
+  else varo "html-generaattori: aja  cd $JUURI/tyokalut/html-generaattori && npm install"; fi
+
+  if [ -f "$TUNNISTEET" ]; then
+    local oik; oik="$(ls -l "$TUNNISTEET" | cut -c1-10)"
+    ok "tunnistetiedosto: $TUNNISTEET ($oik)"
+    case "$oik" in -rw-------) : ;; *) varo "  oikeudet väljät — aja: chmod 600 $TUNNISTEET" ;; esac
+  else
+    him "tunnistetiedostoa ei ole: $TUNNISTEET (tarvitaan vain pilvitarjoajilla)"
+  fi
+}
+
+cmd_tunnisteet() {
+  if [ "${1:-}" = "--alusta" ]; then
+    mkdir -p "$(dirname "$TUNNISTEET")"
+    if [ -f "$TUNNISTEET" ]; then varo "$TUNNISTEET on jo olemassa — ei ylikirjoiteta."
+    else
+      cat > "$TUNNISTEET" <<'EOF'
+# Vnetcon-tunnisteet. TÄTÄ TIEDOSTOA EI KOSKAAN VIEDÄ VERSIONHALLINTAAN.
+# Täytä vain ne rivit, joita projektisi konfiguraatio käyttää
+# (vnetcon.config.yaml → agentit.*.token_lahde).
+
+VNETCON_ANTHROPIC_TOKEN=
+VNETCON_OPENAI_TOKEN=
+EOF
+      chmod 600 "$TUNNISTEET"
+      ok "Luotiin $TUNNISTEET (oikeudet 600). Täytä arvot editorilla."
+    fi
+    him "Avaa esim.:  \${EDITOR:-nano} $TUNNISTEET"
+    return 0
+  fi
+  him "Tunnistetiedosto: $TUNNISTEET"
+  if [ -f "$TUNNISTEET" ]; then
+    sed -n 's/^[[:space:]]*\(export[[:space:]]\+\)\{0,1\}\([A-Z_][A-Z0-9_]*\)=.*/  \2 = (asetettu)/p' "$TUNNISTEET"
+  else
+    varo "ei ole olemassa — luo: vnetcon-ai tunnisteet --alusta"
+  fi
+}
+
+cmd_token() {   # tulostaa tunnisteen (apiKeyHelperille) — ei mitään muuta
+  local a="${1:-claude}" lahde
+  lahde="$(konf "agentit.$a.token_lahde" || true)"
+  [ -n "$lahde" ] || exit 1
+  local t; t="$(hae_tunniste "$lahde")"
+  [ -n "$t" ] || exit 1
+  printf '%s' "$t"
+}
+
+cmd_html() {
+  command -v node >/dev/null 2>&1 || kuole "node puuttuu — HTML-generointi vaatii Noden."
+  local gen="$JUURI/tyokalut/html-generaattori" zip=0
+  local -a gen_args=()
+  local a
+  for a in "$@"; do
+    if [ "$a" = "--zip" ]; then zip=1; else gen_args+=( "$a" ); fi
+  done
+  [ -d "$gen/node_modules" ] || varo "node_modules puuttuu — haku ja kaaviot eivät toimi. Aja: (cd $gen && npm install)"
+  ( cd "$gen" && node generoi.mjs ${gen_args[@]+"${gen_args[@]}"} )
+  if [ "$zip" = 1 ]; then
+    command -v zip >/dev/null 2>&1 || kuole "zip-komento puuttuu (asenna zip tai paketoi käsin)."
+    ( cd "$JUURI" && rm -f html.zip && zip -rq html.zip html )
+    ok "Paketoitiin $JUURI/html.zip"
+  fi
+  kirjaa_kaytto html - 0 ok
+}
+
+cmd_linkit() {
+  command -v node >/dev/null 2>&1 || kuole "node puuttuu — linkkitarkistus vaatii Noden."
+  node "$JUURI/tyokalut/tarkista-linkit.mjs" "$@"
+}
+
+cmd_kalibroi() {
+  command -v node >/dev/null 2>&1 || kuole "node puuttuu — kalibrointi vaatii Noden."
+  node "$JUURI/tyokalut/kalibroi.mjs" "$@"
+}
+
+cmd_moduulit() {
+  command -v node >/dev/null 2>&1 || kuole "node puuttuu — moduulilistaus vaatii Noden."
+  node "$JUURI/tyokalut/moduulit.mjs" "$@"
+}
+
+cmd_toteuta() {
+  local tunnus="${1:-}"
+  [ -n "$tunnus" ] || kuole "Käyttö: vnetcon-ai toteuta <tiketin-tunnus>"
+  local dir="$JUURI/tiketit/$tunnus"
+  [ -d "$dir" ] || kuole "Tikettihakemistoa ei ole: $dir (aja Claudessa /valmistele-tiketti)"
+  local kehote=""
+  for f in "$dir/codex-kehote.md" "$dir/toteutuskehote.md"; do
+    [ -f "$f" ] && { kehote="$f"; break; }
+  done
+  local agentti; agentti="$(konf_tai agentit.toteutus codex)"
+  local teksti
+  if [ -n "$kehote" ]; then
+    teksti="$(cat "$kehote")"
+  else
+    varo "Valmista kehotetta ei löytynyt ($dir/codex-kehote.md) — annetaan geneerinen ohje."
+    teksti="Toteuta tiketti $tunnus. Lue ensin vnetcon-docs/metodi/tiketti-tyonkulku.md ja vnetcon-docs/metodi/konventiot.md sekä kaikki tiedostot hakemistosta vnetcon-docs/tiketit/$tunnus/. Jatka siitä vaiheesta, joka on kesken. Älä committaa ilman lupaa."
+  fi
+  VNETCON_KOMENTO="toteuta:$tunnus" aja_agentti "$agentti" "$PROJEKTI" "$teksti"
+}
+
+cmd_dokumentoi() {
+  local moduuli="${1:-}"
+  local agentti; agentti="$(konf_tai agentit.dokumentointi claude)"
+  local teksti
+  if [ "$agentti" = claude ]; then
+    teksti="/dokumentoi${moduuli:+ $moduuli}"
+    VNETCON_KOMENTO="dokumentoi${moduuli:+:$moduuli}" aja_agentti claude "$JUURI" "$teksti"
+  else
+    teksti="Dokumentoi ${moduuli:-seuraava tekemätön moduuli} vnetcon-docs-järjestelmään. Lue ensin vnetcon-docs/metodi/tyonkulku.md, vnetcon-docs/metodi/konventiot.md, vnetcon-docs/metodi/kartoitus.md ja vnetcon-docs/tila/rekisteri.yaml, ja seuraa työnkulkua vaihe vaiheelta. Älä committaa ilman lupaa."
+    VNETCON_KOMENTO="dokumentoi${moduuli:+:$moduuli}" aja_agentti "$agentti" "$PROJEKTI" "$teksti"
+  fi
+}
+
+cmd_asenna_kehotteet() {
+  local dir="$HOME/.codex/prompts"
+  mkdir -p "$dir"
+  local n=0 f nimi
+  for f in "$TYOKALU_DIR/codex-kehotteet"/*.md; do
+    [ -f "$f" ] || continue
+    nimi="vnetcon-$(basename "$f")"
+    sed "s|__VNETCON_DOCS__|$JUURI|g" "$f" > "$dir/$nimi"
+    n=$((n + 1))
+  done
+  if [ "$n" -gt 0 ]; then
+    ok "Asennettiin $n kehotetta hakemistoon $dir"
+    him "Käytettävissä Codexissa: /vnetcon-tiketti, /vnetcon-dokumentoi, /vnetcon-synkronoi"
+    varo "Kehotteet ovat GLOBAALEJA ja sisältävät tämän projektin polun."
+  else
+    varo "Ei kehotteita hakemistossa $TYOKALU_DIR/codex-kehotteet"
+  fi
+}
+
+cmd_konfig() {
+  [ -f "$KONF" ] || kuole "vnetcon.config.yaml puuttuu — aja /vnetcon-init."
+  printf 'projekti.nimi            %s\n' "$(konf_tai projekti.nimi '-')"
+  printf 'agentit.dokumentointi   %s\n' "$(konf_tai agentit.dokumentointi claude)"
+  printf 'agentit.toteutus        %s\n' "$(konf_tai agentit.toteutus codex)"
+  printf 'agentit.paivitys        %s\n' "$(konf_tai agentit.paivitys codex)"
+  local a
+  for a in claude codex; do
+    printf 'agentit.%s.tarjoaja %s\n' "$a" "$(konf_tai "agentit.$a.tarjoaja" oma)"
+    printf 'agentit.%s.base_url %s\n' "$a" "$(konf_tai "agentit.$a.base_url" '-')"
+    printf 'agentit.%s.malli    %s\n' "$a" "$(konf_tai "agentit.$a.malli" '(oletus)')"
+  done
+  printf 'laskutus.asiakas        %s\n' "$(konf_tai laskutus.asiakas '-')"
+  printf 'laskutus.otel_endpoint  %s\n' "$(konf_tai laskutus.otel_endpoint '-')"
+  him '(tunnisteita ei näytetä — ks. vnetcon-ai tunnisteet)'
+}
+
+kaytto() {
+  cat <<EOF
+vnetcon-ai — tekoälyagenttien käynnistys tälle projektille
+
+Käyttö: vnetcon-ai <komento> [argumentit]
+
+  doctor                  Tarkista asennus, konfiguraatio ja tunnisteet
+  kalibroi                Kartoita projekti ja kirjoita kalibrointiraportti
+  moduulit [--tekematta]  Listaa moduulit ja dokumentointitila (+ mikä seuraavaksi)
+  claude [args...]        Käynnistä Claude vnetcon-docs-hakemistossa
+  codex [args...]         Käynnistä Codex projektin juuressa
+  dokumentoi [moduuli]    Käynnistä dokumentointiagentti
+  toteuta <tunnus>        Käynnistä toteutusagentti tiketin valmiilla kehotteella
+  html [--zip]            Generoi selattava HTML (ja paketoi)
+  linkit [--lahteet]      Tarkista dokumentaation linkit ja lähdepolut
+  tunnisteet [--alusta]   Näytä / luo ~/.vnetcon/credentials.env
+  token <claude|codex>    Tulosta tunniste (Claude Coden apiKeyHelperille)
+  asenna-kehotteet        Asenna Codex-slash-kehotteet ~/.codex/prompts/
+  konfig                  Näytä tehokas konfiguraatio (ilman salaisuuksia)
+
+Asetukset: $KONF
+Tunnisteet: $TUNNISTEET
+Ks. myös: $JUURI/metodi/agentit.md
+EOF
+}
+
+komento="${1:-}"
+[ $# -gt 0 ] && shift || true
+case "$komento" in
+  doctor|tarkista)     cmd_doctor "$@" ;;
+  claude)              VNETCON_KOMENTO=claude aja_agentti claude "$JUURI" "" "$@" ;;
+  codex)               VNETCON_KOMENTO=codex  aja_agentti codex  "$PROJEKTI" "" "$@" ;;
+  dokumentoi)          cmd_dokumentoi "$@" ;;
+  toteuta)             cmd_toteuta "$@" ;;
+  html)                cmd_html "$@" ;;
+  linkit)              cmd_linkit "$@" ;;
+  kalibroi)            cmd_kalibroi "$@" ;;
+  moduulit)            cmd_moduulit "$@" ;;
+  tunnisteet)          cmd_tunnisteet "$@" ;;
+  token)               cmd_token "$@" ;;
+  asenna-kehotteet)    cmd_asenna_kehotteet "$@" ;;
+  konfig)              cmd_konfig "$@" ;;
+  ''|-h|--help|help)   kaytto ;;
+  *)                   virhe "Tuntematon komento: $komento"; echo; kaytto; exit 1 ;;
+esac
