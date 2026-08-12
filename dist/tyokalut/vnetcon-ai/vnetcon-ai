@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # vnetcon-ai — käynnistää tekoälyagentit (Claude / Codex) tälle projektille
-# konfiguroidulla tavalla, myös Vnetconin pilviympäristöä vasten.
+# konfiguroidulla tavalla: oma kirjautuminen, oma pilvitili, suora API-avain tai
+# organisaation oma välityspalvelin.
 #
 # Asetukset: vnetcon-docs/vnetcon.config.yaml (osiot agentit, laskutus)
 # Tunnisteet: ~/.vnetcon/credentials.env  (EI koskaan tähän hakemistoon)
@@ -132,7 +133,8 @@ valmistele_claude() {
 
   case "$tarjoaja" in
     oma) : ;;
-    vnetcon-pilvi|gateway)
+    gateway)
+      # Asiakkaan oma sisäinen välityspalvelin (bearer-tunniste). Ei Vnetconin palvelua.
       [ -n "$base" ] || kuole "agentit.claude.base_url puuttuu (tarjoaja=$tarjoaja). Aja /agentit."
       export ANTHROPIC_BASE_URL="$base"
       token="$(hae_tunniste "$token_lahde")"
@@ -180,11 +182,11 @@ valmistele_codex() {
   base="$(konf agentit.codex.base_url || true)"
   token_lahde="$(konf agentit.codex.token_lahde || true)"
   wire="$(konf_tai agentit.codex.wire_api chat)"
-  tunnus="$(konf_tai agentit.codex.tarjoajan_tunnus vnetcon)"
+  tunnus="$(konf_tai agentit.codex.tarjoajan_tunnus mukautettu)"
 
   case "$tarjoaja" in
     oma) : ;;
-    vnetcon-pilvi|gateway|openai-api|azure)
+    gateway|openai-api|azure)
       muuttuja="$(tunniste_muuttuja "$token_lahde")"
       token="$(hae_tunniste "$token_lahde")"
       if [ -n "$token" ] && [ -n "$muuttuja" ]; then export "$muuttuja=$token"
@@ -193,7 +195,7 @@ valmistele_codex() {
         [ -n "$muuttuja" ] || kuole "agentit.codex.token_lahde puuttuu (tarvitaan env_key)."
         # Arvot lainausmerkeissä, jotta ne jäsentyvät TOML-merkkijonoiksi.
         CODEX_ARGS+=( -c "model_provider=\"$tunnus\"" )
-        CODEX_ARGS+=( -c "model_providers.$tunnus.name=\"Vnetcon\"" )
+        CODEX_ARGS+=( -c "model_providers.$tunnus.name=\"$tunnus\"" )
         CODEX_ARGS+=( -c "model_providers.$tunnus.base_url=\"$base\"" )
         CODEX_ARGS+=( -c "model_providers.$tunnus.env_key=\"$muuttuja\"" )
         CODEX_ARGS+=( -c "model_providers.$tunnus.wire_api=\"$wire\"" )

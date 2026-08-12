@@ -34,7 +34,7 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 | **Node.js 18+** (suositus 20 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
 | **git** | vahvasti suositeltu | Dokumentoinnin skooppi on `git ls-files`, ja `/synkronoi-dokumentaatio` perustuu commit-diffiin. Ilman gitiä aseta `projekti.versionhallinta: none` — silloin päivitykset tehdään käsin. |
 | **`npm install`** html-generaattorissa | vain `/generoi-html` | Kertaluontoinen, vaatii verkon. Ilman sitä HTML syntyy, mutta haku ja Mermaid-kaaviot eivät toimi. |
-| **`~/.vnetcon/credentials.env`** | vain pilvitarjoajilla | Tunnisteet, kun agentti osoitetaan omaan pilvitiliin tai Vnetconin gatewayhin. |
+| **`~/.vnetcon/credentials.env`** | vain pilvitarjoajilla | Tunnisteet, kun agentti osoitetaan omaan pilvitiliin, suoraan API-avaimeen tai organisaation omaan välityspalvelimeen. |
 
 Pythonia, Dockeria, tietokantaa tai web-palvelinta ei tarvita. Tarkistus yhdellä
 komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
@@ -54,7 +54,7 @@ komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
    Odota, että näet syötekentän.
    > Jos `claude`-komentoa ei löydy tai kirjautuminen puuttuu, aja
    > `./tyokalut/vnetcon-ai/vnetcon-ai doctor` — se kertoo mitä puuttuu.
-   > Vnetconin pilviympäristöä käytettäessä käynnistä
+   > Jos agentti on osoitettu omaan pilvitiliin tai API-avaimeen, käynnistä
    > `./tyokalut/vnetcon-ai/vnetcon-ai claude` (asettaa palvelun osoitteen
    > ja tunnisteen puolestasi).
 4. **Kirjoita komento syötekenttään**, esim.:
@@ -92,7 +92,7 @@ komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 | `/toteuta-tiketti` | Toteuttaa rajatun koodimuutoksen dokumentaatio kontekstipohjana ja päivittää lopuksi dokit. Käytettävissä sekä Claudessa että Codexissa. |
 | `/synkronoi-dokumentaatio` | Päivittää dokumentaation vastaamaan koodimuutoksia, jotka tehtiin **ilman** tikettiprosessia (suorat commitit, merget). |
 | `/yhdenmukaista-dokumentaatio` | Päivittää vanhat dokit nykyisten mallipohjien mukaisiksi, kun **menettely** on muuttunut. |
-| `/agentit` | Konfiguroi kumpi agentti tekee mitä ja mitä pilvipalvelua vasten (Vnetconin pilvi vai oma tili). |
+| `/agentit` | Konfiguroi kumpi agentti tekee mitä ja kenen AI-tiliä vasten ne ajetaan (oma kirjautuminen vai oma pilvitili). |
 
 Kunkin täydellinen menettely on kansiossa [`metodi/`](metodi/).
 
@@ -141,7 +141,7 @@ Muut vaihtoehdot (`/agentit` konfiguroi ne):
 |-------|--------------------|---------|
 | **Oma tili** (oletus) | sinä | Toimii heti |
 | **Oma pilvitili** (Bedrock, Vertex, Azure OpenAI, suora API-avain) | sinä | Yritys-/julkishallintokäyttö: avaimet ja liikenne pysyvät omassa tenantissa, kustannus on omaa pilvikulutusta |
-| **Vnetconin pilvi** | Vnetcon | Vain pilottivaihe, jos oma hankinta kestäisi. Huom: promptissa on koodia, joten tämä vaatii tietosuojasopimuksen |
+| **Toimittajan tili** | toimittaja | Vain jos omaa tiliä ei ole eikä sitä voi hankkia. Promptissa on koodia, joten tämä tekee toimittajasta käsittelijän ja mallin tarjoajasta alikäsittelijän: vaatii kirjallisen luvan ja kaupallisilla ehdoilla olevan tilin |
 
 Tunnisteet **eivät koskaan ole tässä hakemistossa** vaan tiedostossa
 `~/.vnetcon/credentials.env`. Ks.

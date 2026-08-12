@@ -6,7 +6,8 @@ asetuksilla ja tarjoaa kevyet tarkistuskomennot (`doctor`, `kalibroi`, `linkit`)
 **Oletus on käyttäjän oma AI-tili** (`tarjoaja: oma`) — silloin tätä skriptiä ei
 tarvitse käyttää agentin käynnistämiseen lainkaan, pelkkä `claude` tai `codex`
 riittää. Skripti on tarpeen vasta kun agentti osoitetaan johonkin muuhun
-tarjoajaan (oma pilvitili tai poikkeustapauksena Vnetconin gateway).
+tarjoajaan (oma pilvitili, suora API-avain tai organisaation oma
+välityspalvelin).
 
 ```bash
 ./vnetcon-ai doctor              # mitä on asennettu, mikä konfiguroitu, löytyykö tunniste
@@ -41,8 +42,7 @@ Konfiguraatio viittaa tunnisteeseen nimellä:
 ```yaml
 agentit:
   claude:
-    tarjoaja: vnetcon-pilvi
-    base_url: "https://<vnetconin-gateway>/anthropic"
+    tarjoaja: anthropic-api
     token_lahde: "~/.vnetcon/credentials.env:VNETCON_ANTHROPIC_TOKEN"
 ```
 
@@ -58,7 +58,8 @@ Ympäristömuuttuja voittaa tiedoston, joten CI:ssä riittää asettaa sama muut
 
 ## Mitä `tarjoaja`-arvot tekevät
 
-Suositusjärjestys on `oma` → oma pilvitili → `vnetcon-pilvi` (vain pilotti).
+Suositusjärjestys on `oma` → oma pilvitili tai API-avain → `gateway`
+(organisaation oma välityspalvelin).
 Perustelut: [`../../metodi/agentit.md`](../../metodi/agentit.md).
 
 **Claude** (`agentit.claude.tarjoaja`)
@@ -66,7 +67,7 @@ Perustelut: [`../../metodi/agentit.md`](../../metodi/agentit.md).
 | Arvo | Mitä asetetaan |
 |------|----------------|
 | `oma` **(oletus)** | ei mitään — käyttäjän oma kirjautuminen/tilaus |
-| `vnetcon-pilvi` | `ANTHROPIC_BASE_URL` = `base_url`, `ANTHROPIC_AUTH_TOKEN` = tunniste |
+| `gateway` | `ANTHROPIC_BASE_URL` = `base_url`, `ANTHROPIC_AUTH_TOKEN` = tunniste. **Asiakkaan oma** välityspalvelin — toimittaja ei tarjoa tällaista palvelua |
 | `anthropic-api` | `ANTHROPIC_API_KEY` = tunniste (+ `ANTHROPIC_BASE_URL` jos annettu) |
 | `bedrock` | `CLAUDE_CODE_USE_BEDROCK=1`, `AWS_REGION` = `alue` |
 | `vertex` | `CLAUDE_CODE_USE_VERTEX=1`, `CLOUD_ML_REGION` = `alue`, `ANTHROPIC_VERTEX_PROJECT_ID` = `projekti_id` |
@@ -79,7 +80,7 @@ Perustelut: [`../../metodi/agentit.md`](../../metodi/agentit.md).
 | Arvo | Mitä tehdään |
 |------|--------------|
 | `oma` | ei mitään — käyttäjän oma `codex login` |
-| `vnetcon-pilvi` / `openai-api` | tunniste viedään ympäristöön ja tarjoaja annetaan `-c`-parametreina |
+| `gateway` / `openai-api` | tunniste viedään ympäristöön ja tarjoaja annetaan `-c`-parametreina |
 
 Codexille annetaan käynnistyksessä:
 
@@ -92,7 +93,8 @@ Codexille annetaan käynnistyksessä:
 
 Näin **käyttäjän `~/.codex/config.toml` pysyy koskemattomana** — asetus on
 projektikohtainen ja voimassa vain tämän skriptin käynnistämissä ajoissa.
-Jos gateway käyttää Responses-API:a, aseta `agentit.codex.wire_api: responses`.
+Jos välityspalvelin käyttää Responses-API:a, aseta
+`agentit.codex.wire_api: responses`.
 
 ## Claude ilman käynnistysskriptiä
 
@@ -100,7 +102,7 @@ Jos gateway käyttää Responses-API:a, aseta `agentit.codex.wire_api: responses
 
 ```json
 {
-  "env": { "ANTHROPIC_BASE_URL": "https://<gateway>/anthropic" },
+  "env": { "ANTHROPIC_BASE_URL": "https://<oma-valityspalvelin>/anthropic" },
   "apiKeyHelper": "./tyokalut/vnetcon-ai/hae-token.sh"
 }
 ```

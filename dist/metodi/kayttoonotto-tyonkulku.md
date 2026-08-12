@@ -109,11 +109,11 @@ kysy asioita, jotka luit koodista. Kysy enintään nämä:
    navigointia ja vaiheittaista dokumentointia varten. Esitä oma ehdotus.
 3. **Sanasto** — mitä moduulia kutsutaan tässä projektissa (moduuli / palvelu /
    sovellus / komponentti / paketti)? Tämä on vain näyttönimi.
-4. **Agentit ja pilvipalvelu** — kuka dokumentoi, kuka toteuttaa, ja käytetäänkö
-   Vnetconin pilviympäristöä vai omia tilejä. Yksityiskohdat:
-   [`agentit.md`](agentit.md). Jos käyttäjä valitsee Vnetconin pilven, ohjaa
-   `/agentit`-komentoon (tai seuraa `agentit.md`:n asetusosiota) — älä pyydä
-   tunnisteita chattiin.
+4. **Agentit ja AI-tili** — kuka dokumentoi, kuka toteuttaa, ja kenen tiliä
+   vasten agentit ajetaan: oma kirjautuminen, oma pilvitili vai organisaation
+   välityspalvelin. Yksityiskohdat: [`agentit.md`](agentit.md). Jos valinta on
+   muu kuin oma kirjautuminen, ohjaa `/agentit`-komentoon (tai seuraa
+   `agentit.md`:n asetusosiota) — älä pyydä tunnisteita chattiin.
 
 ## Vaihe I4 — Kirjoita konfiguraatio ja tila
 

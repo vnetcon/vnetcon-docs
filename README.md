@@ -58,8 +58,9 @@ Selattava näyte siitä, miltä valmis dokumentaatio näyttää:
 Kokonaisuus tukee **kahta agenttia**: dokumentointi ajetaan tyypillisesti
 Claudella ja tikettien toteutus Codexilla, mutta kumpi tahansa osaa kummankin.
 Oletuksena käytetään **asiakkaan omaa AI-tiliä** — koodi ei kulje kolmannen
-osapuolen läpi. Muut tarjoajat (oma pilvitili, poikkeustapauksena Vnetconin
-gateway) ovat konfiguroitavissa; ks. [`dist/metodi/agentit.md`](dist/metodi/agentit.md).
+osapuolen läpi. Muut tarjoajat (oma pilvitili, suora API-avain tai organisaation
+oma välityspalvelin) ovat konfiguroitavissa; ks.
+[`dist/metodi/agentit.md`](dist/metodi/agentit.md).
 
 ## Käyttömalli
 

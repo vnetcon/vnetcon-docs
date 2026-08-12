@@ -94,25 +94,46 @@ joka lukee agentin `vnetcon.config.yaml`:n `agentit.toteutus`-kentästä ja
 käynnistää sen projektin juuressa kehotteella. (Käsin:
 `cd .. && codex "$(cat vnetcon-docs/tiketit/<tunnus>/codex-kehote.md)"`.)
 
-## Mitä AI-tiliä käytetään
+## Kenen AI-tiliä vasten ajetaan
 
-**Oletus ja suositus: asiakkaan oma tili** (`tarjoaja: oma`). Silloin koodi ei
-kulje kenenkään kolmannen osapuolen infrastruktuurin läpi, tietosuojasopimuksia
-ei tarvita ylimääräisesti, eikä kustannus ole kenenkään välikäden hinnoittelun
-varassa.
+Koodi on aina asiakkaan versionhallinnassa, ja työasemalla oleva klooni on sama
+asia kuin missä tahansa git-pohjaisessa toimeksiannossa. **Ainoa ero tavalliseen
+alihankintaan on se, että promptissa lähtee koodia mallin tarjoajalle.** Siksi
+tämän luvun kysymys ei ole kuka koodin omistaa vaan **kenen tiliä vasten agentti
+ajetaan** — se ratkaisee kuka on tietojenkäsittelijä ja kenen laskulla tokenit
+ovat.
 
 Kolme mallia paremmuusjärjestyksessä:
 
-| Malli | Kuka omistaa tilin | Kulkeeko koodi kolmannen läpi | Kenelle |
-|-------|--------------------|-------------------------------|---------|
-| **1. Oma tili, oma hallinta** (`oma`) | asiakas | ei | Oletus. Toimii heti, jos `claude`/`codex` on kirjautunut. |
-| **2. Oma pilvitili, ulkoistettu hallinta** (`bedrock`, `vertex`, `anthropic-api`, `openai-api`) | asiakas | ei — avaimet ja liikenne asiakkaan tenantissa | Suositeltu yritys-/julkishallintomalli: kustannus on asiakkaan omaa pilvikulutusta, konfiguroinnin ja seurannan voi ostaa palveluna. |
-| **3. Vnetconin pilvi** (`vnetcon-pilvi`) | Vnetcon | **kyllä** | Vain pilotti- ja kokeiluvaiheeseen, kun oma hankinta kestäisi kuukausia. Rajattu, katollinen, väliaikainen. |
+| Malli | Kenen tili | Kenen lasku | Kenelle |
+|-------|-----------|-------------|---------|
+| **1. Asiakkaan oma tili** (`oma`) | asiakas | asiakas | Oletus. Toimii heti, jos `claude`/`codex` on kirjautunut. Koodi ei kulje kenenkään kolmannen kautta paitsi mallin tarjoajan, jonka asiakas on itse valinnut. |
+| **2. Asiakkaan oma pilvitili** (`bedrock`, `vertex`, `anthropic-api`, `openai-api`) | asiakas | asiakas (pilvikulutus) | Suositeltu yritys- ja julkishallintomalli. Liikenne ja avaimet asiakkaan tenantissa; Vnetcon voi operoida siellä tunnisteilla, ja konfiguroinnin sekä seurannan voi ostaa palveluna. |
+| **3. Toimittajan oma tili** (`oma`, toimittajan kirjautuminen) | Vnetcon | Vnetcon | Pienet asiakkaat joilla ei ole AI-tiliä eikä lupaa hankkia sitä. Poistaa esteen kokonaan, mutta siirtää käsittelijän vastuun toimittajalle — ks. ehdot alla. |
 
-> **Malli 3 ei ole kevyt oikotie.** Promptissa on koodia, joten välittäjä on
-> tietosuoja-asetuksen mukainen käsittelijä: tarvitaan sopimus, lokituskäytännöt
-> ja tietoturva-arvio — käytännössä sama arviointi kuin koodin luovutuksessa.
-> Käytä sitä siksi vain rajatusti ja siirry malliin 1 tai 2 heti kun mahdollista.
+Mallissa 3 ei ole omaa `tarjoaja`-arvoa: teknisesti se on `oma`, ja ero on vain
+siinä kenen kirjautuminen koneella on aktiivinen. Konfiguraatioon ei siis tule
+mitään mallikohtaista — vastuu ja paperit ovat sopimuksessa, eivät asetuksissa.
+
+> **Malli 3 vaatii kolme asiaa ennen ensimmäistä ajoa.** (1) Kirjallinen lupa,
+> jossa mallin tarjoaja on **nimetty alikäsittelijänä** — koodin luovutus
+> toimittajalle ja sen lähettäminen mallin tarjoajalle ovat eri asia, ja lupa
+> tarvitaan erikseen jälkimmäiseen. (2) Tili **kaupallisilla ehdoilla**
+> (Team/Enterprise/API), ei henkilökohtainen kuluttajatilaus: kuluttajatasolla
+> säilytys- ja koulutusasetukset ovat väärä oletus jonkun toisen omistamalle
+> lähdekoodille. (3) **Salaisuustarkistus repoon ennen ajoa** — versionhallinnassa
+> oleva tunnistetiedosto menee kontekstiin siinä missä muukin koodi.
+
+**Kysy malli ensimmäisessä keskustelussa.** Isoilla organisaatioilla ja
+julkishallinnossa on usein lista hyväksytyistä AI-palveluista, jolla toimittajan
+omaa tiliä ei ole — silloin malli 3 ei ole valittavissa vaikka toimittaja olisi
+valmis. Tunnisteiden saaminen malliin 2 voi kestää viikkoja, joten tämä on
+aikatauluriski eikä tekninen riski.
+
+> **Vaiheet 0 ovat riippumattomia tästä.** `vnetcon-ai moduulit` ja
+> `vnetcon-ai kalibroi` ovat paikallisia Node-skriptejä ilman tekoälyä, joten
+> lähtötilanteen kartoitus ja laajuusarvio onnistuvat ennen kuin tilikysymykseen
+> on otettu kantaa.
 
 Periaatteet kaikissa malleissa:
 
@@ -131,7 +152,13 @@ Periaatteet kaikissa malleissa:
 | `oma` **(oletus)** | Käyttäjän oma kirjautuminen (`claude` / tilaus tai API-avain) | Käyttäjän oma `codex login` |
 | `bedrock` / `vertex` | `CLAUDE_CODE_USE_BEDROCK` / `CLAUDE_CODE_USE_VERTEX` + alue (asiakkaan tenant) | — (käytä `openai-api` + Azure-osoite) |
 | `anthropic-api` / `openai-api` | Suora API-avain (asiakkaan oma) | Suora API-avain; myös Azure OpenAI `base_url`illa |
-| `vnetcon-pilvi` | `ANTHROPIC_BASE_URL` = gateway + tunniste | Codexin `model_provider` = gateway + tunniste |
+| `gateway` | `ANTHROPIC_BASE_URL` = **asiakkaan oman** välityspalvelimen osoite + bearer-tunniste | Codexin `model_provider` = asiakkaan välityspalvelin + tunniste |
+
+`gateway` on olemassa vain sitä varten, että osa yritys- ja
+julkishallintoasiakkaista ajaa mallikutsut oman sisäisen välityspalvelimensa
+kautta. Se on siis asiakkaan infraa, ja kuuluu malliin 2. **Vnetcon ei tarjoa
+välityspalvelinta** eikä sellaista ole tarkoitus rakentaa: jos asiakkaalla ei ole
+omaa tiliä, vaihtoehto on malli 3 (toimittajan tili ehtoineen), ei välityspalvelu.
 
 Käytännön asetukset ja ympäristömuuttujat: [`../tyokalut/vnetcon-ai/README.md`](../tyokalut/vnetcon-ai/README.md).
 Konfigurointi agentin kanssa: `/agentit`.

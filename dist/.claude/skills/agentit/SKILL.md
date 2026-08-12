@@ -1,6 +1,6 @@
 ---
 name: agentit
-description: Konfiguroi kumpi tekoälyagentti (Claude vai Codex) tekee dokumentoinnin, toteutuksen ja päivitykset, ja mitä pilvipalvelua vasten ne ajetaan (Vnetconin pilviympäristö vai käyttäjän oma tili). Käytä kun halutaan asettaa tai vaihtaa agenttien työnjako, malli, palvelun osoite tai tunnisteen lähde.
+description: Konfiguroi kumpi tekoälyagentti (Claude vai Codex) tekee dokumentoinnin, toteutuksen ja päivitykset, ja kenen AI-tiliä vasten ne ajetaan (oma kirjautuminen, oma pilvitili tai organisaation välityspalvelin). Käytä kun halutaan asettaa tai vaihtaa agenttien työnjako, malli, palvelun osoite tai tunnisteen lähde.
 ---
 
 # Konfiguroi agentit ja pilvipalvelu
@@ -22,15 +22,19 @@ käynnistysasetukset, jotta Claude ja/tai Codex ajetaan halutulla tavalla.
         kolmannen osapuolen läpi, ei lisäsopimuksia.
      2. `bedrock` / `vertex` / `anthropic-api` / `openai-api` — käyttäjän oma
         pilvitili tai API-avain; avaimet ja liikenne pysyvät hänen tenantissaan.
-     3. `vnetcon-pilvi` — **vain pilottivaiheeseen.** Kerro selvästi, että
-        promptissa on koodia, joten tämä tekee palveluntarjoajasta
-        tietosuoja-asetuksen mukaisen käsittelijän ja vaatii sopimuksen sekä
-        tietoturva-arvion. Älä esitä tätä helppona oikotienä.
+     3. `gateway` — organisaation **oma sisäinen välityspalvelin**, jos sellainen
+        on käytössä. Tämä on asiakkaan omaa infraa, ei toimittajan palvelua.
+   - Jos käyttäjällä ei ole omaa AI-tiliä lainkaan, **ei ole olemassa
+     teknistä vaihtoehtoa jonka voisi tässä valita.** Silloin agentin ajaa
+     toimittaja omalla tilillään omalla koneellaan (`tarjoaja: oma`, toimittajan
+     kirjautuminen) — se on sopimusasia, ei konfiguraatioarvo. Kerro, että se
+     tekee toimittajasta tietojenkäsittelijän ja vaatii kirjallisen luvan;
+     yksityiskohdat `metodi/agentit.md` → *Kenen AI-tiliä vasten ajetaan*.
    - **Malli** (tyhjä = agentin oletus) ja tarvittaessa alue/projekti-id.
    - **Laskutustunniste** (`laskutus.asiakas`) ja halutaanko käyttöloki.
 3. **Kirjoita `vnetcon.config.yaml`.** Vain osoitteet, mallit ja
    `token_lahde`-viittaukset — **ei tunnisteita**.
-4. **Jos tarjoaja on `vnetcon-pilvi` tai API-avainpohjainen:**
+4. **Jos tarjoaja on `gateway` tai API-avainpohjainen:**
    - Kerro käyttäjälle, että tunniste kirjoitetaan tiedostoon
      `~/.vnetcon/credentials.env` muodossa `MUUTTUJA=arvo`, ja anna valmis
      komento (`vnetcon-ai tunnisteet --alusta` luo pohjan oikeilla oikeuksilla).

@@ -60,14 +60,16 @@ agentit:
   #   2. bedrock | vertex |  asiakkaan oma pilvitili/API-avain. Avaimet ja
   #      anthropic-api |     liikenne pysyvät asiakkaan tenantissa; konfiguroinnin
   #      openai-api          ja kustannusseurannan voi ostaa palveluna.
-  #   3. vnetcon-pilvi       liikenne Vnetconin gatewayn kautta. VAIN pilotti-
-  #                          vaiheeseen: promptissa on koodia, joten tämä vaatii
-  #                          tietosuojasopimuksen ja tietoturva-arvion.
+  #   3. gateway             organisaation OMA sisäinen välityspalvelin, jos
+  #                          sellainen on käytössä. Toimittaja ei tarjoa
+  #                          välityspalvelinta. Jos omaa tiliä ei ole lainkaan,
+  #                          ks. metodi/agentit.md — se on sopimusasia, ei
+  #                          konfiguraatioarvo.
   claude:
     komento: claude
     malli: ""                 # tyhjä = agentin oletus
     tarjoaja: oma
-    base_url: ""              # vain kun tarjoaja = vnetcon-pilvi | anthropic-api
+    base_url: ""              # vain kun tarjoaja = gateway | anthropic-api
     token_lahde: ""           # esim. "~/.vnetcon/credentials.env:VNETCON_ANTHROPIC_TOKEN"
     # tarjoaja: bedrock  → alue: eu-central-1
     # tarjoaja: vertex   → alue: europe-west1, projekti_id: <gcp-projekti>
@@ -81,8 +83,8 @@ agentit:
     # Azure OpenAI: tarjoaja: openai-api + base_url azure-endpointiin.
     base_url: ""              # esim. "https://<resurssi>.openai.azure.com/openai/v1"
     token_lahde: ""           # esim. "~/.vnetcon/credentials.env:VNETCON_OPENAI_TOKEN"
-    wire_api: chat            # chat | responses (gatewaysta riippuen)
-    tarjoajan_tunnus: vnetcon # nimi, jolla tarjoaja rekisteröidään Codexille
+    wire_api: chat            # chat | responses (välityspalvelimesta riippuen)
+    tarjoajan_tunnus: mukautettu  # nimi, jolla tarjoaja rekisteröidään Codexille
 
 arvio:
   # Laajuusarvion kertoimet. Oletukset ovat YHDESTÄ mitatusta projektista

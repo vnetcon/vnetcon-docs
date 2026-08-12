@@ -70,8 +70,9 @@ A browsable sample of what finished documentation looks like:
 The system supports **two agents**: documentation is typically run with Claude and
 ticket implementation with Codex, but either can do both. By default it uses the
 **customer's own AI account** — code never passes through a third party. Other
-providers (your own cloud tenant, or as an exception a Vnetcon gateway) are
-configurable; see [`dist/metodi/agentit.md`](dist/metodi/agentit.md).
+providers (your own cloud tenant, a direct API key, or your organisation's own
+internal proxy) are configurable; see
+[`dist/metodi/agentit.md`](dist/metodi/agentit.md).
 
 ## How it is used
 
