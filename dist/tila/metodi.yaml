@@ -10,11 +10,21 @@
 # `metodi-versio` on pienempi kuin tämä (tai puuttuu). Ks.
 # ../metodi/yhdenmukaistus-tyonkulku.md
 
-metodi_versio: 1
-paivitetty: 2026-08-10
+metodi_versio: 2
+paivitetty: 2026-08-12
 
 # Uusin ylimmäs.
 muutokset:
+  - versio: 2
+    pvm: 2026-08-12
+    kuvaus: >-
+      Koodiviittaukset: paljas rivinumero (`:997`) ilman tiedostonimeä on
+      kielletty (konventiot.md kohta 6). Syy: kun koodiin lisätään rivi,
+      synkronointi joutuu päättelemään paljaan viittauksen kohdetiedoston
+      lähimmästä edeltävästä tiedostonimestä, ja väärä päättely siirtää väärän
+      viittauksen ilman että virhe näkyy. Yhdenmukaistus kirjoittaa paljaat
+      viittaukset auki tiedostonimineen.
+    vaikuttaa: [kaikki]
   - versio: 1
     pvm: 2026-08-10
     kuvaus: >-

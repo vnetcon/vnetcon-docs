@@ -7,7 +7,7 @@ lahteet:
   - <moduuli>/src/.../kasittelija.ts
 paivitetty: YYYY-MM-DD
 git-viite: <lyhyt-commit-hash>
-metodi-versio: 1
+metodi-versio: 2
 tila: luonnos
 ---
 

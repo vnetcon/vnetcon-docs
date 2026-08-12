@@ -76,7 +76,12 @@ agentit:
 
 laskutus:
   asiakas: ""                 # laskutustunniste (näkyy käyttölokissa)
+  # HUOM: kaytto_loki täyttyy VAIN kun ajo käynnistetään tyokalut/vnetcon-ai/
+  # -skriptillä. Pelkkä `claude`/`codex` ei kirjaa mitään. Loki ei myöskään
+  # sisällä tokenmääriä — se on ajopäiväkirja. Ks. metodi/agentit.md.
   kaytto_loki: tila/kaytto.jsonl   # tyhjä = ei lokia
+  # Ainoa käynnistystavasta riippumaton tokenkulutuksen lähde. Ilman tätä
+  # kulutus on olemassa vain agentin sessiossa (Claude Code: /cost).
   otel_endpoint: ""           # OTLP-endpoint token-käytön keräykseen (valinnainen)
 
 html:

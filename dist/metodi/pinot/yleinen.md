@@ -8,6 +8,14 @@ Kaikki komennot ajetaan `vnetcon-docs/`-hakemistosta; `-C ..` osoittaa projektin
 juureen. Käytä `git grep`iä, ei `grep -r`:ää — se rajaa automaattisesti
 versioituihin tiedostoihin.
 
+> **Käytä aina `-E`-lippua vuorottelussa.** `git grep 'a\|b'` käyttää
+> perusregexiä, joka **ei tue `\|`-vuorottelua** kaikissa
+> git-konfiguraatioissa — se palauttaa hiljaisen nollan, joka näyttää
+> katvealueelta. Nolla osumaa väärästä lipusta on pahin mahdollinen virhe tässä
+> menettelyssä, koska se on erottamaton aidosta katveesta. Kirjoita
+> `git grep -nE 'a|b'`. Sama koskee jokaista hakua, jonka kirjoitat itse
+> `kartoitus.md`:hen: **testaa se ja varmista että se tuottaa osumia.**
+
 ## Laajuus ja rakenne
 
 ```bash

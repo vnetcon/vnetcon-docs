@@ -6,7 +6,7 @@ lahteet:
   - <moduuli>/db/migrations/002_<taulu>.sql
 paivitetty: YYYY-MM-DD
 git-viite: <lyhyt-commit-hash>
-metodi-versio: 1
+metodi-versio: 2
 tila: luonnos
 ---
 

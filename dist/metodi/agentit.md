@@ -151,12 +151,28 @@ ilman käynnistysskriptiä.
 
 ## Laskutus ja käytön seuranta
 
+> ⚠️ **Kulutusta ei kirjata, jos agentti käynnistetään suoraan.** `kaytto_loki`
+> täyttyy **vain** kun ajo menee `./tyokalut/vnetcon-ai/vnetcon-ai`-skriptin
+> kautta. Pelkkä `claude` tai `codex` — jota README neuvoo käyttämään, koska se
+> on yksinkertaisin — ei kirjaa mitään. Jos kulutusta on tarkoitus seurata,
+> valitse **toinen** näistä tavoista tietoisesti:
+>
+> | Tapa | Mitä saa | Vaatii |
+> |------|----------|--------|
+> | `vnetcon-ai claude` / `vnetcon-ai dokumentoi <moduuli>` | rivi per ajo: aika, komento, agentti, kesto, tulos — **ei tokeneita** | että jokainen ajo muistetaan käynnistää skriptillä |
+> | `laskutus.otel_endpoint` | token- ja kustannusdata automaattisesti, riippumatta käynnistystavasta | OTLP-vastaanottimen |
+>
+> **OTEL on ainoa luotettava tapa**, koska se ei riipu siitä miten agentti
+> käynnistettiin. Ilman sitä token­kulutus on olemassa vain agentin omassa
+> sessiossa (Claude Codessa `/cost`), ja se katoaa session mukana.
+
 - `laskutus.asiakas` — tunniste, joka kirjataan jokaiseen ajoon.
 - `laskutus.kaytto_loki` — `vnetcon-ai` kirjaa rivin per ajo (JSONL: aika,
   projekti, komento, agentti, kesto, tulos). Tiedosto on `.gitignore`ssa.
+  **Ei sisällä tokenmääriä** — se on ajopäiväkirja, ei kulutusmittari.
 - `laskutus.otel_endpoint` — jos asetettu, Claude Code -ajot lähettävät
   token-käytön OTLP-endpointiin (`CLAUDE_CODE_ENABLE_TELEMETRY=1`). Tämä on
-  tarkin laskutusperuste; paikallinen loki on varmistus.
+  ainoa käynnistystavasta riippumaton laskutusperuste.
 
 ## Erot agenttien välillä (tiedostettavat)
 

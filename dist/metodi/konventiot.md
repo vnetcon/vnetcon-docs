@@ -75,6 +75,12 @@ väliin: `### Vaihe 3b — …`, ei uudelleennumerointia.
   jos osoitat tiettyyn kohtaan.
 - Viittaa mieluiten funktioon/määrittelyyn **nimeltä**, jotta viittaus kestää
   pientä rivisiirtymää.
+- **Älä koskaan kirjoita paljasta rivinumeroa** (`` `:997` ``) ilman tiedostoa,
+  vaikka tiedosto olisi mainittu edellisessä lauseessa. Kun koodiin tulee rivi
+  lisää, synkronointi joutuu siirtämään kaikki sen jälkeiset viittaukset — ja
+  paljaan viittauksen kohdetiedosto on pääteltävä lähimmästä edeltävästä
+  tiedostonimestä. Väärä päättely siirtää väärän viittauksen, eikä virhe näy
+  mitenkään. Kirjoita `` `source_processing.py:997` ``, ei `` `:997` ``.
 
 ## 7. Ristiinlinkitys
 

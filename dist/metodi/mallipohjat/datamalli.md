@@ -6,7 +6,7 @@ lahteet:
   - <skeeman lähdetiedosto, esim. openapi.yaml tai prisma/schema.prisma>
 paivitetty: YYYY-MM-DD
 git-viite: <lyhyt-commit-hash>
-metodi-versio: 1
+metodi-versio: 2
 tila: luonnos
 ---
 

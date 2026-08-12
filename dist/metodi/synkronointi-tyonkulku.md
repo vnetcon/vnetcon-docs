@@ -59,6 +59,30 @@ Toimi muutostyypin mukaan:
 
 Älä arvaa. Epävarmat kohdat `> TODO:`-merkinnällä ja dokki `tila: luonnos`.
 
+### S3b — Rivinumeroviittausten siirto (helposti unohtuva)
+
+Sisällön päivittäminen ei riitä. Jos muutos lisäsi tai poisti rivejä tiedoston
+**keskeltä**, kaikki dokumentaation viittaukset sen jälkeisiin riveihin ovat
+väärässä — ja ne näyttävät edelleen oikeilta. Tämä on suurin yksittäinen
+viittausten rappeutumisen lähde.
+
+1. Selvitä nettosiirtymä ja sen alkukohta muuttuneesta tiedostosta:
+   ```
+   git -C .. diff <baseline>..HEAD -- <tiedosto> | grep -nE '^@@'
+   ```
+2. Siirrä vain ne viittaukset, jotka osoittavat **muutoskohdan jälkeisiin**
+   riveihin. Aiemmat rivit eivät liiku.
+3. **Paljaat viittaukset** (`` `:997` `` ilman tiedostonimeä) ovat vaarallisia:
+   kohdetiedosto on pääteltävä lähimmästä edeltävästä tiedostonimestä, ja väärä
+   päättely siirtää väärän viittauksen huomaamatta. Kun kohtaat paljaan
+   viittauksen, **kirjoita se auki tiedostonimineen** samalla kun siirrät sen
+   ([`konventiot.md`](konventiot.md) kohta 6).
+4. **Tarkista otos koodia vasten** — osuvatko siirretyt rivinumerot yhä siihen
+   funktioon tai määrittelyyn, josta dokumentti puhuu. Jos eivät, siirtymä oli
+   väärä.
+5. Kirjaa lokiin **montako viittausta siirrettiin**, ei vain montako dokkia
+   päivitettiin. Se on eri luku ja kertoo eri asian.
+
 ## Vaihe S4 — Päivitä lähtötaso ja loki
 
 1. Aseta `../tila/synkronoitu.yaml`:
