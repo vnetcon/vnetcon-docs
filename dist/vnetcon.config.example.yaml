@@ -44,6 +44,16 @@ agentit:
   toteutus: codex
   paivitys: codex
 
+  # ALIAGENTIT (/dokumentoi-kaikki) — suurin yksittäinen kuluerä.
+  # Mitattuna 39 % kulutuksesta menee aliagentteihin. Dokumentointiagentti tekee
+  # rajattua luku- ja kirjoitustyötä mallipohjien mukaan, joten se on luonteva
+  # halvemmalle mallille; verifiointiagentti etsii virheitä ja on arvostelukykyä,
+  # joten sen alentaminen on aito laaturiski. Tyhjä = peri pääagentilta.
+  # Suhteelliset hinnat, ks. metodi/agentit.md.
+  aliagentit:
+    dokumentointi_malli: ""   # esim. claude-sonnet-5
+    verifiointi_malli: ""     # suositus: jätä tyhjäksi
+
   # TARJOAJA — suositusjärjestys (ks. metodi/agentit.md):
   #   1. oma                 asiakkaan oma kirjautuminen. OLETUS. Koodi ei kulje
   #                          kenenkään kolmannen läpi, ei lisäsopimuksia.
@@ -73,6 +83,13 @@ agentit:
     token_lahde: ""           # esim. "~/.vnetcon/credentials.env:VNETCON_OPENAI_TOKEN"
     wire_api: chat            # chat | responses (gatewaysta riippuen)
     tarjoajan_tunnus: vnetcon # nimi, jolla tarjoaja rekisteröidään Codexille
+
+arvio:
+  # Laajuusarvion kertoimet per dokumentoimaton moduuli. Oletukset ovat YHDESTÄ
+  # mitatusta projektista (62 kloc, python + react-ts) — kalibroi omiin ajoihisi:
+  # dokumentoi yksi moduuli, ota seinäkelloaika ja Claude Coden /cost-luku.
+  tunnit_per_moduuli: 1       # agenttiaikaa, EI substanssiosaajan validointia
+  usd_per_moduuli: 25         # tokenit asiakkaan omalla AI-tilillä
 
 laskutus:
   asiakas: ""                 # laskutustunniste (näkyy käyttölokissa)

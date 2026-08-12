@@ -642,6 +642,16 @@ const dokumentoimatta = Math.max(0, moduuleja - dokumentoidutKandidaatit);
 // Dokumentoituja moduuleja voi olla enemmän kuin ehdokkaita (nimet eivät täsmää
 // tai jako on tehty käsin) — se on itsessään tieto, joten kirjataan molemmat.
 const nimieroja = dokTila.dokumentoidutModuulit.size - dokumentoidutKandidaatit;
+
+// Aika ja rahamäärä per moduuli ovat konfiguroitavissa, koska oletukset ovat
+// YHDESTÄ mitatusta projektista (62 kloc, python + react-ts). Kalibroi omista
+// ajoistasi: dokumentoi yksi moduuli, ota seinäkelloaika ja Claude Coden
+// /cost-luku, ja kirjoita ne vnetcon.config.yaml:n `arvio`-osioon.
+const TUNNIT_PER_MODUULI = Number(konf('arvio.tunnit_per_moduuli')) || 1;
+const USD_PER_MODUULI = Number(konf('arvio.usd_per_moduuli')) || 25;
+// Yhdestä mittauksesta ei saa haarukkaa, joten se levitetään karkeasti.
+const ALA = 0.6, YLA = 1.4;
+
 const arvio = {
   moduuleja,
   lahde: arvionLahde,
@@ -649,11 +659,16 @@ const arvio = {
   dokumentoituja_dokeissa: dokTila.dokumentoidutModuulit.size,
   nimieroja,
   dokumentoimatta,
+  tunnit_min: +(dokumentoimatta * TUNNIT_PER_MODUULI * ALA).toFixed(1),
+  tunnit_max: +(dokumentoimatta * TUNNIT_PER_MODUULI * YLA).toFixed(1),
+  usd_min: Math.round(dokumentoimatta * USD_PER_MODUULI * ALA),
+  usd_max: Math.round(dokumentoimatta * USD_PER_MODUULI * YLA),
   tokenit_min_M: +(dokumentoimatta * 0.15).toFixed(2),
   tokenit_max_M: +(dokumentoimatta * 0.35).toFixed(2),
   dokkeja_min: dokumentoimatta * 6,
   dokkeja_max: dokumentoimatta * 20,
-  perusta: 'toteutuneet ajot: ~0,15–0,35 M tokenia ja 6–20 dokumenttia per moduuli',
+  perusta: `toteutuneet ajot — per moduuli ~${TUNNIT_PER_MODUULI} h agenttiaikaa ja `
+    + `~$${USD_PER_MODUULI} tokenikulutusta (0,15–0,35 M tokenia, 6–20 dokumenttia)`,
 };
 
 // --- Löydökset -----------------------------------------------------------
@@ -894,11 +909,21 @@ Karkea arvio, perusta: ${t.arvio.perusta}.
 
 - Dokumentoimattomia moduuleja: **${t.arvio.dokumentoimatta}**
 - Arvioitu dokumenttimäärä: **${t.arvio.dokkeja_min}–${t.arvio.dokkeja_max}**
+- Arvioitu **agenttiaika**: **${t.arvio.tunnit_min}–${t.arvio.tunnit_max} h**
+- Arvioitu **AI-kustannus**: **$${t.arvio.usd_min}–${t.arvio.usd_max}** omalla AI-tililläsi
 - Arvioitu tokenikulutus: **${t.arvio.tokenit_min_M}–${t.arvio.tokenit_max_M} M tokenia**
 
-> Muunna tokenit euroiksi käyttämäsi mallin voimassa olevalla hinnastolla. Arvio
-> ei sisällä substanssiosaajan aikaa eikä TODO-kysymysten läpikäyntiä, jotka ovat
-> tyypillisesti se osa joka ratkaisee lopputuloksen laadun.
+> ⚠️ **Arvio ei sisällä sitä osaa, joka ratkaisee lopputuloksen laadun:
+> substanssiosaajan validointiaikaa** ja TODO-kysymysten läpikäyntiä. Agenttiaika
+> ja AI-kustannus ovat koneen osuus; ne ovat mitattuja ja pieniä. Ihmisen osuutta
+> ei voi arvioida koneellisesti — se selviää vain käymällä ensimmäisen moduulin
+> dokumentit läpi ja mittaamalla.
+>
+> Aika- ja kustannuskertoimet ovat **yhdestä mitatusta projektista**. Kalibroi ne
+> omiin ajoihisi: \`vnetcon.config.yaml\` → \`arvio.tunnit_per_moduuli\` ja
+> \`arvio.usd_per_moduuli\`. Kustannus laskettiin sillä mallilla, jolla mittaus
+> tehtiin — halvempi malli aliagenteille pudottaa sitä olennaisesti
+> (ks. [\`metodi/agentit.md\`](metodi/agentit.md)).
 
 ## Mitä tämä raportti ei kerro
 

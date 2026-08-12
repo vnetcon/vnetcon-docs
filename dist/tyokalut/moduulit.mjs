@@ -226,8 +226,15 @@ console.log(c(1, 'Yhteensä: ') + `${moduulit.length} moduulia · `
   + `${laske('tekematta')} tekemättä${laske('rajattu-pois') ? ` · ${laske('rajattu-pois')} rajattu pois` : ''}`);
 
 if (kal && kal.arvio && kal.arvio.dokumentoimatta) {
-  console.log(c(90, `Arvio jäljellä: ${kal.arvio.tokenit_min_M}–${kal.arvio.tokenit_max_M} M tokenia, `
-    + `${kal.arvio.dokkeja_min}–${kal.arvio.dokkeja_max} dokumenttia`));
+  const a = kal.arvio;
+  // Aika ja raha ensin: ne ovat se mitä lukija osaa suhteuttaa. Tokenit ovat
+  // tekninen mittari ja jäävät raporttiin.
+  const osat = [];
+  if (a.tunnit_min != null) osat.push(`${a.tunnit_min}–${a.tunnit_max} h agenttiaikaa`);
+  if (a.usd_min != null) osat.push(`$${a.usd_min}–${a.usd_max}`);
+  osat.push(`${a.dokkeja_min}–${a.dokkeja_max} dokumenttia`);
+  console.log(c(90, `Arvio jäljellä: ${osat.join(' · ')}`));
+  console.log(c(90, '  Ei sisällä substanssiosaajan validointiaikaa — se on ihmisen osuus.'));
 }
 // Rekisterin ulkopuolelle jäävä koodi on kerrottava ääneen: se ei näy
 // tekemättömien joukossa eikä laajuusarviossa, joten se jäisi muuten kokonaan

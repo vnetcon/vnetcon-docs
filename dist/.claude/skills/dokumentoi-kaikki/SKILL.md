@@ -29,9 +29,13 @@ moniagenttisella workflowlla.
 3. **Datamallit ensin** (perusta, johon moduulit linkittävät): seuraa
    `metodi/datamalli-tyonkulku.md`. Ohita, jos skeemalähteitä ei ole tai
    datamallit ovat jo ajan tasalla — kerro kumpi.
-4. **Moduulit syvästi (fan-out).** Kutsu `Workflow`-työkalua
-   `name: "dokumentoi-moduulit"`, `args: { osaAlue, moduulit: [...] }`. Se
-   dokumentoi jokaisen moduulin ja verifioi tuloksen koodia vasten.
+4. **Moduulit syvästi (fan-out).** Lue `vnetcon.config.yaml`:sta
+   `agentit.aliagentit.dokumentointi_malli` ja `verifiointi_malli` sekä
+   `tila/metodi.yaml`:sta `metodi_versio`. Kutsu `Workflow`-työkalua
+   `name: "dokumentoi-moduulit"`,
+   `args: { osaAlue, moduulit: [...], metodiVersio, mallit: { dokumentointi, verifiointi } }`.
+   Jätä tyhjät mallit pois argsista — silloin aliagentit perivät pääagentin
+   mallin. Se dokumentoi jokaisen moduulin ja verifioi tuloksen koodia vasten.
    (Tämä on eksplisiittinen moniagenttiajo — käyttäjä käynnisti sen tällä
    komennolla.) Jos workflowt eivät ole käytössä, tee tämä vaihe erissä
    `/dokumentoi <moduuli>` -ajoina.
@@ -48,6 +52,23 @@ moniagenttisella workflowlla.
 9. **Kalibroi lopuksi** (`node tyokalut/kalibroi.mjs`) ja kerro käyttäjälle
    kattavuus, TODO-tiheys ja jäljelle jääneet katvealueet — nämä ovat se tieto,
    jonka perusteella hän päättää mitä tehdään seuraavaksi.
+
+## Kustannus: konteksti, ei tuotos
+
+Mitatussa ajossa **70 % kustannuksesta oli kontekstin uudelleenlukua** (välimuistista
+luettuja tokeneita), ei dokumenttien kirjoittamista — output oli 16 %. Ja 84 %
+kulutuksesta tapahtui yli 150 000 tokenin kontekstissa.
+
+Fan-out-vaihe on tässä kunnossa: jokainen aliagentti saa oman tyhjän kontekstinsa.
+**Kallis osa on orkestroijan oma sessio**, joka kasvaa vaiheiden myötä ja luetaan
+uudelleen joka pyynnöllä. Siksi:
+
+- **Kerro käyttäjälle vaiheiden välissä, että sessio kannattaa tyhjentää** (`/clear`)
+  ennen seuraavaa isoa vaihetta — erityisesti datamallien jälkeen ja
+  end-to-end-vaiheen jälkeen. Työn tila on tiedostoissa (`tila/rekisteri.yaml`,
+  `tila/edistyminen.md`), ei sessiossa, joten mitään ei menetetä.
+- **Älä aja käyttöönottoa, dokumentointia ja synkronointia samassa sessiossa.**
+- Jos ajat moduulit erikseen `/dokumentoi`-komennoilla, **yksi moduuli per sessio**.
 
 ## Invariantit
 

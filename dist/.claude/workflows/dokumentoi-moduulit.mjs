@@ -7,15 +7,19 @@ export const meta = {
   ],
 }
 
-// args = { osaAlue?: string, moduulit: string[], metodiVersio?: number }
-// Orkestroija (skill) poimii moduulit tila/rakenne.yaml:sta ja välittää ne tänne
-// — workflow itse ei lue tiedostoja. Robusti: args voi tulla oliona tai JSON-merkkijonona.
+// args = { osaAlue?, moduulit: string[], metodiVersio?, mallit?: { dokumentointi?, verifiointi? } }
+// Orkestroija (skill) poimii moduulit tila/rakenne.yaml:sta ja mallit
+// vnetcon.config.yaml:sta ja välittää ne tänne — workflow itse ei lue tiedostoja
+// (ei YAML-jäsentäjää). Robusti: args voi tulla oliona tai JSON-merkkijonona.
 let a = args
 if (typeof a === 'string') {
   try { a = JSON.parse(a) } catch (e) { a = {} }
 }
 const moduulit = (a && Array.isArray(a.moduulit)) ? a.moduulit : []
 const metodiVersio = (a && a.metodiVersio) ? a.metodiVersio : 1
+// Tyhjä/puuttuva malli = peri pääagentilta (agent() jättää mallin asettamatta).
+const mallit = (a && a.mallit) || {}
+const optiot = (perus, malli) => (malli ? { ...perus, model: malli } : perus)
 
 if (!moduulit.length) {
   log('Ei moduuleja argsissa (odotettiin { moduulit: [...] }). Ei tehdä mitään.')
@@ -45,10 +49,13 @@ const VERIFY = (m) =>
 - Ovatko sisäiset linkit olemassa oleviin tiedostoihin?
 Korjaa löytämäsi puutteet paikallaan. ÄLÄ committaa. Palauta lista korjauksista ja jäljelle jäävistä epävarmuuksista.`
 
+if (mallit.dokumentointi) log(`Dokumentointiagentit: ${mallit.dokumentointi}`)
+if (mallit.verifiointi) log(`Verifiointiagentit: ${mallit.verifiointi}`)
+
 const tulokset = await pipeline(
   moduulit,
-  (m) => agent(DOK(m), { label: `dok:${m}`, phase: 'Moduulit' }),
-  (_res, m) => agent(VERIFY(m), { label: `verify:${m}`, phase: 'Verify' })
+  (m) => agent(DOK(m), optiot({ label: `dok:${m}`, phase: 'Moduulit' }, mallit.dokumentointi)),
+  (_res, m) => agent(VERIFY(m), optiot({ label: `verify:${m}`, phase: 'Verify' }, mallit.verifiointi))
     .then((v) => ({ moduuli: m, verify: v }))
 )
 

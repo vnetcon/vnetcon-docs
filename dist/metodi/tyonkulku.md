@@ -155,6 +155,17 @@ grep -rl "<muuttunut/polku>" moduulit liiketoimintaprosessit jarjestelmaprosessi
 
 ---
 
+## Yksi moduuli per sessio
+
+Kun tämä työnkulku ajetaan käsin (`/dokumentoi <moduuli>`), **tee yksi moduuli
+sessiota kohti ja tyhjennä sessio välissä** (`/clear`).
+
+Syy on kustannus, ei siisteys: mitatussa ajossa 70 % kulutuksesta oli kontekstin
+uudelleenlukua ja 84 % tapahtui yli 150 000 tokenin kontekstissa. Kun sama sessio
+dokumentoi neljä moduulia, neljännen moduulin jokainen pyyntö lukee myös kolmen
+edellisen jäljen. Työn tila on tiedostoissa (`../tila/rekisteri.yaml`,
+`../tila/edistyminen.md`), ei sessiossa — tyhjentäminen ei hukkaa mitään.
+
 ## Vaihe F — Päivitä tila ja loki (aina)
 
 1. `tila/rekisteri.yaml`: aseta moduulin `tila` (`valmis`/`kesken`) ja

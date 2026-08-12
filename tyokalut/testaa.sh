@@ -79,6 +79,15 @@ done
 for f in "$REPO"/tyokalut/*.sh "$REPO"/dist/tyokalut/vnetcon-ai/vnetcon-ai "$REPO"/dist/tyokalut/vnetcon-ai/hae-token.sh; do
   bash -n "$f" 2>/dev/null && ok "bash -n $(basename "$f")" || virhe "bash -n $(basename "$f")"
 done
+# Workflow-skriptit ajetaan async-kontekstissa ja saavat käyttää top-level
+# returnia, joten `node --check` hylkäisi ne sellaisenaan. Kääritään ja
+# poistetaan export-avainsana, jotta syntaksin voi silti tarkistaa — muuten
+# kirjoitusvirhe workflow'ssa paljastuu vasta asiakkaan /dokumentoi-kaikki-ajossa.
+for f in "$REPO"/dist/.claude/workflows/*.mjs; do
+  [ -e "$f" ] || continue
+  { printf '(async () => {\n'; sed 's/^export const /const /' "$f"; printf '\n})()\n'; } > "$TYO/wf.mjs"
+  node --check "$TYO/wf.mjs" 2>/dev/null && ok "syntaksi $(basename "$f")" || virhe "syntaksi $(basename "$f")"
+done
 
 # --- Tapaus 1: ei rekisteriä, moduulit päätellään koodin sijainnista -------
 
