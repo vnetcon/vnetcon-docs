@@ -1,5 +1,7 @@
 # vnetcon-docs — geneerinen AI-dokumentaatio- ja tikettiympäristö
 
+> 🇬🇧 In English: [`README.en.md`](README.en.md)
+
 Tämä repo on **työkalun lähde**. Se tuottaa hakemiston `dist/`, joka kopioidaan
 minkä tahansa projektin juureen nimellä `vnetcon-docs/`. Sen jälkeen projektiin
 saadaan yhdellä komennolla (`/vnetcon-init`) itseohjautuva dokumentaatio­järjestelmä
@@ -102,6 +104,26 @@ tyokalut/testaa.sh     Savutesti: rakentaa tilapäisprojektit ja väittää tulo
 VERSIO                 Paketin versio (asenna.sh kirjoittaa sen kohteeseen)
 LICENSE                Apache-2.0
 ```
+
+## Kielet
+
+| Kerros | Kieli | Konfiguroitavissa |
+|--------|-------|-------------------|
+| Työkalun **tuottama** dokumentaatio | `vnetcon.config.yaml` → `dokumentaatio.kieli` (oletus `fi`) | **kyllä** — arvolla `en` tuotos ja generoitu HTML ovat englanniksi |
+| Menettelydokumentit (`dist/metodi/**`) ja skillit | suomi | ei |
+| Tämän repon README | suomi + englanti ([`README.en.md`](README.en.md)) | — |
+
+Menettelydokumentit pidetään tarkoituksella **yksikielisinä**. Ne ovat promptia,
+jota agentti noudattaa, eivät ihmiselle kirjoitettua proosaa: kahden kieliversion
+pitäisi pysyä identtisinä *käyttäytymisen* tasolla, ja pienin ajautuminen niiden
+välillä tuottaisi samasta koodista erilaisen dokumentaation. Se rikkoisi juuri sen
+johdonmukaisuuden, jonka vuoksi työkalu on olemassa — eikä pariteettia voi
+varmistaa savutestillä.
+
+Jos menettely itse tarvitaan englanniksi (esim. asiakkaan on auditoitava se ennen
+käyttöönottoa), se on oma projekti: **termistö on lukittava ensin**, koska
+`katve`, `kartoitus`, `laajennuspiste` ja `lähteet` eriytyisivät muuten
+käsitteellisesti eivätkä vain kielellisesti.
 
 ## Kehittäminen
 

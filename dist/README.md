@@ -72,6 +72,10 @@ komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
   komennot luetaan vain käynnistyksessä.
 - Komentoja ei ole pakko muistaa: voit kirjoittaa tavallista suomea, esim.
   *"dokumentoi moduuli maksupalvelu vnetcon-docs-ohjeiden mukaan"*.
+- **Dokumentaation kieli on konfiguroitavissa:** `vnetcon.config.yaml` →
+  `dokumentaatio.kieli` (oletus `fi`). Arvolla `en` dokumentit ja generoitu HTML
+  syntyvät englanniksi. Nämä menettelyohjeet (`metodi/`) ovat aina suomeksi — ne
+  ovat agentin ohjeita, eivät osa tuotosta.
 
 ## Komennot
 
