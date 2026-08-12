@@ -85,11 +85,20 @@ agentit:
     tarjoajan_tunnus: vnetcon # nimi, jolla tarjoaja rekisteröidään Codexille
 
 arvio:
-  # Laajuusarvion kertoimet per dokumentoimaton moduuli. Oletukset ovat YHDESTÄ
-  # mitatusta projektista (62 kloc, python + react-ts) — kalibroi omiin ajoihisi:
-  # dokumentoi yksi moduuli, ota seinäkelloaika ja Claude Coden /cost-luku.
-  tunnit_per_moduuli: 1       # agenttiaikaa, EI substanssiosaajan validointia
-  usd_per_moduuli: 25         # tokenit asiakkaan omalla AI-tilillä
+  # Laajuusarvion kertoimet. Oletukset ovat YHDESTÄ mitatusta projektista
+  # (62 kloc, python + react-ts) — kalibroi omiin ajoihisi: dokumentoi yksi
+  # moduuli, ota seinäkelloaika ja Claude Coden /cost-luku.
+  #
+  # ENSISIJAINEN on rivipainotus. Moduulien koot vaihtelevat mitatusti
+  # satakertaisesti (85 → 11 852 riviä samassa projektissa), joten tasainen
+  # kerroin per moduuli on väärä heti kun arviota katsotaan moduuli- tai
+  # osa-aluetasolla. Moduulikertoimia käytetään vain jos rivimäärät puuttuvat.
+  tunnit_per_kloc: 0.39       # agenttiaikaa per 1 000 koodiriviä
+  usd_per_kloc: 9.2           # tokenit asiakkaan omalla AI-tilillä
+  tunnit_per_moduuli: 1       # varakerroin, kun rivimäärä ei ole tiedossa
+  usd_per_moduuli: 25         # varakerroin
+  # HUOM: mikään näistä ei sisällä substanssiosaajan validointiaikaa, joka on
+  # se osa joka ratkaisee lopputuloksen laadun — ja hinnan.
 
 laskutus:
   asiakas: ""                 # laskutustunniste (näkyy käyttölokissa)

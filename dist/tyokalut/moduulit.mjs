@@ -230,7 +230,10 @@ if (kal && kal.arvio && kal.arvio.dokumentoimatta) {
   // Aika ja raha ensin: ne ovat se mitä lukija osaa suhteuttaa. Tokenit ovat
   // tekninen mittari ja jäävät raporttiin.
   const osat = [];
-  if (a.tunnit_min != null) osat.push(`${a.tunnit_min}–${a.tunnit_max} h agenttiaikaa`);
+  // Arviossa on kaksi desimaalia, jotta pieni moduuli ei pyöristy nollaan;
+  // yhteissummassa yksi riittää.
+  const h = (x) => (x > 0 && x < 0.1 ? '<0,1' : String(+Number(x).toFixed(1)));
+  if (a.tunnit_min != null) osat.push(`${h(a.tunnit_min)}–${h(a.tunnit_max)} h agenttiaikaa`);
   if (a.usd_min != null) osat.push(`$${a.usd_min}–${a.usd_max}`);
   osat.push(`${a.dokkeja_min}–${a.dokkeja_max} dokumenttia`);
   console.log(c(90, `Arvio jäljellä: ${osat.join(' · ')}`));

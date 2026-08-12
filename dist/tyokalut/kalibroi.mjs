@@ -643,14 +643,41 @@ const dokumentoimatta = Math.max(0, moduuleja - dokumentoidutKandidaatit);
 // tai jako on tehty käsin) — se on itsessään tieto, joten kirjataan molemmat.
 const nimieroja = dokTila.dokumentoidutModuulit.size - dokumentoidutKandidaatit;
 
-// Aika ja rahamäärä per moduuli ovat konfiguroitavissa, koska oletukset ovat
-// YHDESTÄ mitatusta projektista (62 kloc, python + react-ts). Kalibroi omista
-// ajoistasi: dokumentoi yksi moduuli, ota seinäkelloaika ja Claude Coden
-// /cost-luku, ja kirjoita ne vnetcon.config.yaml:n `arvio`-osioon.
+// Kertoimet ovat konfiguroitavissa, koska oletukset ovat YHDESTÄ mitatusta
+// projektista (62 kloc, python + react-ts). Kalibroi omista ajoistasi:
+// dokumentoi yksi moduuli, ota seinäkelloaika ja Claude Coden /cost-luku.
+const TUNNIT_PER_KLOC = Number(konf('arvio.tunnit_per_kloc')) || 0.39;
+const USD_PER_KLOC = Number(konf('arvio.usd_per_kloc')) || 9.2;
 const TUNNIT_PER_MODUULI = Number(konf('arvio.tunnit_per_moduuli')) || 1;
 const USD_PER_MODUULI = Number(konf('arvio.usd_per_moduuli')) || 25;
 // Yhdestä mittauksesta ei saa haarukkaa, joten se levitetään karkeasti.
 const ALA = 0.6, YLA = 1.4;
+
+// Rivipainotus: moduulien koot vaihtelevat mitatusti satakertaisesti (85 → 11 852
+// riviä samassa projektissa), joten tasainen kerroin per moduuli on väärä heti kun
+// arviota katsotaan moduuli- tai osa-aluetasolla. Käytetään rivimäärää kun se on
+// tiedossa; muuten palataan moduulikertoimeen.
+const dokumentoimattomatModuulit = rekisteriKaytossa
+  ? rekisteriTyojono.filter((r) => r.tila !== 'valmis' && !dokTila.dokumentoidutModuulit.has(r.nimi))
+  : moduuliLista.filter((m) => !dokTila.dokumentoidutModuulit.has(nimiPolusta(m.hakemisto)));
+const dokumentoimattomatRivit = dokumentoimattomatModuulit.reduce((s, m) => s + (m.loc || 0), 0);
+const rivipainotus = dokumentoimattomatRivit > 0;
+const kloc = dokumentoimattomatRivit / 1000;
+
+const tunnitPohja = rivipainotus ? kloc * TUNNIT_PER_KLOC : dokumentoimatta * TUNNIT_PER_MODUULI;
+const usdPohja = rivipainotus ? kloc * USD_PER_KLOC : dokumentoimatta * USD_PER_MODUULI;
+
+// Moduulikohtainen erittely: tämä on se taso, jolla osa-alue kerrallaan myyminen
+// ja priorisointi tapahtuu — kokonaissumma peittää satakertaiset erot.
+const arvioModuuleittain = dokumentoimattomatModuulit
+  .map((m) => {
+    const nimi = m.nimi || nimiPolusta(m.hakemisto);
+    const loc = m.loc || 0;
+    const t = loc > 0 ? (loc / 1000) * TUNNIT_PER_KLOC : TUNNIT_PER_MODUULI;
+    const u = loc > 0 ? (loc / 1000) * USD_PER_KLOC : USD_PER_MODUULI;
+    return { nimi, loc, tunnit: +t.toFixed(2), usd: Math.round(u) };
+  })
+  .sort((a, b) => b.loc - a.loc);
 
 const arvio = {
   moduuleja,
@@ -659,16 +686,20 @@ const arvio = {
   dokumentoituja_dokeissa: dokTila.dokumentoidutModuulit.size,
   nimieroja,
   dokumentoimatta,
-  tunnit_min: +(dokumentoimatta * TUNNIT_PER_MODUULI * ALA).toFixed(1),
-  tunnit_max: +(dokumentoimatta * TUNNIT_PER_MODUULI * YLA).toFixed(1),
-  usd_min: Math.round(dokumentoimatta * USD_PER_MODUULI * ALA),
-  usd_max: Math.round(dokumentoimatta * USD_PER_MODUULI * YLA),
+  dokumentoimatta_rivit: dokumentoimattomatRivit,
+  painotus: rivipainotus ? 'koodirivit' : 'moduulimäärä',
+  tunnit_min: +(tunnitPohja * ALA).toFixed(2),
+  tunnit_max: +(tunnitPohja * YLA).toFixed(2),
+  usd_min: Math.round(usdPohja * ALA),
+  usd_max: Math.round(usdPohja * YLA),
   tokenit_min_M: +(dokumentoimatta * 0.15).toFixed(2),
   tokenit_max_M: +(dokumentoimatta * 0.35).toFixed(2),
   dokkeja_min: dokumentoimatta * 6,
   dokkeja_max: dokumentoimatta * 20,
-  perusta: `toteutuneet ajot — per moduuli ~${TUNNIT_PER_MODUULI} h agenttiaikaa ja `
-    + `~$${USD_PER_MODUULI} tokenikulutusta (0,15–0,35 M tokenia, 6–20 dokumenttia)`,
+  moduuleittain: arvioModuuleittain,
+  perusta: rivipainotus
+    ? `toteutuneet ajot — ~${TUNNIT_PER_KLOC} h agenttiaikaa ja ~$${USD_PER_KLOC} tokenikulutusta per 1 000 koodiriviä`
+    : `toteutuneet ajot — per moduuli ~${TUNNIT_PER_MODUULI} h agenttiaikaa ja ~$${USD_PER_MODUULI} tokenikulutusta`,
 };
 
 // --- Löydökset -----------------------------------------------------------
@@ -681,9 +712,58 @@ if (kartoitusPohja) L('esto', 'Kartoitus', 'metodi/kartoitus.md on yhä geneerin
 if (projektiTayttamaton) L('esto', 'Projektin faktat', 'tila/projekti.yaml on täyttämätön.', 'Aja /vnetcon-init.');
 if (!GIT) L('varoitus', 'Versionhallinta', 'Projekti ei näytä olevan git-repo — skooppirajaus ja synkronointi eivät toimi.', 'Aseta projekti.versionhallinta: none ja huomioi, että päivitys tehdään käsin.');
 
+// --- Onko katve jo tutkittu ja kirjattu? ----------------------------------
+// metodi/kartoitus.md:n "Katvealueet"-taulukko on se paikka, johon ihminen
+// kirjaa tutkitun katveen ja sen syyn. Ilman tätä tarkistusta kalibrointi
+// raportoi saman ratkaistun löydöksen joka ajossa ikuisesti — ja raportti, joka
+// toistaa käsiteltyjä löydöksiä, opettaa lukijan ohittamaan löydökset.
+//
+// Löydöstä EI poisteta, vain sen vakavuus laskee: hiljainen katoaminen olisi
+// vastoin koko menettelyn periaatetta (sano ääneen mitä jäi katveeseen).
+const kartoituksenKatveet = (() => {
+  const f = path.join(JUURI, 'metodi', 'kartoitus.md');
+  if (!fs.existsSync(f)) return [];
+  const teksti = fs.readFileSync(f, 'utf8');
+  const i = teksti.search(/^##+\s*Katvealueet/mi);
+  if (i < 0) return [];
+  const loppu = teksti.slice(i + 1).search(/^##+\s/m);
+  const runko = loppu > 0 ? teksti.slice(i, i + 1 + loppu) : teksti.slice(i);
+  const ulos = [];
+  for (const rivi of runko.split('\n')) {
+    if (!/^\s*\|/.test(rivi)) continue;
+    const sarakkeet = rivi.split('|').map((s) => s.trim()).filter((s, n, a) => n > 0 && n < a.length - 1);
+    if (sarakkeet.length < 2) continue;
+    const alue = sarakkeet[0], vastaus = sarakkeet[1];
+    // Ohita otsikko-, erotin- ja pohjarivit (mallipohjan <esim. …> -paikanvaraajat).
+    if (/^-+$/.test(alue) || /^:?-{2,}/.test(alue)) continue;
+    if (/^alue$/i.test(alue) || !alue || !vastaus) continue;
+    if (/^</.test(alue)) continue;
+    ulos.push({ alue, vastaus });
+  }
+  return ulos;
+})();
+
+// Normalisoitu vertailu: agentti kirjoittaa alueen nimen omin sanoin, joten
+// tarkka merkkijonovertailu ei riitä. Osumaksi kelpaa kumpi tahansa suunta.
+const norm = (s) => String(s).toLowerCase().replace(/[^a-zä-ö0-9]+/g, ' ').trim();
+function kartoituksessaKasitelty(nimi) {
+  const n = norm(nimi);
+  if (!n) return null;
+  return kartoituksenKatveet.find((k) => {
+    const a = norm(k.alue);
+    return a === n || a.includes(n) || n.includes(a);
+  }) || null;
+}
+
 for (const p of PROBET) {
   const o = proberOsumat[p.tunnus];
-  if (o.tiedostoja === 0) {
+  if (o.tiedostoja !== 0) continue;
+  const kirjattu = kartoituksessaKasitelty(p.kuvaus);
+  if (kirjattu) {
+    L('kasitelty', `Kartoitus: ${p.kuvaus}`,
+      `Ei osumia (${p.tunnus}), mutta alue on tutkittu ja kirjattu kartoitukseen: "${kirjattu.vastaus}".`,
+      'Ei toimenpiteitä. Tarkista uudelleen vain jos koodi on muuttunut niin, että kirjattu päätelmä ei enää pidä.');
+  } else {
     L('katve', `Kartoitus: ${p.kuvaus}`,
       `Yleiset haut eivät löytäneet yhtään osumaa (${p.tunnus}).`,
       'Joko tätä ei tässä projektissa ole, tai se on toteutettu tavalla jota geneeriset haut eivät tunnista. Tarkista käsin; jos kyse on jälkimmäisestä, lisää projektikohtainen haku metodi/kartoitus.md:hen.');
@@ -691,7 +771,16 @@ for (const p of PROBET) {
 }
 
 if (moduuleja === 0) L('esto', 'Moduulijako', 'Manifestitiedostoja tai lähdehakemistorakennetta ei löytynyt — moduulijakoa ei voi päätellä.', 'Määrittele moduulijako käsin tila/rekisteri.yaml:iin ja perustele se tila/projekti.yaml:iin.');
-if (Object.keys(skeemat).length === 0) L('katve', 'Skeemalähteet', 'Koneluettavia skeemalähteitä ei löytynyt (OpenAPI, migraatiot, ORM, protobuf).', 'Datamallit kuvataan silloin koodista lukemalla — hitaampaa ja epävarmempaa. Tarkista onko skeemoja epätyypillisessä muodossa.');
+if (Object.keys(skeemat).length === 0) {
+  const kirjattu = kartoituksessaKasitelty('skeemalähteet');
+  if (kirjattu) {
+    L('kasitelty', 'Skeemalähteet',
+      `Koneluettavia skeemalähteitä ei löytynyt, ja asia on kirjattu kartoitukseen: "${kirjattu.vastaus}".`,
+      'Ei toimenpiteitä. Muista silti, että datamallit on kirjoitettava koodista lukemalla ja merkittävä tila: luonnos kunnes tarkistettu.');
+  } else {
+    L('katve', 'Skeemalähteet', 'Koneluettavia skeemalähteitä ei löytynyt (OpenAPI, migraatiot, ORM, protobuf).', 'Datamallit kuvataan silloin koodista lukemalla — hitaampaa ja epävarmempaa. Tarkista onko skeemoja epätyypillisessä muodossa.');
+  }
+}
 if (!komennot.testi) L('varoitus', 'Testikomento', 'Testikomentoa ei voitu päätellä.', 'Kirjaa se tila/projekti.yaml → komennot.testi; tiketin toteutus tarvitsee sitä.');
 if (dokTila.puuttuvatLahteet.length) L('varoitus', 'Ajautuminen', `${dokTila.puuttuvatLahteet.length} lähdepolkua dokumentaatiossa ei löydy enää projektista.`, 'Aja /synkronoi-dokumentaatio.');
 if (baselineIka && baselineIka.committeja > 200) L('varoitus', 'Ajautuminen', `Synkronoinnin lähtötaso on ${baselineIka.committeja} committia jäljessä.`, 'Aja /synkronoi-dokumentaatio; erittäin suuri aukko kannattaa käydä osa-alue kerrallaan.');
@@ -734,7 +823,7 @@ if (rekisteriKaytossa) {
   }
 }
 
-const VAKAVUUS_JARJ = { esto: 0, varoitus: 1, katve: 2 };
+const VAKAVUUS_JARJ = { esto: 0, varoitus: 1, katve: 2, kasitelty: 3 };
 loydokset.sort((a, b) => VAKAVUUS_JARJ[a.vakavuus] - VAKAVUUS_JARJ[b.vakavuus]);
 
 // --- Tuloste --------------------------------------------------------------
@@ -782,7 +871,9 @@ kerro('');
 const estot = loydokset.filter((l) => l.vakavuus === 'esto').length;
 const varoitukset = loydokset.filter((l) => l.vakavuus === 'varoitus').length;
 const katveet = loydokset.filter((l) => l.vakavuus === 'katve').length;
-kerro(`Löydökset: ${estot} estoa · ${varoitukset} varoitusta · ${katveet} katvealuetta`);
+const kasitellyt = loydokset.filter((l) => l.vakavuus === 'kasitelty').length;
+kerro(`Löydökset: ${estot} estoa · ${varoitukset} varoitusta · ${katveet} katvealuetta`
+  + (kasitellyt ? ` · ${kasitellyt} käsiteltyä` : ''));
 if (estot) kerro('→ Estot on korjattava ennen kuin dokumentointi tuottaa luotettavaa jälkeä.');
 
 // --- Raportin muotoilu ---------------------------------------------------
@@ -794,8 +885,10 @@ function taulu(otsikot, rivit) {
 }
 
 function raportti(t) {
+  // Pieni moduuli antaa alle 0,1 h — nolla näyttäisi siltä ettei työtä ole.
+  const tunnit = (h) => (h > 0 && h < 0.1 ? '<0,1' : String(+Number(h).toFixed(1)));
   const pvm = new Date().toISOString().slice(0, 10);
-  const VAK = { esto: '🔴 esto', varoitus: '🟡 varoitus', katve: '⚪ katve' };
+  const VAK = { esto: '🔴 esto', varoitus: '🟡 varoitus', katve: '⚪ katve', kasitelty: '✅ käsitelty' };
   let s = `# Kalibrointiraportti — ${t.projekti}
 
 _Luotu ${pvm} · vnetcon-docs · lähde: ${t.luettelon_lahde}${t.git && t.git.head ? ` · HEAD ${t.git.head}` : ''}_
@@ -825,7 +918,10 @@ ${t.loydokset.length === 0 ? '_Ei löydöksiä._\n' : t.loydokset.map((l) =>
 **Vakavuusluokat.** 🔴 *esto* = dokumentointi ei tuota luotettavaa jälkeä ennen
 korjausta. 🟡 *varoitus* = toimii, mutta laatu tai ajantasaisuus kärsii.
 ⚪ *katve* = geneeriset haut eivät nähneet aluetta; voi olla myös oikea tulos
-(aluetta ei ole).
+(aluetta ei ole). ✅ *käsitelty* = katve on tutkittu ja päätelmä kirjattu
+\`metodi/kartoitus.md\`:n Katvealueet-taulukkoon — ei toimenpiteitä. Käsitellyt
+näkyvät edelleen, koska hiljainen katoaminen olisi vastoin sitä periaatetta,
+että katve sanotaan ääneen.
 
 ## Projektin laajuus
 
@@ -907,11 +1003,22 @@ ${taulu(['Mittari', 'Arvo'], [
 
 Karkea arvio, perusta: ${t.arvio.perusta}.
 
-- Dokumentoimattomia moduuleja: **${t.arvio.dokumentoimatta}**
+- Dokumentoimattomia moduuleja: **${t.arvio.dokumentoimatta}**${t.arvio.dokumentoimatta_rivit ? ` (${t.arvio.dokumentoimatta_rivit.toLocaleString('fi-FI')} koodiriviä)` : ''}
 - Arvioitu dokumenttimäärä: **${t.arvio.dokkeja_min}–${t.arvio.dokkeja_max}**
-- Arvioitu **agenttiaika**: **${t.arvio.tunnit_min}–${t.arvio.tunnit_max} h**
+- Arvioitu **agenttiaika**: **${tunnit(t.arvio.tunnit_min)}–${tunnit(t.arvio.tunnit_max)} h**
 - Arvioitu **AI-kustannus**: **$${t.arvio.usd_min}–${t.arvio.usd_max}** omalla AI-tililläsi
-- Arvioitu tokenikulutus: **${t.arvio.tokenit_min_M}–${t.arvio.tokenit_max_M} M tokenia**
+- Arvioitu tokenikulutus: **${t.arvio.tokenit_min_M}–${t.arvio.tokenit_max_M} M tokenia** _(moduulimäärästä, ei rivipainotettu)_
+${t.arvio.moduuleittain && t.arvio.moduuleittain.length > 1 ? `
+Kokonaissumma peittää sen, että moduulit ovat eri kokoisia. Priorisointi ja
+osa-alue kerrallaan myyminen tapahtuvat tällä tasolla:
+
+${taulu(['Moduuli', 'Koodirivejä', 'Agenttiaika', 'AI-kustannus'],
+    t.arvio.moduuleittain.slice(0, 30).map((m) => [
+      `\`${m.nimi}\``,
+      m.loc ? m.loc.toLocaleString('fi-FI') : '—',
+      `${tunnit(m.tunnit)} h`,
+      `$${m.usd}`,
+    ]))}${t.arvio.moduuleittain.length > 30 ? `_(${t.arvio.moduuleittain.length - 30} muuta jätetty pois listasta)_\n` : ''}` : ''}
 
 > ⚠️ **Arvio ei sisällä sitä osaa, joka ratkaisee lopputuloksen laadun:
 > substanssiosaajan validointiaikaa** ja TODO-kysymysten läpikäyntiä. Agenttiaika
