@@ -105,7 +105,12 @@ paalle() {   # $1 = dist-relatiivinen hakemisto tai tiedosto
   fi
 }
 
-for p in metodi tyokalut .claude/skills .claude/workflows \
+# HUOM: tila/metodi.yaml on MOOTTORIA vaikka se asuu tila/-hakemistossa.
+# Menettelyn versio ja muutosloki ovat samat kaikille projekteille, ja
+# /yhdenmukaista-dokumentaatio vertaa dokumenttien metodi-versiota juuri siihen
+# lukuun. Jos tiedostoa ei päivitetä, versionumero jää vanhaan ja yhdenmukaistus
+# ei löydä mitään tehtävää — menettelymuutos ei koskaan saavuta projektia.
+for p in metodi tyokalut .claude/skills .claude/workflows tila/metodi.yaml \
          CLAUDE.md AGENTS.md README.md vnetcon.config.example.yaml .gitignore; do
   paalle "$p"
 done

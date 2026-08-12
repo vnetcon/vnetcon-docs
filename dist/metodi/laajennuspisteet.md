@@ -42,6 +42,7 @@ jättää projektin pysyvästi vanhaan versioon. Molemmat ovat kalliita.
 | `tyokalut/html-generaattori/`, `tyokalut/vnetcon-ai/`, `tyokalut/kalibroi.mjs`, `tyokalut/tarkista-linkit.mjs` | Työkalut |
 | `.claude/skills/*` (paketin omat), `.claude/workflows/*` | Skillit |
 | `CLAUDE.md`, `AGENTS.md`, `README.md`, `vnetcon.config.example.yaml` | Reitittimet ja ohjeet |
+| **`tila/metodi.yaml`** | **Menettelyn versio ja muutosloki.** Asuu `tila/`-hakemistossa mutta on moottoria: sama luku kaikille projekteille. `/yhdenmukaista-dokumentaatio` vertaa dokumenttien `metodi-versio`ta tähän, joten jos päivitys ei koskisi sitä, menettelymuutos ei koskaan saavuttaisi projektia |
 
 `asenna.sh --paivita` säilyttää `metodi/kartoitus.md`:n, `metodi/sanasto.md`:n ja
 `.claude/settings.json`:in vaikka ne ovat samoissa hakemistoissa kuin moottori.
