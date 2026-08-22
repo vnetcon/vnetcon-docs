@@ -9,8 +9,11 @@ Toimi näin:
    `__VNETCON_DOCS__/tila/projekti.yaml` (testi- ja buildkomennot).
 2. Jos `__VNETCON_DOCS__/tiketit/<tunnus>/` on olemassa, lue kaikki sen
    tiedostot ja **jatka siitä vaiheesta, joka on kesken**. Jos hakemistossa on
-   `codex-kehote.md`, suunnitelma on jo hyväksytty — toteuta se (vaiheet 4–5)
-   äläkä suunnittele uudelleen.
+   `codex-kehote.md`, suunnitelma on jo hyväksytty — älä suunnittele uudelleen,
+   mutta **aloita vaiheesta 3b (vastaanottoportti), et toteutuksesta**:
+   tarkista suunnitelma koodia vasten ja esitä kehittäjälle (a) miten aiot
+   toteuttaa sen 3–5 rivillä, (b) mistä olet eri mieltä ja miksi, (c) avoimet
+   kysymykset. Pysähdy ja odota "jatka". Kirjaa tulos `vastaanotto.md`:hen.
 3. Muuten aloita vaiheesta 0: kysy tunnus, tavoite, hyväksymiskriteerit ja
    reunaehdot yhtenä numeroituna kysymyssarjana.
 4. Kirjoita jokainen vaihe tiedostoon sitä mukaa kuin etenet, jotta työhön voi
@@ -18,7 +21,11 @@ Toimi näin:
 
 Ehdottomat rajat:
 
-- **Älä koske koodiin ennen kuin suunnitelma on eksplisiittisesti hyväksytty.**
+- **Älä koske koodiin ennen kuin suunnitelma on eksplisiittisesti hyväksytty** —
+  ja jos suunnitelma tuli tiedostona toisesta sessiosta, ennen kuin olet käynyt
+  vaiheen 3b vastaanottoportin ja saanut luvan jatkaa.
+- **Valmis suunnitelma ei ole käsky.** Jos olet siitä eri mieltä, sano se ennen
+  toteutusta — se on nimenomaan sinun tehtäväsi tässä vaiheessa.
 - **Älä aja `git add`/`git commit`/`git push` ilman erillistä lupaa** — myös
   suunnitelman hyväksyntä ei ole lupa committaamiseen.
 - Pysy tiketin skoopissa. Jos suunnitelma ei päde, pysähdy ja kysy.

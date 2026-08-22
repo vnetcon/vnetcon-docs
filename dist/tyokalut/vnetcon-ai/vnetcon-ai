@@ -400,7 +400,7 @@ cmd_toteuta() {
     teksti="$(cat "$kehote")"
   else
     varo "Valmista kehotetta ei löytynyt ($dir/codex-kehote.md) — annetaan geneerinen ohje."
-    teksti="Toteuta tiketti $tunnus. Lue ensin vnetcon-docs/metodi/tiketti-tyonkulku.md ja vnetcon-docs/metodi/konventiot.md sekä kaikki tiedostot hakemistosta vnetcon-docs/tiketit/$tunnus/. Jatka siitä vaiheesta, joka on kesken. Älä committaa ilman lupaa."
+    teksti="Toteuta tiketti $tunnus. Lue ensin vnetcon-docs/metodi/tiketti-tyonkulku.md ja vnetcon-docs/metodi/konventiot.md sekä kaikki tiedostot hakemistosta vnetcon-docs/tiketit/$tunnus/. Jatka siitä vaiheesta, joka on kesken. Jos suunnitelma on jo hyväksytty toisessa sessiossa, aloita vaiheesta 3b (vastaanottoportti): tarkista suunnitelma koodia vasten, esitä toteutus, eriävät kohdat ja avoimet kysymykset, ja odota lupaa ennen koodimuutoksia. Älä committaa ilman lupaa."
   fi
   VNETCON_KOMENTO="toteuta:$tunnus" aja_agentti "$agentti" "$PROJEKTI" "$teksti"
 }

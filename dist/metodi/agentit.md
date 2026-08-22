@@ -9,7 +9,7 @@ eivät agentin sisäiset ominaisuudet. Käytännössä kaksi agenttia tukevat to
 |-----|---------------|-------|
 | Dokumentointi (`/dokumentoi`, `/dokumentoi-kaikki`, järjestelmäprosessit) | **Claude** | Laaja kartoitus monesta tiedostosta, rinnakkaiset aliagentit, plan mode |
 | Tiketin valmistelu (vaiheet 0–3) | **Claude** | Kysely + kontekstin koonti + plan mode -hyväksyntäportti |
-| Tiketin toteutus (vaiheet 4–5) | **Codex** | Koodimuutokset ja testiajot |
+| Tiketin toteutus (vaiheet 3b–5) | **Codex** | Koodimuutokset ja testiajot — ja vaiheessa 3b oma näkemys suunnitelmasta |
 | Dokumentaation päivitys toteutuksen jälkeen | **Codex** (sama sessio) | Muutokset ovat tuoreessa muistissa |
 | Synkronointi / yhdenmukaistus | kumpi vain | Menettely on identtinen |
 
@@ -42,8 +42,15 @@ tiketit/<tunnus>/
   konteksti.md      Vaihe 1: mihin muutos osuu (linkit dokkeihin ja koodiin)
   suunnitelma.md    Vaihe 2–3: suunnitelma + hyväksyntämerkintä
   codex-kehote.md   Vaihe 3: valmis toteutuskehote seuraavalle agentille
+  vastaanotto.md    Vaihe 3b: toteuttajan tarkistus, erimielisyydet, lupa jatkaa
   lopputulos.md     Vaihe 5: mitä tehtiin, testit, päivitetyt dokit
 ```
+
+**Kädenojennus ei ole komento.** Toteuttava agentti ei ala koodata kehotteen
+perusteella vaan käy ensin vaiheen 3b vastaanottoportin: tarkistaa suunnitelman
+koodia vasten, kertoo mistä on eri mieltä ja odottaa kehittäjän luvan. Molemmat
+puolet kädenojennuksesta ovat siis interaktiivisia — valmisteleva agentti ei voi
+sitoa toteuttavaa agenttia ratkaisuun, jota tämä pitää virheellisenä.
 
 ### `codex-kehote.md` — mitä siihen kirjoitetaan
 
@@ -54,14 +61,31 @@ keskustelua). Rakenne:
 # Toteutuskehote: <tunnus> — <otsikko>
 
 Olet projektin juuressa. Menettely: `vnetcon-docs/metodi/tiketti-tyonkulku.md`
-vaiheet 4–5. Vaiheet 0–3 on tehty ja **suunnitelma on hyväksytty** —
-älä suunnittele uudelleen äläkä laajenna skooppia.
+vaiheet 3b–5. Vaiheet 0–3 on tehty ja suunnitelma on hyväksytty kehittäjän
+kanssa — **mutta et aloita toteutusta suoraan.** Käy ensin vaihe 3b.
 
 ## Lue ensin
 - vnetcon-docs/tiketit/<tunnus>/tiketti.md
 - vnetcon-docs/tiketit/<tunnus>/konteksti.md
 - vnetcon-docs/tiketit/<tunnus>/suunnitelma.md
 - vnetcon-docs/metodi/konventiot.md
+
+## Aloitus: vaihe 3b — vastaanottoportti (pakollinen)
+
+Tarkista suunnitelma **koodia vasten** (polut `git ls-files`illä, oletukset
+rajapinnoista, kutsujat, testit) ja esitä kehittäjälle kolme kohtaa:
+
+1. **Toteutus** — 3–5 riviä siitä miten aiot tehdä sen
+2. **Eriävät kohdat** — mistä olet eri mieltä, miksi, ja oma ehdotuksesi
+   (jos et ole mistään eri mieltä, sano se)
+3. **Avoimet kysymykset**
+
+**Pysähdy tähän ja odota "jatka".** Suunnitelman laatija ei ole tehnyt
+muutosta koodiin — sinä teet, joten sinun näkemyksesi kuuluu esittää ennen kuin
+mitään kirjoitetaan. Kirjaa portin tulos tiedostoon
+`vnetcon-docs/tiketit/<tunnus>/vastaanotto.md`. Jos erimielisyys koskee
+perusratkaisua, palaa vaiheeseen 2 — älä toteuta suunnitelmaa, jonka tiedät
+vääräksi.
 
 ## Tehtävä
 <1–3 lausetta>
@@ -81,7 +105,8 @@ vaiheet 4–5. Vaiheet 0–3 on tehty ja **suunnitelma on hyväksytty** —
    muuttuneisiin polkuihin, ja päivitä ne paikallaan.
 2. Kirjoita `vnetcon-docs/tiketit/<tunnus>/lopputulos.md`, aseta `tila: valmis`.
 3. **Älä committaa** ilman kehittäjän lupaa.
-4. Jos suunnitelma ei päde, pysähdy ja kysy — älä improvisoi.
+4. Jos suunnitelma ei päde, pysähdy ja kysy — älä improvisoi. Skoopin
+   laajentaminen ei ole sallittua ilman kehittäjän päätöstä.
 ```
 
 Kehote käynnistetään:
@@ -239,3 +264,8 @@ mallin tarjoajalta. **Kustannus on asiakkaan omalla AI-tilillä** (oletus
 
 Siksi: laajat dokumentointiajot Claudella, koodimuutokset kumpi vain — ja
 Codexissa noudata git-ohjetta erityisen tarkasti, koska harness ei estä.
+
+Sama koskee **vaiheen 3b vastaanottoporttia**: Claudessa plan mode voi pitää sen
+teknisesti, Codexissa portti on pelkkä ohje. Älä siksi aja Codexia täysin
+automaattisessa tilassa tikettityössä — silloin portti katoaa, eikä
+erimielisyyttä kuulla ennen kuin koodi on jo muuttunut.

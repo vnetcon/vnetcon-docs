@@ -32,7 +32,12 @@ jatkamaan ilman keskusteluhistoriaa.
    (rakenne: `metodi/agentit.md`). Kehotteen pitää olla **itsenäisesti
    riittävä**: luettavat tiedostot, tehtävä, muutettavat tiedostot, reunaehdot,
    testikomennot, lopetusohje (vaihe 5 + ei committia + pysähdy jos suunnitelma
-   ei päde).
+   ei päde). **Kehotteen on aloitettava vaiheen 3b vastaanottoportilla**:
+   toteuttava agentti tarkistaa suunnitelman koodia vasten, esittää toteutuksen,
+   eriävät kohtansa ja avoimet kysymyksensä kehittäjälle ja odottaa lupaa ennen
+   kuin koskee koodiin. Älä kirjoita kehotetta niin, että se lukee kuin käsky —
+   suunnitelmasi on paras arvaus, ei totuus, ja toteuttaja näkee koodin
+   tarkemmin.
 7. **Kerro käynnistyskomento:**
    `./tyokalut/vnetcon-ai/vnetcon-ai toteuta <tunnus>` — ja mikä agentti sillä
    käynnistyy (`vnetcon.config.yaml` → `agentit.toteutus`).

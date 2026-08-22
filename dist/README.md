@@ -127,6 +127,13 @@ Codex käynnistetään sillä kehotteella:
 ./tyokalut/vnetcon-ai/vnetcon-ai toteuta <tunnus>
 ```
 
+**Molemmat vaiheet ovat interaktiivisia.** Codex ei aloita koodaamista
+kehotteesta vaan käy ensin vaiheen 3b vastaanottoportin: tarkistaa suunnitelman
+koodia vasten, kertoo mistä on eri mieltä ja odottaa kehittäjän luvan
+(`vastaanotto.md`). Suunnitteleva agentti ei siis voi sitoa toteuttavaa agenttia
+ratkaisuun, jota tämä pitää virheellisenä — kahden agentin arvo on juuri siinä,
+että ne ovat eri mieltä ennen kuin koodi muuttuu.
+
 Ks. [`metodi/agentit.md`](metodi/agentit.md).
 
 ## Mitä AI-tiliä käytetään

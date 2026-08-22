@@ -37,6 +37,12 @@ pino, moduulit, komennot, hakemistokartta).
   `git add`/`git commit`/`git push` ilman eksplisiittistä lupaa — kirjoita
   tiedostot, kerro muutokset ja ehdota commitia, mutta jätä päätös kehittäjälle.
   Git-lukukomennot (status/diff/log/ls-files/grep/rev-parse) ovat sallittuja.
+- **Tiketissä: älä koske koodiin ennen kuin suunnitelma on hyväksytty**
+  ([`metodi/tiketti-tyonkulku.md`](metodi/tiketti-tyonkulku.md) vaihe 3). Jos
+  suunnitelma tuli **tiedostona toisesta sessiosta** (`suunnitelma.md` /
+  `codex-kehote.md`), se on jo hyväksytty — mutta **käy silti vaiheen 3b
+  vastaanottoportti ennen toteutusta**: tarkista suunnitelma koodia vasten,
+  kerro mistä olet eri mieltä ja odota lupaa. Valmis suunnitelma ei ole käsky.
 - **Älä keksi, ja kerro kun et nähnyt.** Jos koodista ei selviä miten jokin
   toimii, merkitse `> TODO: varmistettava — <mikä>` ja jätä `tila: luonnos`. Jos
   jokin hakuluokka ei tuottanut yhtään osumaa, **sano se ääneen** ajon lopussa —
@@ -58,7 +64,7 @@ Tämä CLAUDE.md on vain reititin. Varsinainen menettely on `metodi/`-kansiossa:
 - **Projektin kartoitus** (mistä koodista mitä etsitään) → [`metodi/kartoitus.md`](metodi/kartoitus.md)
 - **Laajennuspisteet** (mihin projektikohtaiset muutokset kuuluvat) → [`metodi/laajennuspisteet.md`](metodi/laajennuspisteet.md)
 - **Järjestelmäprosessi** (end-to-end, moduulirajat ylittävä) → [`metodi/jarjestelmaprosessi-tyonkulku.md`](metodi/jarjestelmaprosessi-tyonkulku.md)
-- **Tiketin toteutus** (vaiheet 0–5) → [`metodi/tiketti-tyonkulku.md`](metodi/tiketti-tyonkulku.md)
+- **Tiketin toteutus** (vaiheet 0–5, sis. vaiheen 3b vastaanottoportti) → [`metodi/tiketti-tyonkulku.md`](metodi/tiketti-tyonkulku.md)
 - **Synkronointi** (muutokset ilman tikettiä) → [`metodi/synkronointi-tyonkulku.md`](metodi/synkronointi-tyonkulku.md)
 - **Yhdenmukaistus** (menettelymuutos → vanhat dokit) → [`metodi/yhdenmukaistus-tyonkulku.md`](metodi/yhdenmukaistus-tyonkulku.md)
 - **Datamallit** (jaetut skeemat) → [`metodi/datamalli-tyonkulku.md`](metodi/datamalli-tyonkulku.md)
@@ -101,7 +107,7 @@ liiketoimintaprosessit/ Ei-tekninen kerros; voi ylittää moduulirajat; sisään
 jarjestelmaprosessit/   End-to-end -kulut moduulirajojen yli (tekninen)
 datamallit/             Jaetut skeemat; moduulit linkittävät
 moduulit/<moduuli>/     Tekninen tuotos: yleiskuvaus, prosessit, datavirrat, datarakenteet
-tiketit/<tunnus>/       Tikettityön jälki (vaiheet 0–5), audit-jälki + agenttien kädenojennus
+tiketit/<tunnus>/       Tikettityön jälki (vaiheet 0–5, 3b), audit-jälki + agenttien kädenojennus
 tyokalut/               html-generaattori, vnetcon-ai (agenttien käynnistys)
 html/                   Generoitu selattava HTML (johdettu md:stä; ei versioida)
 ```

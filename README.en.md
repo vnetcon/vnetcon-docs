@@ -68,7 +68,13 @@ A browsable sample of what finished documentation looks like:
 ---
 
 The system supports **two agents**: documentation is typically run with Claude and
-ticket implementation with Codex, but either can do both. By default it uses the
+ticket implementation with Codex, but either can do both. The handoff between
+them is **interactive at both ends**: the implementing agent does not start
+coding from a ready-made prompt — it verifies the plan against the code, states
+where it disagrees, and waits for the developer's explicit go-ahead (phase 3b,
+[`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonkulku.md)). The
+point of two agents is precisely that they disagree before the code changes.
+By default it uses the
 **customer's own AI account** — code never passes through a third party. Other
 providers (your own cloud tenant, a direct API key, or your organisation's own
 internal proxy) are configurable; see
@@ -101,7 +107,7 @@ updating the package never overwrites them.
 | End-to-end | `/dokumentoi-jarjestelmaprosessi` | Claude | `jarjestelmaprosessit/` — flows that cross module boundaries |
 | Browsable version | `/generoi-html` | either | `html/` — static site, search + Mermaid, works over `file://` |
 | Ticket preparation | `/valmistele-tiketti` | Claude | `tiketit/<id>/` context + plan + a ready prompt for Codex |
-| Ticket implementation | `/toteuta-tiketti` | Codex | Code change + documentation update |
+| Ticket implementation | `/toteuta-tiketti` | Codex | Phase 3b: verifies the plan against the code and raises its disagreements → after go-ahead, code change + documentation update |
 | Maintenance | `/synkronoi-dokumentaatio`, `/yhdenmukaista-dokumentaatio` | either | Docs brought in line with code or method changes |
 | Verification | `vnetcon-ai linkit --lahteet` | — | Broken links and `lahteet` (provenance) paths — needs no agent and no dependencies |
 | Provider setup | `/agentit` | Claude | Point Claude/Codex at a cloud provider or your own account |

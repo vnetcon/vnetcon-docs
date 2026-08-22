@@ -57,7 +57,12 @@ Selattava näyte siitä, miltä valmis dokumentaatio näyttää:
 
 Kokonaisuus tukee **kahta agenttia**: dokumentointi ajetaan tyypillisesti
 Claudella ja tikettien toteutus Codexilla, mutta kumpi tahansa osaa kummankin.
-Oletuksena käytetään **asiakkaan omaa AI-tiliä** — koodi ei kulje kolmannen
+Kädenojennus agentilta toiselle on **interaktiivinen molemmista päistä**:
+toteuttava agentti ei aloita koodaamista valmiista kehotteesta vaan tarkistaa
+suunnitelman koodia vasten, kertoo mistä on eri mieltä ja odottaa kehittäjän
+luvan (vaihe 3b, [`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonkulku.md)).
+Kahden agentin arvo on juuri siinä, että ne ovat eri mieltä ennen kuin koodi
+muuttuu. Oletuksena käytetään **asiakkaan omaa AI-tiliä** — koodi ei kulje kolmannen
 osapuolen läpi. Muut tarjoajat (oma pilvitili, suora API-avain tai organisaation
 oma välityspalvelin) ovat konfiguroitavissa; ks.
 [`dist/metodi/agentit.md`](dist/metodi/agentit.md).
@@ -88,7 +93,7 @@ paketin päivitys ei koskaan ylikirjoita niitä.
 | End-to-end | `/dokumentoi-jarjestelmaprosessi` | Claude | `jarjestelmaprosessit/` — moduulirajat ylittävät kulut |
 | Selattava versio | `/generoi-html` | kumpi vain | `html/` — staattinen sivusto, haku + Mermaid, toimii `file://` |
 | Tiketin valmistelu | `/valmistele-tiketti` | Claude | `tiketit/<tunnus>/` konteksti + suunnitelma + valmis Codex-kehote |
-| Tiketin toteutus | `/toteuta-tiketti` | Codex | Koodimuutos + dokumentaation päivitys |
+| Tiketin toteutus | `/toteuta-tiketti` | Codex | Vaihe 3b: tarkistaa suunnitelman koodia vasten ja esittää eriävät näkemyksensä → luvan jälkeen koodimuutos + dokumentaation päivitys |
 | Ylläpito | `/synkronoi-dokumentaatio`, `/yhdenmukaista-dokumentaatio` | kumpi vain | Dokit ajan tasalle koodi-/metodimuutosten kanssa |
 | Tarkistus | `vnetcon-ai linkit --lahteet` | — | Rikkinäiset linkit ja `lahteet`-polut (ei vaadi agenttia eikä riippuvuuksia) |
 | Pilvikonfigurointi | `/agentit` | Claude | Claude/Codex osoitettu Vnetconin pilveen tai omaan tiliin |

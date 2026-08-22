@@ -6,8 +6,14 @@ kontekstipohjana, jotta kehittäjän ei tarvitse itse koota tietoja.
 
 Menettely on **agenttiriippumaton**: sekä Claude että Codex seuraavat samoja
 vaiheita. Työ voi myös jakautua kahdelle agentille — Claude valmistelee
-(vaiheet 0–3, `/valmistele-tiketti`) ja Codex toteuttaa (vaiheet 4–5,
+(vaiheet 0–3, `/valmistele-tiketti`) ja Codex toteuttaa (vaiheet 3b–5,
 `/toteuta-tiketti`). Ks. [`agentit.md`](agentit.md).
+
+**Molemmat puolet ovat interaktiivisia.** Suunnittelu keskustellaan vaiheissa
+1–3 ja toteutus avataan uudelleen vaiheessa 3b: toteuttava agentti tarkistaa
+saamansa suunnitelman koodia vasten ja saa olla siitä eri mieltä ennen kuin
+koodiin kosketaan. Kädenojennus siirtää suunnitelman, ei suunnittelijan
+arvovaltaa.
 
 **Kaikki vaiheet tallennetaan** hakemistoon `tiketit/<tunnus>/`, jotta työhön voi
 palata, keskeytynyt työ voi jatkua toisessa sessiossa ja **agentti voi vaihtua
@@ -38,7 +44,8 @@ HEAD, `agentti`).
 
 > **Jos `tiketit/<tunnus>/codex-kehote.md` (tai vastaava valmis kehote) on jo
 > olemassa**, vaiheet 0–3 on tehty toisessa sessiossa: lue `tiketti.md`,
-> `konteksti.md` ja `suunnitelma.md` ja siirry suoraan vaiheeseen 4.
+> `konteksti.md` ja `suunnitelma.md` ja siirry **vaiheeseen 3b** (et suoraan
+> toteutukseen).
 
 ## Vaihe 1 — Kokoa konteksti automaattisesti
 
@@ -83,7 +90,51 @@ ennen toteutusta. Ilman hyväksyntää ei kosketa koodiin. Kirjaa hyväksyntä
 - **Jos työ siirretään toiselle agentille tässä kohdassa** (Claude → Codex),
   kirjoita `tiketit/<tunnus>/codex-kehote.md`: tehtävä, hyväksytty suunnitelma
   tiivistettynä, muutettavat tiedostot, reunaehdot, testikomennot ja
-  eksplisiittinen kielto laajentaa skooppia. Ks. [`agentit.md`](agentit.md).
+  eksplisiittinen kielto laajentaa skooppia. **Kehotteen on käskettävä aloittaa
+  vaiheesta 3b**, ei toteutuksesta. Ks. [`agentit.md`](agentit.md).
+
+## Vaihe 3b — Vastaanottoportti (kun suunnitelma tulee tiedostosta)
+
+Tämä vaihe koskee **toteuttavaa agenttia silloin, kun se ei itse suunnitellut** —
+eli suunnitelma tulee `suunnitelma.md`/`codex-kehote.md`-tiedostosta, ei
+keskustelusta. Silloin **koodiin ei kosketa suoraan.**
+
+Syy on kokemusperäinen: valmisteleva agentti kirjoittaa suunnitelman lukemalla
+koodia, toteuttava agentti muuttaa sitä — ja ne ovat säännöllisesti eri mieltä
+ratkaisusta. Erimielisyys on hyödyllistä vain jos se tulee esiin **ennen**
+toteutusta. Hyväksytty suunnitelma on paras tiedossa oleva arvaus, ei totuus.
+
+Tee tässä järjestyksessä:
+
+1. **Lue** `tiketti.md`, `konteksti.md`, `suunnitelma.md` (ja saatu kehote).
+2. **Tarkista suunnitelma koodia vasten** — älä luota kehotteeseen:
+   - ovatko mainitut polut olemassa (`git ls-files`) ja sisältävätkö ne sen mitä
+     suunnitelma väittää
+   - pitävätkö oletukset rajapinnoista, tyypeistä, kutsujista ja testeistä
+   - onko suunnitelma toteutettavissa sellaisenaan ja täyttääkö se
+     hyväksymiskriteerit
+   - mikä rikkoutuu, mitä suunnitelmassa ei mainita (kutsujat, migraatiot, testit)
+3. **Esitä kehittäjälle nämä kolme kohtaa — ja pysähdy:**
+   - **Toteutus:** 3–5 riviä siitä miten aiot suunnitelman toteuttaa
+   - **Eriävät kohdat:** mistä olet eri mieltä, miksi, ja oma ehdotuksesi. Jos et
+     ole mistään eri mieltä, sano se — älä keksi erimielisyyttä muodon vuoksi.
+   - **Avoimet kysymykset:** mitä pitää ratkaista ennen kuin voi jatkaa
+4. **Odota eksplisiittistä lupaa** ("jatka" / "toteuta"). Keskustele niin monta
+   kierrosta kuin tarvitaan — portti on kaksisuuntainen: myös kehittäjä korjaa
+   sinun tulkintaasi, ei vain sinä suunnitelmaa.
+5. **Kirjaa** `tiketit/<tunnus>/vastaanotto.md`: mitä tarkistit, mistä olit eri
+   mieltä, mitä päätettiin ja kuka hyväksyi. Tämä on ainoa jälki siitä, että
+   suunnitelma muuttui matkalla.
+
+Jos erimielisyys koskee suunnitelman **perusratkaisua** eikä yksityiskohtaa,
+palaa vaiheeseen 2: suunnittele uudelleen tässä sessiossa tai palauta tiketti
+valmistelevalle agentille. Älä toteuta suunnitelmaa, jonka tiedät vääräksi, vain
+koska se on hyväksytty.
+
+> **Portti ei toistu, jos sama sessio teki vaiheet 0–3.** Silloin hyväksyntä
+> vaiheessa 3 annettiin täydellä kontekstilla, ja 3b olisi sama kysely uudestaan.
+> Kirjaa `vastaanotto.md`:hen tällöin vain rivi "sama sessio suunnitteli — 3b ei
+> sovellu", tai jätä tiedosto luomatta.
 
 ## Vaihe 4 — Toteuta
 
@@ -92,7 +143,8 @@ ennen toteutusta. Ilman hyväksyntää ei kosketa koodiin. Kirjaa hyväksyntä
 > `git add`/`git commit`/`git push` ilman eksplisiittistä lupaa.** Suunnitelman
 > hyväksyntä (vaihe 3) EI ole lupa committaamiseen.
 
-- Toteuta hyväksytyn suunnitelman mukaan.
+- Toteuta hyväksytyn suunnitelman mukaan — ja jos vaihe 3b muutti sitä, sen
+  mukaan kuin vaiheessa 3b sovittiin (`vastaanotto.md`).
 - Pysy tiketin skoopissa ja reunaehdoissa. Jos matkalla paljastuu, että
   suunnitelma ei päde, **palaa vaiheeseen 2–3** (älä laajenna skooppia omin päin).
 - Aja testit / buildit projektin tapojen mukaan (`tila/projekti.yaml`).
@@ -116,4 +168,5 @@ ennen toteutusta. Ilman hyväksyntää ei kosketa koodiin. Kirjaa hyväksyntä
 Jos `tiketit/<tunnus>/` on jo olemassa, lue sen tiedostot ja jatka siitä
 vaiheesta, jota ei ole vielä viety loppuun. Vihjeet: `tiketti.md`:n `tila`,
 puuttuva `suunnitelma.md` (vaihe 2 kesken), puuttuva hyväksyntämerkintä (vaihe 3
-kesken), puuttuva `lopputulos.md` (vaihe 4–5 kesken).
+kesken), puuttuva `vastaanotto.md` vaikka suunnitelma on hyväksytty toisessa
+sessiossa (vaihe 3b kesken), puuttuva `lopputulos.md` (vaihe 4–5 kesken).

@@ -5,14 +5,15 @@ tila: kesken            # kesken | odottaa-hyvaksyntaa | valmis | peruttu
 pvm: YYYY-MM-DD
 git-viite: <HEAD tiketin aloitushetkellä>
 agentti: <claude | codex>
-vaihe: 0                # viimeisin valmistunut vaihe (0–5)
+vaihe: 0                # viimeisin valmistunut vaihe (0, 1, 2, 3, 3b, 4, 5)
 ---
 
 # <TIKETTI-123> — <otsikko>
 
 > **Mallipohja.** Kopioi tiedostoksi `tiketit/<tunnus>/tiketti.md` (vaihe 0).
 > Muut vaiheet omiin tiedostoihinsa: `konteksti.md` (1), `suunnitelma.md` (2–3),
-> `codex-kehote.md` (3, jos työ siirtyy agentilta toiselle), `lopputulos.md` (5).
+> `codex-kehote.md` (3, jos työ siirtyy agentilta toiselle), `vastaanotto.md`
+> (3b, toteuttajan tarkistus ja erimielisyydet), `lopputulos.md` (5).
 > Menettely: [`../../metodi/tiketti-tyonkulku.md`](../../metodi/tiketti-tyonkulku.md).
 
 ## Tavoite (substanssi)
@@ -44,5 +45,6 @@ vaihe: 0                # viimeisin valmistunut vaihe (0–5)
 | 1 Konteksti | `konteksti.md` | — |
 | 2 Suunnitelma | `suunnitelma.md` | — |
 | 3 Hyväksyntä | `suunnitelma.md` (merkintä) | — |
+| 3b Vastaanotto | `vastaanotto.md` | — (vain jos toteuttaja ≠ suunnittelija) |
 | 4 Toteutus | koodi | — |
 | 5 Sulkeminen | `lopputulos.md` | — |

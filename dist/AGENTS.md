@@ -32,7 +32,9 @@ olet:
 - **Tiketissä: älä koske koodiin ennen kuin suunnitelma on hyväksytty**
   (`metodi/tiketti-tyonkulku.md` vaihe 3). Jos sait valmiin
   `tiketit/<tunnus>/codex-kehote.md`-kehotteen, suunnitelma on jo hyväksytty —
-  toteuta se, älä laajenna skooppia.
+  mutta **käy silti vaiheen 3b vastaanottoportti ennen toteutusta**: tarkista
+  suunnitelma koodia vasten, kerro mistä olet eri mieltä ja odota lupaa. Älä
+  laajenna skooppia.
 - **Älä keksi, ja kerro kun et nähnyt.** Epävarma kohta:
   `> TODO: varmistettava — <mikä>`. Jos jokin hakuluokka ei tuottanut osumia,
   sano se ääneen — hiljainen ohittaminen tuottaa uskottavan näköistä mutta
@@ -81,6 +83,16 @@ suunnitelma.md    Hyväksytty toteutussuunnitelma + päätökset
 codex-kehote.md   Valmis kehote sinulle — sisältää tehtävän ja rajaukset
 ```
 
-Aloita lukemalla ne kaikki, toteuta `suunnitelma.md`:n mukaan ja päätä työ
-vaiheeseen 5 (dokumentaation päivitys + `lopputulos.md`). Jos suunnitelma ei
-matkalla pädekään, **pysähdy ja kysy** — älä laajenna skooppia omin päin.
+Aloita lukemalla ne kaikki. **Älä siirry suoraan koodiin:** käy ensin vaihe 3b
+(vastaanottoportti) — tarkista suunnitelma koodia vasten ja esitä kehittäjälle
+(a) miten aiot toteuttaa sen 3–5 rivillä, (b) mistä olet eri mieltä ja miksi,
+(c) avoimet kysymykset. Pysähdy ja odota lupaa; kirjaa tulos `vastaanotto.md`:hen.
+
+Claude on suunnitellut lukemalla koodia, sinä muutat sitä — erimielisyys on
+odotettavaa ja **hyödyllistä vain ennen toteutusta**. Hyväksytty suunnitelma on
+paras arvaus, ei totuus. Jos erimielisyys koskee perusratkaisua, palaa
+vaiheeseen 2 äläkä toteuta suunnitelmaa, jonka tiedät vääräksi.
+
+Luvan jälkeen toteuta sovitun mukaan ja päätä työ vaiheeseen 5 (dokumentaation
+päivitys + `lopputulos.md`). Jos suunnitelma ei matkalla pädekään, **pysähdy ja
+kysy** — älä laajenna skooppia omin päin.

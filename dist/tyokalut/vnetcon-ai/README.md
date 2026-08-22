@@ -24,6 +24,11 @@ välityspalvelin).
 Neljä ensimmäistä eivät käytä tekoälyä lainkaan — ne ovat paikallisia
 tarkistuksia ja toimivat ilman tilejä ja ilman `npm install`ia.
 
+`toteuta` **ei aloita koodimuutoksia suoraan.** Agentti käy ensin
+vastaanottoportin (`metodi/tiketti-tyonkulku.md` vaihe 3b): tarkistaa saamansa
+suunnitelman koodia vasten, kertoo mistä on eri mieltä ja odottaa lupaasi.
+Aja siis komento interaktiivisessa istunnossa — automaattitilassa portti katoaa.
+
 `moduulit` päivittää kalibrointidatan automaattisesti ennen listausta (n. 1 s
 isossa monorepossa). `--nopea` käyttää edellistä dataa, jos haluat välittömän
 vastauksen.
