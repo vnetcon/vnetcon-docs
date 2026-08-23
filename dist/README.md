@@ -30,7 +30,7 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 |------|-----------|-------|
 | **Pääte + bash** | aina | Tämän hakemiston skriptit (`tyokalut/vnetcon-ai/…`) ovat bash-skriptejä. macOS ja Linux: valmiina. **Windows: WSL2** (suositus) tai Git Bash — PowerShellissä ne eivät toimi, eikä Claude Code tue Windowsia muuten kuin WSL:n kautta. Aja koko työ WSL:n sisällä, myös `git`. |
 | **`claude` ja/tai `codex`** | aina | `/`-komennot ajetaan agentin sisällä. Yksi agentti riittää alkuun; oletustyönjako on dokumentointi Claudella, toteutus Codexilla. |
-| **Kirjautuminen agenttiin** | aina | Oletuksena oma tili (`claude`, `codex login`) — mitään ei tarvitse konfiguroida. Muut tarjoajat: ks. [Mitä AI-tiliä käytetään](#mitä-ai-tiliä-käytetään). |
+| **Kirjautuminen agenttiin** | aina | Oletuksena oma tili (`claude`, `codex login`) — mitään ei tarvitse konfiguroida. Muut tarjoajat: ks. [Kenen AI-tiliä vasten ajetaan](#kenen-ai-tiliä-vasten-ajetaan). |
 | **Node.js 18+** (suositus 20 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
 | **git** | vahvasti suositeltu | Dokumentoinnin skooppi on `git ls-files`, ja `/synkronoi-dokumentaatio` perustuu commit-diffiin. Ilman gitiä aseta `projekti.versionhallinta: none` — silloin päivitykset tehdään käsin. |
 | **`npm install`** html-generaattorissa | vain `/generoi-html` | Kertaluontoinen, vaatii verkon. Ilman sitä HTML syntyy, mutta haku ja Mermaid-kaaviot eivät toimi. |
@@ -141,7 +141,7 @@ mukaan. Vaiheeseen 2 palataan vain, jos suunnitelman perusratkaisu ei päde.
 
 Ks. [`metodi/agentit.md`](metodi/agentit.md).
 
-## Mitä AI-tiliä käytetään
+## Kenen AI-tiliä vasten ajetaan
 
 **Oletus: oma tili.** Jos `claude` tai `codex` on koneellasi kirjautunut, mitään
 ei tarvitse konfiguroida — koodi ei kulje kenenkään kolmannen osapuolen

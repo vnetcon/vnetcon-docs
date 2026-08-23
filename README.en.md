@@ -112,7 +112,7 @@ updating the package never overwrites them.
 | Ticket implementation | `/toteuta-tiketti` | Codex | Phase 3b: verifies the plan against the code and raises its disagreements → after go-ahead, code change + documentation update |
 | Maintenance | `/synkronoi-dokumentaatio`, `/yhdenmukaista-dokumentaatio` | either | Docs brought in line with code or method changes |
 | Verification | `vnetcon-ai linkit --lahteet` | — | Broken links and `lahteet` (provenance) paths — needs no agent and no dependencies |
-| Provider setup | `/agentit` | Claude | Point Claude/Codex at a cloud provider or your own account |
+| Agent setup | `/agentit` | Claude | Work split + whose account the agents run against: your own login, your own cloud tenant, or your organisation's proxy |
 
 ## Installing into a target project
 

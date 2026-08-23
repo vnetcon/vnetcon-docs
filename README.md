@@ -98,7 +98,7 @@ paketin päivitys ei koskaan ylikirjoita niitä.
 | Tiketin toteutus | `/toteuta-tiketti` | Codex | Vaihe 3b: tarkistaa suunnitelman koodia vasten ja esittää eriävät näkemyksensä → luvan jälkeen koodimuutos + dokumentaation päivitys |
 | Ylläpito | `/synkronoi-dokumentaatio`, `/yhdenmukaista-dokumentaatio` | kumpi vain | Dokit ajan tasalle koodi-/metodimuutosten kanssa |
 | Tarkistus | `vnetcon-ai linkit --lahteet` | — | Rikkinäiset linkit ja `lahteet`-polut (ei vaadi agenttia eikä riippuvuuksia) |
-| Pilvikonfigurointi | `/agentit` | Claude | Claude/Codex osoitettu Vnetconin pilveen tai omaan tiliin |
+| Agenttien konfigurointi | `/agentit` | Claude | Työnjako + kenen tiliä vasten ajetaan: oma kirjautuminen, oma pilvitili tai organisaation välityspalvelin |
 
 ## Käyttöönotto kohdeprojektissa
 
