@@ -24,7 +24,7 @@ kertaluontoinen — ilman sitä muut komennot eivät tiedä mistä projektista o
      Testaa jokainen kirjoittamasi haku; kirjaa aidot puutteet
      "Katvealueet"-osioon. Aja kalibrointi uudelleen lopuksi.
    - I3 — kysy `AskUserQuestion`illa vain se mitä et voi päätellä: moduulijako,
-     osa-alueet, sanasto, agentit/pilvipalvelu. Esitä päättelemäsi vastaus oletuksena.
+     osa-alueet, sanasto, agentit ja tarjoaja. Esitä päättelemäsi vastaus oletuksena.
    - I4 — kirjoita `vnetcon.config.yaml` (pohja: `vnetcon.config.example.yaml`),
      `tila/projekti.yaml`, `tila/rekisteri.yaml` (yksi **pilotti**),
      `tila/rakenne.yaml`, `johdanto.md`
@@ -45,7 +45,7 @@ kertaluontoinen — ilman sitä muut komennot eivät tiedä mistä projektista o
   `metodi/laajennuspisteet.md`. Älä muokkaa moottoritiedostoja
   (`metodi/*-tyonkulku.md`, `metodi/konventiot.md`, `tyokalut/`, paketin skillit).
 - **Älä committaa** eikä muokkaa projektin tiedostoja (`../`) ilman lupaa.
-- **Älä pyydä tunnisteita chattiin** — pilvipalvelun tunniste kirjoitetaan
+- **Älä pyydä tunnisteita chattiin** — tunniste kirjoitetaan
   `~/.vnetcon/credentials.env`-tiedostoon käyttäjän itsensä toimesta.
 
 Käyttäjän argumentti (jos annettu) on projektin nimi tai rajaus (esim. vain

@@ -3,7 +3,7 @@ name: agentit
 description: Konfiguroi kumpi tekoälyagentti (Claude vai Codex) tekee dokumentoinnin, toteutuksen ja päivitykset, ja kenen AI-tiliä vasten ne ajetaan (oma kirjautuminen, oma pilvitili tai organisaation välityspalvelin). Käytä kun halutaan asettaa tai vaihtaa agenttien työnjako, malli, palvelun osoite tai tunnisteen lähde.
 ---
 
-# Konfiguroi agentit ja pilvipalvelu
+# Konfiguroi agentit ja tarjoaja
 
 Asettaa `vnetcon.config.yaml`:n `agentit`- ja `laskutus`-osiot sekä tarvittavat
 käynnistysasetukset, jotta Claude ja/tai Codex ajetaan halutulla tavalla.

@@ -1,7 +1,16 @@
-# Agentit: Claude ja Codex, työnjako ja pilvipalvelu
+# Agentit: Claude ja Codex, työnjako ja tarjoaja
 
 Tämä järjestelmä on **agenttiriippumaton**: menettely on `metodi/`-kansiossa,
 eivät agentin sisäiset ominaisuudet. Käytännössä kaksi agenttia tukevat toisiaan.
+
+> **Kaksi eri "tarjoajaa" — älä sekoita.**
+> **`tarjoaja`** (konfiguraatioavain `agentit.<agentti>.tarjoaja`) on se
+> päätepiste ja tunnistautumistapa, jota vasten agentti ajetaan: `oma`,
+> `bedrock`, `vertex`, `anthropic-api`, `openai-api` tai `gateway`. Oletus `oma`
+> tarkoittaa omaa kirjautumista — ei "ei tarjoajaa".
+> **Mallin tarjoaja** on Anthropic tai OpenAI eli se, jonka malli promptin
+> vastaanottaa. Se on tietosuojamielessä alikäsittelijä, ja se pysyy samana
+> riippumatta siitä, mikä `tarjoaja`-arvo on valittu.
 
 ## Työnjako (oletus)
 

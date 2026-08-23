@@ -69,7 +69,7 @@ Tämä CLAUDE.md on vain reititin. Varsinainen menettely on `metodi/`-kansiossa:
 - **Yhdenmukaistus** (menettelymuutos → vanhat dokit) → [`metodi/yhdenmukaistus-tyonkulku.md`](metodi/yhdenmukaistus-tyonkulku.md)
 - **Datamallit** (jaetut skeemat) → [`metodi/datamalli-tyonkulku.md`](metodi/datamalli-tyonkulku.md)
 - **HTML-generointi** (selattava versio md:stä) → [`metodi/generointi-tyonkulku.md`](metodi/generointi-tyonkulku.md)
-- **Agenttien työnjako** (Claude/Codex, pilvipalvelu) → [`metodi/agentit.md`](metodi/agentit.md)
+- **Agenttien työnjako** (Claude/Codex, työnjako, tarjoaja) → [`metodi/agentit.md`](metodi/agentit.md)
 - **Konventiot** (frontmatter, kaaviot, nimeäminen, skooppi) → [`metodi/konventiot.md`](metodi/konventiot.md)
 - **Sanasto** (projektin domain-termit) → [`metodi/sanasto.md`](metodi/sanasto.md)
 - **Mallipohjat** → [`metodi/mallipohjat/`](metodi/mallipohjat/)
@@ -96,7 +96,7 @@ metodi-ohjeisiin:
 - `/toteuta-tiketti` — toteuta rajattu koodimuutos dokumentaatio kontekstipohjana
 - `/synkronoi-dokumentaatio` — dokit ajan tasalle koodimuutosten kanssa
 - `/yhdenmukaista-dokumentaatio` — vanhat dokit nykyisiin mallipohjiin
-- `/agentit` — konfiguroi agentit ja pilvipalvelu
+- `/agentit` — konfiguroi agentit ja tarjoaja (kenen AI-tiliä vasten ajetaan)
 
 ## Hakemistokartta
 

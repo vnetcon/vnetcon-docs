@@ -92,7 +92,7 @@ komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 | `/toteuta-tiketti` | Toteuttaa rajatun koodimuutoksen dokumentaatio kontekstipohjana ja päivittää lopuksi dokit. Käytettävissä sekä Claudessa että Codexissa. |
 | `/synkronoi-dokumentaatio` | Päivittää dokumentaation vastaamaan koodimuutoksia, jotka tehtiin **ilman** tikettiprosessia (suorat commitit, merget). |
 | `/yhdenmukaista-dokumentaatio` | Päivittää vanhat dokit nykyisten mallipohjien mukaisiksi, kun **menettely** on muuttunut. |
-| `/agentit` | Konfiguroi kumpi agentti tekee mitä ja kenen AI-tiliä vasten ne ajetaan (oma kirjautuminen vai oma pilvitili). |
+| `/agentit` | Konfiguroi kumpi agentti tekee mitä ja kenen AI-tiliä vasten ne ajetaan (oma kirjautuminen, oma pilvitili tai organisaation välityspalvelin). |
 
 Kunkin täydellinen menettely on kansiossa [`metodi/`](metodi/).
 
