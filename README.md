@@ -134,6 +134,90 @@ kohteessa: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 Loppukäyttäjän ohje on [`dist/README.md`](dist/README.md) (se kopioituu mukana
 nimellä `vnetcon-docs/README.md`).
 
+### Tyhjältä koneelta ensimmäiseen tikettiin (zip-tie)
+
+Kun sekä lähdekoodi että paketti tulevat zipeinä — eristetty ympäristö, uusi
+työasema tai asiakas, jolla ei ole pääsyä tähän repoon. Kumpikin sarja on
+kokonainen: kopioi oman alustasi lohko alusta loppuun.
+
+**Esivaatimukset:** `git`, Node 18+ ja `claude` ja/tai `codex` kirjautuneena.
+Linuxilla varmista myös `unzip` (puuttuu minimaalisista asennuksista:
+`apt install unzip` / `dnf install unzip`). Windowsilla asenna **Git for
+Windows** — se tuo sekä `git`in että `bash`in.
+
+#### macOS / Linux / *nix
+
+```bash
+# 1. pura lähdekoodi
+unzip projekti.zip -d ~/projektit/
+cd ~/projektit/projekti
+
+# 2. tee siitä git-repo — dokumentoinnin skooppi on git ls-files
+git init
+git add -A
+git commit -m "lähtötilanne"
+
+# 3. pura vnetcon-docs projektin juureen
+unzip ~/Downloads/vnetcon-docs-<versio>.zip
+
+# 4. käynnistä agentti pakettihakemistossa (ei projektin juuressa)
+cd vnetcon-docs
+claude
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# 1. pura lähdekoodi
+Expand-Archive projekti.zip -DestinationPath C:\projektit\
+cd C:\projektit\projekti
+
+# 2. tee siitä git-repo — dokumentoinnin skooppi on git ls-files
+git init
+git add -A
+git commit -m "lähtötilanne"
+
+# 3. pura vnetcon-docs projektin juureen
+Expand-Archive $HOME\Downloads\vnetcon-docs-<versio>.zip -DestinationPath .
+
+# 4. käynnistä agentti pakettihakemistossa (ei projektin juuressa)
+cd vnetcon-docs
+claude
+```
+
+Sen jälkeen agentin syötekentässä, molemmilla alustoilla samassa
+järjestyksessä:
+
+```
+/vnetcon-init          käyttöönotto: kartoitus, konfiguraatio, tila
+/kalibroi              lähtötilanne ja katvealueet (ei käytä tekoälyä)
+/valmistele-tiketti    tiketin konteksti + suunnitelma + toteutuskehote
+/toteuta-tiketti       vaihe 3b vastaanottoportti, sitten toteutus
+```
+
+**Dokumentaatiota ei tarvitse olla valmiina ennen ensimmäistä tikettiä.** Jos
+tiketin alue on dokumentoimaton, työnkulku kartoittaa sen koodista suoraan
+([`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonkulku.md) vaihe 1
+kohta 4) ja ehdottaa alueen dokumentointia osana tikettiä.
+
+**Kolme alustaeroa, ja vain kolme:**
+
+1. **Suoritusbitti.** `paketoi.sh` ajaa `chmod +x` ennen pakkausta ja `unzip`
+   säilyttää sen, joten *nixillä `./tyokalut/vnetcon-ai/vnetcon-ai` toimii.
+   `Expand-Archive` ei säilytä oikeuksia → Windowsilla kirjoita eteen `bash`.
+2. **bash.** Vain `tyokalut/vnetcon-ai/`-skriptit tarvitsevat sitä. Windowsilla
+   se tulee Git for Windowsin mukana.
+3. **Windowsilla vaihe 3 on ohitettavissa.** Oletuksella (`tarjoaja: oma`)
+   agentti käynnistetään pelkällä `claude`- tai `codex`-komennolla, jolloin
+   bashia ei tarvita missään vaiheessa.
+
+> **Vaihe 2 on se, joka unohtuu.** Zipistä purettu lähdekoodi ei ole git-repo,
+> ja menettely nojaa siihen: skooppi on `git -C .. ls-files`,
+> `/synkronoi-dokumentaatio` perustuu commit-diffiin ja tiketti ottaa `HEAD`in
+> talteen aloitushetkellä. Ilman `git init`iä `/vnetcon-init` havaitsee tämän ja
+> asettaa `projekti.versionhallinta: none` — järjestelmä toimii, mutta
+> synkronointi menetetään ja päivitykset tehdään käsin.
+
 ## Jakelumalli — paketti kopioidaan, sitä ei linkitetä
 
 Tämä poikkeaa siitä, mihin kehittäjä on tottunut, joten se on syytä sanoa ääneen:

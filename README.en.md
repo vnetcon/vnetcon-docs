@@ -146,6 +146,90 @@ reasons:
 [`dist/README.md` → Esivaatimukset](dist/README.md#esivaatimukset). To check a
 target: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 
+### From a blank machine to the first ticket (the zip route)
+
+For when both the source code and the package arrive as zip files — an
+air-gapped environment, a fresh workstation, or a customer with no access to
+this repository. Each sequence is complete: copy your own platform's block from
+top to bottom.
+
+**Prerequisites:** `git`, Node 18+, and `claude` and/or `codex` signed in. On
+Linux, make sure `unzip` is present (minimal installs omit it:
+`apt install unzip` / `dnf install unzip`). On Windows, install **Git for
+Windows** — it gives you both `git` and `bash`.
+
+#### macOS / Linux / *nix
+
+```bash
+# 1. unpack the source code
+unzip project.zip -d ~/projects/
+cd ~/projects/project
+
+# 2. make it a git repo — the documentation scope is git ls-files
+git init
+git add -A
+git commit -m "starting point"
+
+# 3. unpack vnetcon-docs into the project root
+unzip ~/Downloads/vnetcon-docs-<version>.zip
+
+# 4. start the agent in the package directory (not the project root)
+cd vnetcon-docs
+claude
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# 1. unpack the source code
+Expand-Archive project.zip -DestinationPath C:\projects\
+cd C:\projects\project
+
+# 2. make it a git repo — the documentation scope is git ls-files
+git init
+git add -A
+git commit -m "starting point"
+
+# 3. unpack vnetcon-docs into the project root
+Expand-Archive $HOME\Downloads\vnetcon-docs-<version>.zip -DestinationPath .
+
+# 4. start the agent in the package directory (not the project root)
+cd vnetcon-docs
+claude
+```
+
+Then, in the agent's input field, in the same order on both platforms:
+
+```
+/vnetcon-init          onboarding: survey, configuration, state
+/kalibroi              baseline and blind spots (uses no AI)
+/valmistele-tiketti    ticket context + plan + implementation prompt
+/toteuta-tiketti       phase 3b receiving gate, then implementation
+```
+
+**Documentation does not have to exist before the first ticket.** If the area a
+ticket touches is undocumented, the workflow surveys it straight from the code
+([`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonkulku.md), phase 1
+item 4) and proposes documenting that area as part of the ticket.
+
+**Three platform differences, and only three:**
+
+1. **The executable bit.** `paketoi.sh` runs `chmod +x` before packaging and
+   `unzip` preserves it, so `./tyokalut/vnetcon-ai/vnetcon-ai` works on *nix.
+   `Expand-Archive` does not preserve permissions → on Windows, prefix the
+   command with `bash`.
+2. **bash.** Only the `tyokalut/vnetcon-ai/` scripts need it. On Windows it
+   comes with Git for Windows.
+3. **On Windows, step 3 is skippable.** With the default (`tarjoaja: oma`) the
+   agent is started with plain `claude` or `codex`, so bash is never needed.
+
+> **Step 2 is the one people forget.** Source code unpacked from a zip is not a
+> git repo, and the method relies on it: the scope is `git -C .. ls-files`,
+> `/synkronoi-dokumentaatio` is based on commit diffs, and a ticket records
+> `HEAD` when it starts. Without `git init`, `/vnetcon-init` detects this and
+> sets `projekti.versionhallinta: none` — the system works, but you lose
+> synchronisation and updates are done by hand.
+
 ## Distribution model — the package is copied, not linked
 
 This differs from what a developer usually expects, so it is worth stating

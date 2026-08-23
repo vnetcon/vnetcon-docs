@@ -33,7 +33,7 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 | **`claude` ja/tai `codex`** | aina | `/`-komennot ajetaan agentin sisällä. Yksi agentti riittää alkuun; oletustyönjako on dokumentointi Claudella, toteutus Codexilla. |
 | **Kirjautuminen agenttiin** | aina | Oletuksena oma tili (`claude`, `codex login`) — mitään ei tarvitse konfiguroida. Muut tarjoajat: ks. [Kenen AI-tiliä vasten ajetaan](#kenen-ai-tiliä-vasten-ajetaan). |
 | **Node.js 18+** (suositus 20 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
-| **git** | vahvasti suositeltu | Dokumentoinnin skooppi on `git ls-files`, ja `/synkronoi-dokumentaatio` perustuu commit-diffiin. Ilman gitiä aseta `projekti.versionhallinta: none` — silloin päivitykset tehdään käsin. |
+| **git** | vahvasti suositeltu | Dokumentoinnin skooppi on `git ls-files`, ja `/synkronoi-dokumentaatio` perustuu commit-diffiin. Ilman gitiä aseta `projekti.versionhallinta: none` — silloin päivitykset tehdään käsin. **Jos projekti purettiin zipistä eikä ole vielä repo**, aja `git init`, `git add -A` ja `git commit` ennen käyttöönottoa. |
 | **`npm install`** html-generaattorissa | vain `/generoi-html` | Kertaluontoinen, vaatii verkon. Ilman sitä HTML syntyy, mutta haku ja Mermaid-kaaviot eivät toimi. |
 | **`~/.vnetcon/credentials.env`** | vain pilvitarjoajilla | Tunnisteet, kun agentti osoitetaan omaan pilvitiliin, suoraan API-avaimeen tai organisaation omaan välityspalvelimeen. |
 
