@@ -90,8 +90,15 @@ Aloita lukemalla ne kaikki. **Älä siirry suoraan koodiin:** käy ensin vaihe 3
 
 Claude on suunnitellut lukemalla koodia, sinä muutat sitä — erimielisyys on
 odotettavaa ja **hyödyllistä vain ennen toteutusta**. Hyväksytty suunnitelma on
-paras arvaus, ei totuus. Jos erimielisyys koskee perusratkaisua, palaa
-vaiheeseen 2 äläkä toteuta suunnitelmaa, jonka tiedät vääräksi.
+paras arvaus, ei totuus.
+
+**Erimielisyys ratkotaan tässä sessiossa kehittäjän kanssa** — kehittäjä voi
+kertoa miten asia kannattaa tehdä, ja sinun ehdotuksesi voidaan hyväksyä
+sellaisenaan. Muuttunut suunnitelma kirjataan `vastaanotto.md`:hen, ja
+toteutetaan sen mukaan. Vaiheeseen 2 palataan vain, jos **perusratkaisu** ei
+päde — ja silloinkin ensisijaisesti tässä sessiossa; tiketti palautetaan
+Claudelle vain, jos uudelleensuunnittelu vaatii laajaa kartoitusta tai muuttaa
+tiketin rajausta. Älä koskaan toteuta suunnitelmaa, jonka tiedät vääräksi.
 
 Luvan jälkeen toteuta sovitun mukaan ja päätä työ vaiheeseen 5 (dokumentaation
 päivitys + `lopputulos.md`). Jos suunnitelma ei matkalla pädekään, **pysähdy ja

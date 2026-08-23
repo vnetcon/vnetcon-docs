@@ -126,10 +126,36 @@ Tee tässä järjestyksessä:
    mieltä, mitä päätettiin ja kuka hyväksyi. Tämä on ainoa jälki siitä, että
    suunnitelma muuttui matkalla.
 
-Jos erimielisyys koskee suunnitelman **perusratkaisua** eikä yksityiskohtaa,
-palaa vaiheeseen 2: suunnittele uudelleen tässä sessiossa tai palauta tiketti
-valmistelevalle agentille. Älä toteuta suunnitelmaa, jonka tiedät vääräksi, vain
-koska se on hyväksytty.
+### Miten erimielisyys ratkaistaan
+
+**Erimielisyys ratkotaan lähtökohtaisesti tässä samassa sessiossa toteuttavan
+agentin kanssa.** Kehittäjä voi kertoa 3b:ssä miten asia kannattaa tehdä, ja
+toteuttavan agentin ehdotus voidaan hyväksyä sellaisenaan — paluu edelliseen
+vaiheeseen on poikkeus, ei sääntö. Portti on kehittäjän, ei kummankaan agentin:
+toteuttavan agentin ehdotus on ehdotus samalla tavalla kuin valmistelevan
+agentin suunnitelma on ehdotus, ja kehittäjä päättää kumpi pätee.
+
+Kolme lopputulosta:
+
+| Erimielisyys | Mitä tehdään | Kirjaus |
+|--------------|--------------|---------|
+| **Ei erimielisyyttä tai vain yksityiskohta** | Sovitaan 3b:ssä, siirrytään vaiheeseen 4 | `vastaanotto.md` |
+| **Suunnitelma muuttuu, perusratkaisu pitää** | Sovitaan 3b:ssä toteuttavan agentin kanssa ja jatketaan vaiheeseen 4 — **tavallisin tapaus**, ei paluuta valmistelevalle agentille | `vastaanotto.md` (muutos + perustelu) |
+| **Perusratkaisu ei päde** | Palaa vaiheeseen 2 | `suunnitelma.md` päivitetään |
+
+Kun suunnitelma muuttuu 3b:ssä, **`vastaanotto.md` on se, minkä mukaan
+toteutetaan** — `suunnitelma.md` jää siihen muotoon, jossa se hyväksyttiin
+vaiheessa 3, ja ero näiden välillä on tarkoituksellinen audit-jälki. Päivitä
+`suunnitelma.md` vain, jos palataan vaiheeseen 2.
+
+**Vaiheeseen 2 palataan ensisijaisesti tässä sessiossa** — toteuttava agentti
+suunnittelee uudelleen kehittäjän kanssa. Tiketti palautetaan valmistelevalle
+agentille vain, jos uudelleensuunnittelu vaatii kontekstia, jota toteuttavalla
+agentilla ei ole: laaja kartoitus usean moduulin yli, vaikutus dokumentaatioon
+tai liiketoimintaprosesseihin, tai muutos, joka muuttaa tiketin rajausta.
+
+Älä missään tapauksessa toteuta suunnitelmaa, jonka tiedät vääräksi, vain koska
+se on hyväksytty.
 
 > **Portti ei toistu, jos sama sessio teki vaiheet 0–3.** Silloin hyväksyntä
 > vaiheessa 3 annettiin täydellä kontekstilla, ja 3b olisi sama kysely uudestaan.

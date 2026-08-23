@@ -83,9 +83,12 @@ rajapinnoista, kutsujat, testit) ja esitä kehittäjälle kolme kohtaa:
 **Pysähdy tähän ja odota "jatka".** Suunnitelman laatija ei ole tehnyt
 muutosta koodiin — sinä teet, joten sinun näkemyksesi kuuluu esittää ennen kuin
 mitään kirjoitetaan. Kirjaa portin tulos tiedostoon
-`vnetcon-docs/tiketit/<tunnus>/vastaanotto.md`. Jos erimielisyys koskee
-perusratkaisua, palaa vaiheeseen 2 — älä toteuta suunnitelmaa, jonka tiedät
-vääräksi.
+`vnetcon-docs/tiketit/<tunnus>/vastaanotto.md`.
+
+Erimielisyys ratkotaan tässä sessiossa kehittäjän kanssa: ehdotuksesi voidaan
+hyväksyä sellaisenaan, ja silloin toteutetaan `vastaanotto.md`:n mukaan, ei
+`suunnitelma.md`:n. Vaiheeseen 2 palataan vain, jos perusratkaisu ei päde — älä
+toteuta suunnitelmaa, jonka tiedät vääräksi.
 
 ## Tehtävä
 <1–3 lausetta>

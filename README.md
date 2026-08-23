@@ -62,7 +62,9 @@ toteuttava agentti ei aloita koodaamista valmiista kehotteesta vaan tarkistaa
 suunnitelman koodia vasten, kertoo mistä on eri mieltä ja odottaa kehittäjän
 luvan (vaihe 3b, [`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonkulku.md)).
 Kahden agentin arvo on juuri siinä, että ne ovat eri mieltä ennen kuin koodi
-muuttuu. Oletuksena käytetään **asiakkaan omaa AI-tiliä** — koodi ei kulje kolmannen
+muuttuu — ja erimielisyys ratkotaan samassa sessiossa toteuttavan agentin
+kanssa, joten se ei yleensä maksa paluuta suunnitteluvaiheeseen.
+Oletuksena käytetään **asiakkaan omaa AI-tiliä** — koodi ei kulje kolmannen
 osapuolen läpi. Muut tarjoajat (oma pilvitili, suora API-avain tai organisaation
 oma välityspalvelin) ovat konfiguroitavissa; ks.
 [`dist/metodi/agentit.md`](dist/metodi/agentit.md).

@@ -23,8 +23,9 @@ kontekstia. Dokumentaatio toimii kontekstipohjana.
    kohtaa: **toteutus** (3–5 riviä), **eriävät kohdat** perusteluineen ja omine
    ehdotuksinesi, **avoimet kysymykset**. Pysähdy ja odota eksplisiittistä
    lupaa; keskustele niin monta kierrosta kuin tarvitaan. Kirjaa portin tulos
-   `tiketit/<tunnus>/vastaanotto.md`. Jos erimielisyys koskee perusratkaisua,
-   palaa vaiheeseen 2.
+   `tiketit/<tunnus>/vastaanotto.md`. Erimielisyys ratkotaan tässä sessiossa
+   kehittäjän kanssa; muuttunut suunnitelma toteutetaan `vastaanotto.md`:n
+   mukaan. Vaiheeseen 2 palataan vain, jos perusratkaisu ei päde.
 4. **Muuten (suunnittelet itse) noudata vaiheita järjestyksessä:**
    - Vaihe 0 — kevyt vastaanotto (4 kysymystä `AskUserQuestion`illa)
    - Vaihe 1 — kokoa konteksti dokumentaatiosta, esitä kehittäjälle

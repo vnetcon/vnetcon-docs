@@ -73,7 +73,9 @@ them is **interactive at both ends**: the implementing agent does not start
 coding from a ready-made prompt — it verifies the plan against the code, states
 where it disagrees, and waits for the developer's explicit go-ahead (phase 3b,
 [`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonkulku.md)). The
-point of two agents is precisely that they disagree before the code changes.
+point of two agents is precisely that they disagree before the code changes —
+and the disagreement is settled in that same session with the implementing
+agent, so it rarely costs a round-trip back to planning.
 By default it uses the
 **customer's own AI account** — code never passes through a third party. Other
 providers (your own cloud tenant, a direct API key, or your organisation's own

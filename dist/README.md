@@ -134,6 +134,11 @@ koodia vasten, kertoo mistä on eri mieltä ja odottaa kehittäjän luvan
 ratkaisuun, jota tämä pitää virheellisenä — kahden agentin arvo on juuri siinä,
 että ne ovat eri mieltä ennen kuin koodi muuttuu.
 
+**Erimielisyys ratkotaan samassa sessiossa toteuttavan agentin kanssa**, eikä se
+yleensä maksa paluuta Claudelle: kerrot 3b:ssä miten asia tehdään tai hyväksyt
+Codexin ehdotuksen, muutos kirjataan `vastaanotto.md`:hen ja toteutus jatkuu sen
+mukaan. Vaiheeseen 2 palataan vain, jos suunnitelman perusratkaisu ei päde.
+
 Ks. [`metodi/agentit.md`](metodi/agentit.md).
 
 ## Mitä AI-tiliä käytetään
