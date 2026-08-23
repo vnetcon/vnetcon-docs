@@ -28,7 +28,8 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 
 | Mitä | Tarvitaan | Miksi |
 |------|-----------|-------|
-| **Pääte + bash** | aina | Tämän hakemiston skriptit (`tyokalut/vnetcon-ai/…`) ovat bash-skriptejä. macOS ja Linux: valmiina. **Windows: WSL2** (suositus) tai Git Bash — PowerShellissä ne eivät toimi, eikä Claude Code tue Windowsia muuten kuin WSL:n kautta. Aja koko työ WSL:n sisällä, myös `git`. |
+| **Pääte** | aina | macOS/Linux: mikä tahansa. **Windowsilla PowerShell riittää** — Claude Code ja Codex toimivat siinä natiivisti, samoin Node-työkalut (`kalibroi`, `moduulit`, `linkit`, HTML-generointi). WSL2 käy myös; jos valitset sen, aja koko työ sen sisällä, myös `git`. |
+| **bash** | vain `tyokalut/vnetcon-ai/…` | Paketissa on kaksi bash-skriptiä (`vnetcon-ai`, `hae-token.sh`); kaikki muu on Nodea tai ajetaan agentin sisällä. Windowsilla riittää **Git Bash** (tulee Git for Windowsin mukana) tai WSL2 — myös PowerShellista käsin: `bash tyokalut/vnetcon-ai/vnetcon-ai doctor`. Näitä tarvitaan vasta kun `tarjoaja ≠ oma`; oletuksella agentti käynnistetään pelkällä `claude`- tai `codex`-komennolla. |
 | **`claude` ja/tai `codex`** | aina | `/`-komennot ajetaan agentin sisällä. Yksi agentti riittää alkuun; oletustyönjako on dokumentointi Claudella, toteutus Codexilla. |
 | **Kirjautuminen agenttiin** | aina | Oletuksena oma tili (`claude`, `codex login`) — mitään ei tarvitse konfiguroida. Muut tarjoajat: ks. [Kenen AI-tiliä vasten ajetaan](#kenen-ai-tiliä-vasten-ajetaan). |
 | **Node.js 18+** (suositus 20 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
@@ -41,8 +42,8 @@ komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 
 ### Vaiheet
 
-1. **Avaa pääte** (macOS/Linux: *Terminal*. Windows: **WSL2**-pääte tai Git Bash
-   — ks. [Esivaatimukset](#esivaatimukset) alla; PowerShell ei riitä).
+1. **Avaa pääte** (macOS/Linux: *Terminal*. Windows: PowerShell, Git Bash tai
+   WSL2 — ks. [Esivaatimukset](#esivaatimukset) alla).
 2. **Siirry tähän hakemistoon:**
    ```
    cd <polku-projektiin>/vnetcon-docs
@@ -54,6 +55,7 @@ komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
    Odota, että näet syötekentän.
    > Jos `claude`-komentoa ei löydy tai kirjautuminen puuttuu, aja
    > `./tyokalut/vnetcon-ai/vnetcon-ai doctor` — se kertoo mitä puuttuu.
+   > (PowerShellissa: `bash tyokalut/vnetcon-ai/vnetcon-ai doctor`.)
    > Jos agentti on osoitettu omaan pilvitiliin tai API-avaimeen, käynnistä
    > `./tyokalut/vnetcon-ai/vnetcon-ai claude` (asettaa palvelun osoitteen
    > ja tunnisteen puolestasi).

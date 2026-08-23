@@ -14,8 +14,10 @@ tuotantokoodipohjissa ja yleistetty tässä projektiriippumattomaksi.
 komentoa ovat paikallisia Node-skriptejä: **ei tekoälyä, ei verkkoyhteyttä, ei
 tilejä, ei käyttöoikeuksia kenellekään.** Koodisi ei liiku mihinkään.
 
-Esivaatimukset: `git`, **Node 18+**, `bash`. Windowsilla **WSL2** tai Git Bash —
-PowerShell ei riitä.
+Esivaatimukset: `git`, **Node 18+** ja `bash` (alla olevat skriptit ovat
+bash-skriptejä; itse työkalut ovat Nodea). Windowsilla **Git Bash** — se tulee
+Git for Windowsin mukana — tai WSL2. Myös PowerShellista käsin: kirjoita
+komennon eteen `bash`, esim. `bash vnetcon-docs/tyokalut/asenna.sh …`.
 
 ```bash
 git clone https://github.com/vnetcon/vnetcon-docs.git
@@ -121,9 +123,10 @@ ja Clauden syötekenttään:
 /vnetcon-init
 ```
 
-**Esivaatimukset kohdekoneella:** bash (Windowsilla **WSL2** tai Git Bash — ei
-PowerShell), `claude` ja/tai `codex` kirjautuneena, Node.js 18+ ja mieluiten
-git. Täydellinen lista ja perustelut:
+**Esivaatimukset kohdekoneella:** `claude` ja/tai `codex` kirjautuneena, Node.js
+18+ ja mieluiten git. Agentit ja Node-työkalut toimivat Windowsilla natiivisti
+(PowerShell käy); `bash` tarvitaan vain `tyokalut/vnetcon-ai/`-skripteihin —
+Windowsilla Git Bash tai WSL2. Täydellinen lista ja perustelut:
 [`dist/README.md` → Esivaatimukset](dist/README.md#esivaatimukset). Tarkistus
 kohteessa: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 

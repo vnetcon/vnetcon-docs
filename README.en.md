@@ -21,8 +21,10 @@ project-agnostic.
 commands are plain local Node scripts: **no AI, no network, no accounts, no access
 granted to anyone.** Your code does not go anywhere.
 
-Prerequisites: `git`, **Node 18+**, `bash`. On Windows use **WSL2** or Git Bash —
-PowerShell is not enough.
+Prerequisites: `git`, **Node 18+** and `bash` (the scripts below are bash; the
+tools themselves are Node). On Windows use **Git Bash** — it ships with Git for
+Windows — or WSL2. You can also call them from PowerShell by prefixing the
+command with `bash`, e.g. `bash vnetcon-docs/tyokalut/asenna.sh …`.
 
 ```bash
 git clone https://github.com/vnetcon/vnetcon-docs.git
@@ -135,9 +137,11 @@ and in Claude's input field:
 /vnetcon-init
 ```
 
-**Prerequisites on the target machine:** bash (on Windows use **WSL2** or Git
-Bash — not PowerShell), `claude` and/or `codex` signed in, Node.js 18+ and
-preferably git. Full list with reasons:
+**Prerequisites on the target machine:** `claude` and/or `codex` signed in,
+Node.js 18+ and preferably git. The agents and the Node tools run natively on
+Windows (PowerShell is fine); `bash` is needed only for the
+`tyokalut/vnetcon-ai/` scripts — on Windows, Git Bash or WSL2. Full list with
+reasons:
 [`dist/README.md` → Esivaatimukset](dist/README.md#esivaatimukset). To check a
 target: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 
