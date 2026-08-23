@@ -91,15 +91,15 @@ komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 
 | Kun kirjoitat… | Agentti tekee näin |
 |----------------|--------------------|
-| `/vnetcon-init` | **Käyttöönotto.** Kartoittaa projektin (kieli, kehys, moduulit, testikomennot), kysyy muutaman asian ja kirjoittaa `vnetcon.config.yaml`, `tila/projekti.yaml`, `tila/rekisteri.yaml`, `tila/rakenne.yaml` sekä pinokohtaisen `metodi/kartoitus.md`:n. Aja tämä ensin. |
+| `/vnetcon-init` | **Käyttöönotto.** Kartoittaa projektin (kieli, kehys, moduulit, testikomennot), kysyy muutaman asian ja kirjoittaa `vnetcon.config.yaml`, `tila/projekti.yaml`, `tila/rekisteri.yaml`, `tila/rakenne.yaml` sekä pinokohtaisen `metodi/kartoitus.md`:n. **Pyytää lopuksi luvan ajaa testipaketin kerran** (voi olla hidas ja vaatia esim. tietokannan pystyyn) — ks. [Testien lähtötaso](#testien-lähtötaso). Aja tämä ensin. |
 | `/kalibroi` | **Lähtötilanne ja laatu.** Kertoo kuinka hyvin geneerinen pohja osuu tähän projektiin, mikä jää katveeseen, paljonko työtä on jäljellä ja mitä kannattaa korjata ensin. Halpa ja nopea — aja milloin tahansa. |
 | `/dokumentoi [moduuli]` | Valitsee seuraavan tekemättömän moduulin (tai nimeämäsi), kartoittaa koodin ja kirjoittaa/päivittää dokumentit. |
 | `/dokumentoi-kaikki [osa-alue]` | **Orkestroija:** rakentaa kattavan dokumentaation oikeassa järjestyksessä (datamallit → moduulit rinnakkain → end-to-end → liiketoiminta → HTML). Iso operaatio — suositus: osa-alue kerrallaan. |
 | `/dokumentoi-jarjestelmaprosessi [aihe]` | Kuvaa **end-to-end** -kulun moduulirajojen yli: mitä moduuleja läpäisee, missä järjestyksessä ja mikä data siirtyy. |
 | `/generoi-datamallit` | Kuvaa projektin jaetut skeemat (OpenAPI / JSON Schema / SQL / EDN / tyypit) kertaalleen `datamallit/`-kansioon, johon muut dokit linkittävät. |
 | `/generoi-html` | Muodostaa `.md`-dokumenteista selattavan **HTML-version** hakemistoon `html/` (navigaatio, Mermaid-kaaviot, koko tekstin haku; toimii ilman verkkoa). |
-| `/valmistele-tiketti` | **Claude:** ottaa tiketin vastaan, kokoaa kontekstin dokumentaatiosta, suunnittelee ja iteroi kanssasi — ja kirjoittaa valmiin toteutuskehotteen Codexille. Ei koske koodiin. |
-| `/toteuta-tiketti` | Toteuttaa rajatun koodimuutoksen dokumentaatio kontekstipohjana ja päivittää lopuksi dokit. Käytettävissä sekä Claudessa että Codexissa. |
+| `/valmistele-tiketti` | **Claude:** ottaa tiketin vastaan, kokoaa kontekstin dokumentaatiosta, suunnittelee ja iteroi kanssasi — **ja ehdottaa testit ennen toteutusta** — ja kirjoittaa valmiin toteutuskehotteen Codexille. Ei koske koodiin. |
+| `/toteuta-tiketti` | Toteuttaa rajatun koodimuutoksen dokumentaatio kontekstipohjana, ajaa hyväksytyt testit ja päivittää lopuksi dokit. **Ei muuta yhtäkään testiä ilman lupaasi.** Käytettävissä sekä Claudessa että Codexissa. |
 | `/synkronoi-dokumentaatio` | Päivittää dokumentaation vastaamaan koodimuutoksia, jotka tehtiin **ilman** tikettiprosessia (suorat commitit, merget). |
 | `/yhdenmukaista-dokumentaatio` | Päivittää vanhat dokit nykyisten mallipohjien mukaisiksi, kun **menettely** on muuttunut. |
 | `/agentit` | Konfiguroi kumpi agentti tekee mitä ja kenen AI-tiliä vasten ne ajetaan (oma kirjautuminen, oma pilvitili tai organisaation välityspalvelin). |
@@ -148,6 +148,27 @@ että ne ovat eri mieltä ennen kuin koodi muuttuu.
 yleensä maksa paluuta Claudelle: kerrot 3b:ssä miten asia tehdään tai hyväksyt
 Codexin ehdotuksen, muutos kirjataan `vastaanotto.md`:hen ja toteutus jatkuu sen
 mukaan. Vaiheeseen 2 palataan vain, jos suunnitelman perusratkaisu ei päde.
+
+### Testien lähtötaso
+
+**Testit ehdotetaan ennen toteutusta.** Suunnitelmaan tulee lista siitä mitä
+tullaan testaamaan, johdettuna tiketin hyväksymiskriteereistä ja dokumentaatiosta
+— ei koodista, jota ei vielä ole. Hyväksyt sen samalla kuin muun suunnitelman, ja
+voit lisätä omia tapauksiasi. **Tämä on työnkulun helpoin katselmoitava kohta:**
+testilistan arviointi vaatii tietoa vain siitä, mitä järjestelmän pitäisi tehdä.
+
+**Agentti ei muuta yhtäkään testiä ilman lupaasi** — ei myöskään niitä, jotka se
+juuri itse kirjoitti. Kun testi hylkää, se nimeää diagnoosin: koodi väärin
+(korjaa), testi väärin (**kysyy sinulta ja esittää todisteet**) tai suunnitelma
+väärin (palaa suunnitteluun). Testi, jota agentti saa muuttaa silloin kun se
+hylkää, ei ole tarkistus vaan kuvaus siitä mitä koodi sattuu tekemään.
+
+Käyttöönotto (`/vnetcon-init`) kysyy luvan ajaa testipaketin kerran ja kirjaa
+tuloksen `tila/projekti.yaml` → `testit`. **Se ei valtuuta mitään** — se on
+pelkkä vertailukohta, jotta agentti pystyy erottamaan itse rikkomansa testin
+sellaisesta, joka oli punainen jo ennestään. Hylätyt kirjataan **nimijoukkona
+eikä lukumääränä**: pelkkä luku ei paljastaisi tilannetta, jossa yksi vanha
+punainen korjaantuu ja yksi uusi rikkoutuu.
 
 Ks. [`metodi/agentit.md`](metodi/agentit.md).
 

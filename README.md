@@ -67,6 +67,11 @@ luvan (vaihe 3b, [`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonku
 Kahden agentin arvo on juuri siinä, että ne ovat eri mieltä ennen kuin koodi
 muuttuu — ja erimielisyys ratkotaan samassa sessiossa toteuttavan agentin
 kanssa, joten se ei yleensä maksa paluuta suunnitteluvaiheeseen.
+
+**Sama pätee testeihin.** Ne ehdotetaan ja hyväksytään *ennen* toteutusta,
+johdettuna hyväksymiskriteereistä eikä koodista — ja **agentti ei muuta
+yhtäkään testiä ilman lupaa**, ei myöskään itse kirjoittamaansa. Testi, jota
+agentti saa muuttaa silloin kun se hylkää, lakkaa olemasta tarkistus.
 Oletuksena käytetään **asiakkaan omaa AI-tiliä** — koodi ei kulje kolmannen
 osapuolen läpi. Muut tarjoajat (oma pilvitili, suora API-avain tai organisaation
 oma välityspalvelin) ovat konfiguroitavissa; ks.
@@ -97,8 +102,8 @@ paketin päivitys ei koskaan ylikirjoita niitä.
 | Kattava ajo | `/dokumentoi-kaikki [osa-alue]` | Claude | Koko osa-alue rinnakkain (moniagenttinen workflow) |
 | End-to-end | `/dokumentoi-jarjestelmaprosessi` | Claude | `jarjestelmaprosessit/` — moduulirajat ylittävät kulut |
 | Selattava versio | `/generoi-html` | kumpi vain | `html/` — staattinen sivusto, haku + Mermaid, toimii `file://` |
-| Tiketin valmistelu | `/valmistele-tiketti` | Claude | `tiketit/<tunnus>/` konteksti + suunnitelma + valmis Codex-kehote |
-| Tiketin toteutus | `/toteuta-tiketti` | Codex | Vaihe 3b: tarkistaa suunnitelman koodia vasten ja esittää eriävät näkemyksensä → luvan jälkeen koodimuutos + dokumentaation päivitys |
+| Tiketin valmistelu | `/valmistele-tiketti` | Claude | `tiketit/<tunnus>/` konteksti + suunnitelma + **testilista ennen toteutusta** + valmis Codex-kehote |
+| Tiketin toteutus | `/toteuta-tiketti` | Codex | Vaihe 3b: tarkistaa suunnitelman koodia vasten ja esittää eriävät näkemyksensä → luvan jälkeen koodimuutos, hyväksytyt testit + dokumentaation päivitys. Ei muuta testejä ilman lupaa |
 | Ylläpito | `/synkronoi-dokumentaatio`, `/yhdenmukaista-dokumentaatio` | kumpi vain | Dokit ajan tasalle koodi-/metodimuutosten kanssa |
 | Tarkistus | `vnetcon-ai linkit --lahteet` | — | Rikkinäiset linkit ja `lahteet`-polut (ei vaadi agenttia eikä riippuvuuksia) |
 | Agenttien konfigurointi | `/agentit` | Claude | Työnjako + kenen tiliä vasten ajetaan: oma kirjautuminen, oma pilvitili tai organisaation välityspalvelin |

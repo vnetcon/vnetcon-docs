@@ -79,6 +79,11 @@ where it disagrees, and waits for the developer's explicit go-ahead (phase 3b,
 point of two agents is precisely that they disagree before the code changes —
 and the disagreement is settled in that same session with the implementing
 agent, so it rarely costs a round-trip back to planning.
+
+**The same applies to tests.** They are proposed and approved *before*
+implementation, derived from the acceptance criteria rather than from the code —
+and **the agent changes no test without permission**, not even one it wrote
+itself. A test the agent may rewrite whenever it fails has stopped being a check.
 By default it uses the
 **customer's own AI account** — code never passes through a third party. Other
 providers (your own cloud tenant, a direct API key, or your organisation's own
@@ -111,8 +116,8 @@ updating the package never overwrites them.
 | Bulk run | `/dokumentoi-kaikki [area]` | Claude | A whole area in parallel (multi-agent workflow) |
 | End-to-end | `/dokumentoi-jarjestelmaprosessi` | Claude | `jarjestelmaprosessit/` — flows that cross module boundaries |
 | Browsable version | `/generoi-html` | either | `html/` — static site, search + Mermaid, works over `file://` |
-| Ticket preparation | `/valmistele-tiketti` | Claude | `tiketit/<id>/` context + plan + a ready prompt for Codex |
-| Ticket implementation | `/toteuta-tiketti` | Codex | Phase 3b: verifies the plan against the code and raises its disagreements → after go-ahead, code change + documentation update |
+| Ticket preparation | `/valmistele-tiketti` | Claude | `tiketit/<id>/` context + plan + **a test list agreed before implementation** + a ready prompt for Codex |
+| Ticket implementation | `/toteuta-tiketti` | Codex | Phase 3b: verifies the plan against the code and raises its disagreements → after go-ahead, code change, the approved tests + documentation update. Changes no test without permission |
 | Maintenance | `/synkronoi-dokumentaatio`, `/yhdenmukaista-dokumentaatio` | either | Docs brought in line with code or method changes |
 | Verification | `vnetcon-ai linkit --lahteet` | — | Broken links and `lahteet` (provenance) paths — needs no agent and no dependencies |
 | Agent setup | `/agentit` | Claude | Work split + whose account the agents run against: your own login, your own cloud tenant, or your organisation's proxy |
