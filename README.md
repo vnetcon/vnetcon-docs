@@ -15,9 +15,10 @@ komentoa ovat paikallisia Node-skriptejä: **ei tekoälyä, ei verkkoyhteyttä, 
 tilejä, ei käyttöoikeuksia kenellekään.** Koodisi ei liiku mihinkään.
 
 Esivaatimukset: `git`, **Node 18+** ja `bash` (alla olevat skriptit ovat
-bash-skriptejä; itse työkalut ovat Nodea). Windowsilla **Git Bash** — se tulee
-Git for Windowsin mukana — tai WSL2. Myös PowerShellista käsin: kirjoita
-komennon eteen `bash`, esim. `bash vnetcon-docs/tyokalut/asenna.sh …`.
+bash-skriptejä; itse työkalut ovat Nodea). **Windowsilla asenna Git for
+Windows** — se tuo yhdellä kertaa sekä `git`in että `bash`in. WSL2 käy myös.
+Komennot voi ajaa PowerShellistakin kirjoittamalla eteen `bash`, esim.
+`bash vnetcon-docs/tyokalut/asenna.sh …`.
 
 ```bash
 git clone https://github.com/vnetcon/vnetcon-docs.git
@@ -149,8 +150,25 @@ tyokalut/asenna.sh /polku/kohdeprojektiin --paivita
 ```
 
 Kohdeprojektiin kirjoitetaan `.vnetcon-docs-versio`, josta näkee mikä versio on
-käytössä. Ilman verkkoa toimitettaessa käytä
-[releasen zip-pakettia](#julkaisu) — sisältö on identtinen.
+käytössä.
+
+> **Zip on ensiasennukseen, ei päivitykseen.** Sen sisältö on sama kuin
+> `dist/`:n, mutta *vaikutus* ei ole sama: `--paivita` kopioi vain moottorin,
+> kun taas zipin purku olemassa olevan asennuksen päälle ylikirjoittaa myös
+> projektin oman sisällön pohjilla — `tila/projekti.yaml`, `tila/rekisteri.yaml`
+> (mitä on dokumentoitu), `tila/rakenne.yaml`, `tila/edistyminen.md`,
+> `tila/synkronoitu.yaml`, `johdanto.md`, `metodi/kartoitus.md`,
+> `metodi/sanasto.md` ja `.claude/settings.json`. Pohjatiedostot eivät voi
+> puuttua zipistä, koska ensiasennus tarvitsee ne.
+>
+> **Verkottomassa ympäristössä päivitys tehdään käsin:** pura zip väliaikaiseen
+> hakemistoon ja kopioi sieltä vain nämä olemassa olevan asennuksen päälle:
+> `metodi/` (paitsi `kartoitus.md` ja `sanasto.md`), `tyokalut/`,
+> `.claude/skills/`, `.claude/workflows/`, `tila/metodi.yaml`, `CLAUDE.md`,
+> `AGENTS.md`, `README.md`, `vnetcon.config.example.yaml`, `.gitignore`.
+> Sama lista kuin `asenna.sh --paivita`:lla. Jos `vnetcon-docs/` on asiakkaan
+> versionhallinnassa (oletus — sitä ei ole gitignoroitu), vahinko näkyy
+> `git diff`issä ja on peruttavissa.
 
 ## Repon rakenne
 

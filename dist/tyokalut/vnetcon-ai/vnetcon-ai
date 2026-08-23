@@ -259,7 +259,10 @@ cmd_doctor() {
     ok "tila/projekti.yaml täytetty"
   else varo "tila/projekti.yaml on täyttämätön — käyttöönotto kesken (/vnetcon-init)"; fi
 
-  if [ -d "$PROJEKTI/.git" ] || git -C "$PROJEKTI" rev-parse --git-dir >/dev/null 2>&1; then
+  if ! command -v git >/dev/null 2>&1; then
+    varo "git EI ole asennettu — skooppi (git ls-files) ja synkronointi eivät toimi"
+    him "  Windowsilla: asenna Git for Windows — se tuo sekä gitin että bashin"
+  elif [ -d "$PROJEKTI/.git" ] || git -C "$PROJEKTI" rev-parse --git-dir >/dev/null 2>&1; then
     ok "projekti on git-repo ($(git -C "$PROJEKTI" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?'))"
   else varo "projekti EI ole git-repo — aseta projekti.versionhallinta: none"; fi
   echo

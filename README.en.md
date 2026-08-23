@@ -22,9 +22,10 @@ commands are plain local Node scripts: **no AI, no network, no accounts, no acce
 granted to anyone.** Your code does not go anywhere.
 
 Prerequisites: `git`, **Node 18+** and `bash` (the scripts below are bash; the
-tools themselves are Node). On Windows use **Git Bash** — it ships with Git for
-Windows — or WSL2. You can also call them from PowerShell by prefixing the
-command with `bash`, e.g. `bash vnetcon-docs/tyokalut/asenna.sh …`.
+tools themselves are Node). **On Windows, install Git for Windows** — it gives
+you both `git` and `bash` in one step. WSL2 works too. You can also run the
+commands from PowerShell by prefixing them with `bash`, e.g.
+`bash vnetcon-docs/tyokalut/asenna.sh …`.
 
 ```bash
 git clone https://github.com/vnetcon/vnetcon-docs.git
@@ -161,8 +162,25 @@ tyokalut/asenna.sh /path/to/target-project --paivita
 ```
 
 A `.vnetcon-docs-versio` file is written into the target so you can see which
-version is in use. For delivery without network access, use the
-[release zip](#releasing) — the contents are identical.
+version is in use.
+
+> **The zip is for first installation, not for updating.** Its contents match
+> `dist/`, but the *effect* differs: `--paivita` copies only the engine, whereas
+> unzipping over an existing installation also overwrites the project's own
+> content with templates — `tila/projekti.yaml`, `tila/rekisteri.yaml` (what has
+> been documented), `tila/rakenne.yaml`, `tila/edistyminen.md`,
+> `tila/synkronoitu.yaml`, `johdanto.md`, `metodi/kartoitus.md`,
+> `metodi/sanasto.md` and `.claude/settings.json`. The templates cannot be left
+> out of the zip, because a first installation needs them.
+>
+> **In an air-gapped environment, update by hand:** unpack the zip into a
+> temporary directory and copy only these over the existing installation:
+> `metodi/` (except `kartoitus.md` and `sanasto.md`), `tyokalut/`,
+> `.claude/skills/`, `.claude/workflows/`, `tila/metodi.yaml`, `CLAUDE.md`,
+> `AGENTS.md`, `README.md`, `vnetcon.config.example.yaml`, `.gitignore` — the
+> same list `asenna.sh --paivita` uses. If `vnetcon-docs/` is under the
+> customer's version control (the default — it is not gitignored), any damage
+> shows up in `git diff` and can be reverted.
 
 ## Repository layout
 

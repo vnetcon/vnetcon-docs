@@ -40,6 +40,14 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 Pythonia, Dockeria, tietokantaa tai web-palvelinta ei tarvita. Tarkistus yhdellä
 komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 
+> **Windows: asenna Git for Windows ensin.** Se tuo yhdellä kertaa sekä `git`in
+> (jota dokumentoinnin skooppi tarvitsee) että `bash`in (jota `vnetcon-ai`
+> tarvitsee) — ei erillistä asennusta kummallekaan. Tarkista PowerShellissa:
+> `git --version` ja `where.exe bash`. Jos jälkimmäinen ei löydä mitään, git on
+> asennettu ilman PATH-valintaa; aja skriptit silloin Git Bash -päätteestä.
+> Huom: `doctor` on itse bash-skripti, joten se ei voi kertoa bashin
+> puuttumisesta — tämä tarkistus tehdään käsin.
+
 ### Vaiheet
 
 1. **Avaa pääte** (macOS/Linux: *Terminal*. Windows: PowerShell, Git Bash tai
