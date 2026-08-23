@@ -15,6 +15,12 @@ saamansa suunnitelman koodia vasten ja saa olla siitä eri mieltä ennen kuin
 koodiin kosketaan. Kädenojennus siirtää suunnitelman, ei suunnittelijan
 arvovaltaa.
 
+**Testit ovat osa suunnitelmaa, eivät toteutuksen sivutuote.** Ne ehdotetaan
+vaiheessa 2 ja hyväksytään vaiheessa 3 — ennen kuin riviäkään on kirjoitettu —
+ja niitä ei muuteta myöhemmin ilman kehittäjän lupaa. Testi, jota agentti saa
+muuttaa silloin kun se hylkää, ei ole riippumaton tarkistus vaan kuvaus siitä
+mitä koodi sattuu tekemään.
+
 **Kaikki vaiheet tallennetaan** hakemistoon `tiketit/<tunnus>/`, jotta työhön voi
 palata, keskeytynyt työ voi jatkua toisessa sessiossa ja **agentti voi vaihtua
 kesken työn**. Kirjoita tiedostot sitä mukaa kuin vaiheet etenevät — älä jätä
@@ -63,7 +69,10 @@ Päättele tiketin tavoitteesta, mihin järjestelmän osaan muutos osuu:
    ([`tyonkulku.md`](tyonkulku.md) vaihe C + [`kartoitus.md`](kartoitus.md)) ja
    harkitse alueen dokumentointia osana tikettiä.
 5. Selvitä myös **miten muutos testataan**: `tila/projekti.yaml`:n
-   `testikomento`/`buildkomento` ja alueen olemassa olevat testit.
+   `komennot.testi`/`komennot.build`, `testit.lahtotaso` (mitkä testit olivat
+   ennestään punaisia) ja **mitkä olemassa olevat testit kattavat muutosalueen**.
+   Jos yksikään ei kata sitä, sano se ääneen — se on tiketin riskitieto, ei
+   sivuseikka.
 
 Kirjoita `tiketit/<tunnus>/konteksti.md`: mihin prosesseihin/koodiin/dataan
 muutos osuu, linkit dokumentteihin ja koodikohtiin, sekä testauspolku. **Esitä
@@ -72,11 +81,43 @@ tämä siivu kehittäjälle vahvistettavaksi/korjattavaksi** ennen kuin jatkat.
 ## Vaihe 2 — Suunnittele ja iteroi
 
 - Laadi toteutussuunnitelma: mitkä tiedostot muuttuvat, miten, missä
-  järjestyksessä; testit; migraatiot; riskit; rollback.
+  järjestyksessä; migraatiot; riskit; rollback.
+- **Ehdota testit — ennen toteutusta** (oma osionsa, ks. alla).
 - Esitä tarkentavat kysymykset ja iteroi kehittäjän kanssa.
 - **Älä tee vielä koodimuutoksia.**
 - Kirjaa suunnitelma ja iteraatioiden olennaiset päätökset (mitä muuttui, miksi)
   tiedostoon `tiketit/<tunnus>/suunnitelma.md`.
+
+### Testit ehdotetaan ennen toteutusta
+
+`suunnitelma.md` sisältää osion **"Testit"**, jossa kerrotaan mitä tullaan
+testaamaan — *ennen kuin riviäkään on kirjoitettu*. Kehittäjä hyväksyy sen
+vaiheessa 3 samalla kuin muun suunnitelman.
+
+Syy on rakenteellinen: **testiä ei voi johtaa toteutuksesta, jos toteutusta ei
+ole.** Toteutuksesta johdettu testi väittää sen mitä koodi tekee, ei sitä mitä
+sen pitäisi tehdä — ja läpäisee määritelmällisesti, myös bugin kanssa.
+
+1. **Johda testit hyväksymiskriteereistä** (`tiketti.md`) **ja dokumentoidusta
+   käyttäytymisestä** (`moduulit/<moduuli>/prosessi*.md`) — **älä koodista.**
+   Jos jotain hyväksymiskriteeriä ei saa käännettyä testiksi, kriteeri oli
+   epämääräinen: korjaa kriteeri, älä keksi testiä sen ympärille.
+2. **Listaa myös olemassa olevat testit, joiden odotat muuttuvan** ja miksi.
+   Ennustettu testimuutos on rutiinia; yllättävä testimuutos vaiheessa 4 on
+   merkki siitä, että tämä suunnitelma oli väärässä.
+3. **Kysy kehittäjältä, mitä muuta pitäisi testata.** Portti on kaksisuuntainen:
+   kehittäjä tietää usein tapauksen, jota et voi johtaa kriteereistä etkä
+   dokumenteista — juuri sitä laitostietoa, jota dokumentaatio yrittää pelastaa.
+4. **Pysy tiketin skoopissa:** testataan tämän tiketin muutos, ei koko moduulia.
+   Testit ovat luonnollinen skoopin laajenemisreitti.
+5. Jos alue on testitön ja kehittäjä ei halua testejä tähän tikettiin, **kirjaa
+   päätös ja perustelu** — velka tehdään näkyväksi, ei ohiteta hiljaa.
+
+Muoto: yksi rivi per testi, ihmisen luettavana väitteenä eikä tiedostonimenä —
+*"hylkää hyvityksen, joka on suurempi kuin alkuperäinen maksu"*. Tämä on koko
+työnkulun **helpoin katselmoitava kohta**: suunnitelman arviointi vaatii tietoa
+siitä miten järjestelmä on rakennettu, testilistan arviointi vain siitä mitä sen
+pitäisi tehdä.
 
 ## Vaihe 3 — Hyväksyntäportti
 
@@ -114,6 +155,10 @@ Tee tässä järjestyksessä:
    - onko suunnitelma toteutettavissa sellaisenaan ja täyttääkö se
      hyväksymiskriteerit
    - mikä rikkoutuu, mitä suunnitelmassa ei mainita (kutsujat, migraatiot, testit)
+   - **ovatko suunnitelman "Testit"-osion testit kirjoitettavissa esitetyssä
+     muodossa** — onko niillä tarvittavat kiinnikkeet koodissa, ja pitääkö
+     paikkansa väite siitä, mitkä olemassa olevat testit kattavat alueen. Tämä on
+     kohta, jossa suunnittelija erehtyy usein: hän ei ole ajanut mitään.
 3. **Esitä kehittäjälle nämä kolme kohtaa — ja pysähdy:**
    - **Toteutus:** 3–5 riviä siitä miten aiot suunnitelman toteuttaa
    - **Eriävät kohdat:** mistä olet eri mieltä, miksi, ja oma ehdotuksesi. Jos et
@@ -173,8 +218,67 @@ se on hyväksytty.
   mukaan kuin vaiheessa 3b sovittiin (`vastaanotto.md`).
 - Pysy tiketin skoopissa ja reunaehdoissa. Jos matkalla paljastuu, että
   suunnitelma ei päde, **palaa vaiheeseen 2–3** (älä laajenna skooppia omin päin).
-- Aja testit / buildit projektin tapojen mukaan (`tila/projekti.yaml`).
-  Raportoi tulos rehellisesti — myös epäonnistuneet ajot ja ohitetut testit.
+- **Kirjoita vaiheessa 2 hyväksytyt testit.** Ei muita: hyväksytty testilista on
+  testien skooppi samalla tavalla kuin suunnitelma on koodin skooppi.
+- **Aja testit / buildit** projektin tapojen mukaan (`tila/projekti.yaml` →
+  `komennot`). Raportoi tulos rehellisesti — myös epäonnistuneet ajot, ohitetut
+  testit ja ajot jotka eivät käynnistyneet lainkaan.
+
+### Testien muuttaminen vaatii aina luvan
+
+**Älä muuta äläkä poista yhtäkään testiä ilman kehittäjän eksplisiittistä
+lupaa.** Tämä koskee myös testejä, jotka kirjoitit itse tässä tiketissä: ne
+hyväksyttiin vaiheessa 3, joten ne eivät ole enää sinun luonnoksiasi.
+
+Sääntö on ehdoton, eikä siihen ole poikkeusta "puhtaasti mekaanisille"
+korjauksille. Raja mekaanisen korjauksen ja assertionin hiljaisen löysentämisen
+välillä on täsmälleen se, jota et pysty tässä tilanteessa luotettavasti
+arvioimaan. Kustannukset ovat epäsymmetriset: luvan kysyminen maksaa yhden rivin
+keskustelua, väärin heikennetty testi maksaa hiljaisesti ja pysyvästi. Esitä
+tarvittavat testimuutokset **erässä**, älä yksi kerrallaan.
+
+Jos testi on ennestään punainen (`tila/projekti.yaml` → `testit.ennestaan_punaiset`),
+se ei ole poikkeus: sitäkään ei korjata ilman lupaa, mutta sen hylkääminen ei
+myöskään ole sinun aiheuttamasi.
+
+### Vaihe 4b — Diagnosoi ero, älä korjaa sitä pois
+
+Kun testi hylkää, vaihtoehtoja on kolme, ja **sinun tehtäväsi on nimetä mikä
+niistä — ei valita kehittäjän puolesta:**
+
+| Diagnoosi | Toimi |
+|-----------|-------|
+| **Koodi on väärin** | Korjaa koodi. Ei erillistä lupaa — se kuuluu tikettiin. |
+| **Testi on väärin** | **Kysy kehittäjältä.** Esitä näkemyksesi, mutta päätös on hänen. |
+| **Suunnitelma on väärin** | Palaa vaiheeseen 2–3. |
+
+**Vertaa lähtötasoon, älä absoluuttiseen vihreyteen.** Lue
+`tila/projekti.yaml` → `testit`:
+
+- hylätty nimi, jota **ei** ole `ennestaan_punaiset`-listalla → **rikoit sen**
+- hylätty nimi, joka **on** listalla → ennestään punainen, konteksti eikä tapahtuma
+- listalla ollut nimi, joka nyt menee läpi → korjaantui, kirjaa `lopputulos.md`:hen
+
+Sama määrä hylättyjä eri nimillä tarkoittaa, että **molemmat tapahtuivat**. Siksi
+vertailu tehdään nimijoukkona eikä lukumääränä.
+
+Kun kysyt "onko vika testissä vai koodissa", **kysymys on esitettävä niin että
+siihen voi vastata.** Pelkkä tuomio ei riitä — tarvitaan todisteet:
+
+```
+Testi odottaa pyöristettyä arvoa (spec/maksut/refund_spec.rb:12).
+Koodi katkaisee (src/maksut/hyvitys.rb:88).
+Tiketin hyväksymiskriteerit eivät ota kantaa.
+moduulit/maksut/prosessi-hyvitys.md sanoo "pyöristetty", lähde hyvitys.rb:40.
+Oma näkemykseni: koodi on väärässä. Varaus: dokumentti on vuodelta 2024.
+```
+
+Matalan osaamisen tilanteessa kehittäjän kyky päättää riippuu täysin siitä,
+miten kysymys on muotoiltu. Portin laatu **on** kysymyksen laatu.
+
+> **Yllättävä testimuutos on suunnitelman vika, ei testin.** Jos vaiheessa 4
+> joudutaan toistuvasti muuttamaan testejä, joiden muuttumista vaihe 2 ei
+> ennustanut, ongelma on suunnitteluvaiheessa. Sano se ääneen.
 
 ## Vaihe 5 — Sulje silmukka (dokumentaation päivitys)
 
@@ -183,9 +287,18 @@ se on hyväksytty.
    vaihe P2) ja **päivitä** ne päivitystilassa (P3). Kehittäjä hyväksyy
    päivitykset kuten koodimuutoksetkin.
 3. Kirjoita `tiketit/<tunnus>/lopputulos.md`: mitä toteutettiin, **linkit
-   committiin / PR:ään / haaraan** (ei koodin duplikointia), testien tulos ja
-   mitkä dokumentit päivitettiin. Aseta tiketin `tila: valmis`.
-4. Lisää rivi `tila/edistyminen.md`:hen.
+   committiin / PR:ään / haaraan** (ei koodin duplikointia) ja mitkä dokumentit
+   päivitettiin. Aseta tiketin `tila: valmis`.
+4. **Kirjaa testit omana osionaan** `lopputulos.md`:hen:
+   - **lisätyt** testit
+   - **muutetut** testit: mikä muuttui, miksi, ja **kuka antoi luvan**
+   - **ennestään punaiset, jotka korjaantuivat** (poistuvat lähtötasolta)
+   - **uudet hylätyt**, jos jäi sellaisia, ja miksi ne jäivät
+   - ajon lopputila verrattuna lähtötasoon
+5. **Jos lähtötaso muuttui**, päivitä `tila/projekti.yaml` → `testit`
+   (`ennestaan_punaiset`, `lapi`, `pvm`, `git-viite`). Muuten seuraava tiketti
+   vertaa vanhentuneeseen tietoon.
+6. Lisää rivi `tila/edistyminen.md`:hen.
 
 ---
 
@@ -194,5 +307,6 @@ se on hyväksytty.
 Jos `tiketit/<tunnus>/` on jo olemassa, lue sen tiedostot ja jatka siitä
 vaiheesta, jota ei ole vielä viety loppuun. Vihjeet: `tiketti.md`:n `tila`,
 puuttuva `suunnitelma.md` (vaihe 2 kesken), puuttuva hyväksyntämerkintä (vaihe 3
-kesken), puuttuva `vastaanotto.md` vaikka suunnitelma on hyväksytty toisessa
-sessiossa (vaihe 3b kesken), puuttuva `lopputulos.md` (vaihe 4–5 kesken).
+kesken), `suunnitelma.md` ilman "Testit"-osiota (vaihe 2 kesken), puuttuva
+`vastaanotto.md` vaikka suunnitelma on hyväksytty toisessa sessiossa (vaihe 3b
+kesken), puuttuva `lopputulos.md` (vaihe 4–5 kesken).

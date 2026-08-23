@@ -169,7 +169,22 @@ Jotta projektin juuressa käynnistetty agentti löytää menettelyn:
    agentit ja tunnisteet ovat käytettävissä.
 3. **Aja kalibrointi viimeisen kerran** (`node tyokalut/kalibroi.mjs`), jotta
    raportti vastaa käyttöönoton lopputilaa. Estoja ei pitäisi enää olla.
-4. Kirjaa rivi `tila/edistyminen.md`:hen (`… · käyttöönotto · …`).
+4. **Totea testien lähtötaso** — `tila/projekti.yaml` → `testit`. Kysy
+   kehittäjältä lupa ajaa `komennot.testi` (se voi olla hidas ja vaatia
+   tietokannan tai kontteja; älä aja sitä omin päin), ja kirjaa tulos:
+
+   - `lahtotaso`: `vihrea` | `osin-punainen` | `ei-ajettavissa` | `ei-ajettu`
+   - `lapi`, `ohitettu`, `pvm`, `git-viite`
+   - `ennestaan_punaiset`: **hylättyjen testien nimet, ei lukumäärä.** Tämä on
+     se kohta, jota ei saa oikaista: pelkkä luku ei paljasta tilannetta, jossa
+     yksi vanha punainen korjaantuu ja yksi uusi rikkoutuu.
+
+   Jos pakettia ei voi ajaa (puuttuva riippuvuus, tarvittava palvelu, ei
+   testikomentoa), merkitse `ei-ajettavissa` ja kirjoita syy `huomio`-kenttään.
+   **Tyhjäksi jättäminen on huonompi vaihtoehto kuin rehellinen `ei-ajettu`** —
+   tiketin vaihe 4 lukee tätä kenttää päättääkseen, mitkä hylkäykset ovat sen
+   omia. Kerro kehittäjälle, mitä kenttään jäi ja miksi.
+5. Kirjaa rivi `tila/edistyminen.md`:hen (`… · käyttöönotto · …`).
 
 ## Vaihe I7 — Kerro seuraava askel
 

@@ -29,11 +29,16 @@ kontekstia. Dokumentaatio toimii kontekstipohjana.
 4. **Muuten (suunnittelet itse) noudata vaiheita järjestyksessä:**
    - Vaihe 0 — kevyt vastaanotto (4 kysymystä `AskUserQuestion`illa)
    - Vaihe 1 — kokoa konteksti dokumentaatiosta, esitä kehittäjälle
-   - Vaihe 2 — suunnittele ja iteroi (ei vielä koodimuutoksia)
+   - Vaihe 2 — suunnittele ja iteroi (ei vielä koodimuutoksia) + **ehdota testit
+     hyväksymiskriteereistä, älä koodista** ja kysy mitä muuta pitäisi testata
    - Vaihe 3 — **hyväksyntäportti: käytä plan modea**, odota eksplisiittistä lupaa
    - (3b ei sovellu: hyväksyntä annettiin täydellä kontekstilla)
-   - Vaihe 4 — toteuta hyväksytyn suunnitelman mukaan, aja testit/buildit
-   - Vaihe 5 — sulje silmukka: päivitä dokumentaatio + `lopputulos.md`
+   - Vaihe 4 — toteuta ja kirjoita hyväksytyt testit, aja ne, **vertaa
+     lähtötasoon** (`tila/projekti.yaml` → `testit`)
+   - Vaihe 4b — diagnosoi hylkäys: koodi / testi / suunnitelma. **Testi →
+     kysy kehittäjältä.**
+   - Vaihe 5 — sulje silmukka: päivitä dokumentaatio + `lopputulos.md` +
+     lähtötaso jos se muuttui
 5. **Tallenna työ** hakemistoon `tiketit/<tunnus>/` sitä mukaa kuin etenet
    (tiketti.md, konteksti.md, suunnitelma.md, vastaanotto.md, lopputulos.md),
    jotta työhön voi palata ja agentti voi vaihtua.
@@ -46,8 +51,17 @@ kontekstia. Dokumentaatio toimii kontekstipohjana.
   siitä samaa mieltä — ennen toteutusta, et sen aikana.
 - Pysy tiketin skoopissa ja reunaehdoissa. Jos suunnitelma ei matkalla päde,
   **palaa vaiheeseen 2–3** — älä laajenna skooppia omin päin.
+- **Älä muuta äläkä poista yhtäkään testiä ilman kehittäjän lupaa** — et
+  myöskään niitä, jotka kirjoitit itse tässä tiketissä: ne hyväksyttiin
+  vaiheessa 3. Ei poikkeusta "mekaanisille" korjauksille. Esitä testimuutokset
+  erässä perusteluineen.
+- **Kun testi hylkää, nimeä diagnoosi äläkä valitse puolestasi.** Koodi väärin →
+  korjaa. Testi väärin → **kysy**, ja esitä todisteet (mitä testi odottaa, mitä
+  koodi tekee, mitä kriteerit ja dokumentaatio sanovat) — pelkkä tuomio ei tee
+  kysymyksestä vastattavaa. Suunnitelma väärin → vaihe 2–3.
 - **Raportoi testitulokset rehellisesti**, myös epäonnistuneet ajot ja ohitetut
-  testit.
+  testit. Vertaa `tila/projekti.yaml` → `testit.ennestaan_punaiset`
+  -**nimijoukkoon**, älä hylättyjen lukumäärään.
 - **Älä aja `git add`/`commit`/`push`** ilman eksplisiittistä lupaa —
   suunnitelman hyväksyntä ei ole lupa committaamiseen.
 - Viittaa vain versionhallinnassa olevaan koodiin.

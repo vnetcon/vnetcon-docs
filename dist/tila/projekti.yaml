@@ -55,6 +55,28 @@ komennot:
   paikallinen_ajo: ""
   huomio: ""              # esim. "testit vaativat käynnissä olevan Postgresin (docker compose up db)"
 
+# TESTIEN LÄHTÖTASO — mikä testipaketin tulos oli ENNEN kuin mihinkään koskettiin.
+#
+# Tämä ei valtuuta mitään. Se on pelkkä tulkinta-avain, jotta tiketin vaihe 4 voi
+# raportoida totuudenmukaisesti: ilman sitä agentti näkee hylätyt testit eikä
+# pysty erottamaan itse aiheuttamiaan ennestään punaisista.
+#
+# `ennestaan_punaiset` on JOUKKO, ei lukumäärä. Pelkkä luku päästää läpi
+# tilanteen, jossa yksi vanha punainen korjaantuu ja yksi uusi rikkoutuu:
+# yhteismäärä ei muutu, mutta jotain rikkoutui.
+#
+# Kirjataan käyttöönotossa (I6) ja virkistetään /synkronoi-dokumentaatio (S4).
+testit:
+  lahtotaso: ""           # vihrea | osin-punainen | ei-ajettavissa | ei-ajettu
+  pvm: ""                 # milloin todettu
+  git-viite: ""           # minkä HEADin kohdalla
+  lapi: 0
+  ohitettu: 0
+  ennestaan_punaiset: []  # tunnistettava nimi per rivi — ei pelkkä lukumäärä
+    # - "spec/maksut/refund_spec.rb:12 palauttaa osittaisen hyvityksen"
+    # - "e2e/checkout.spec.ts vahvistaa tilauksen"
+  huomio: ""              # esim. "ei ajettu: vaatii Postgresin, jota ei ollut käytettävissä"
+
 # Olemassa oleva dokumentaatio, johon linkitetään (ei duplikoida).
 olemassa_oleva_dokumentaatio: []
   # - polku: docs/adr

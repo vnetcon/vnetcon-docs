@@ -43,6 +43,13 @@ pino, moduulit, komennot, hakemistokartta).
   `codex-kehote.md`), se on jo hyväksytty — mutta **käy silti vaiheen 3b
   vastaanottoportti ennen toteutusta**: tarkista suunnitelma koodia vasten,
   kerro mistä olet eri mieltä ja odota lupaa. Valmis suunnitelma ei ole käsky.
+- **Testit ehdotetaan ennen toteutusta, eikä niitä muuteta ilman lupaa.**
+  Testilista kuuluu `suunnitelma.md`:hen (vaihe 2) ja hyväksytään vaiheessa 3;
+  se johdetaan hyväksymiskriteereistä ja dokumentaatiosta, ei koodista. Sen
+  jälkeen yhtäkään testiä ei muuteta eikä poisteta ilman kehittäjän lupaa — ei
+  myöskään sinun itse kirjoittamaasi. Kun testi hylkää: koodi väärin → korjaa;
+  **testi väärin → kysy kehittäjältä ja esitä todisteet**; suunnitelma väärin →
+  vaihe 2.
 - **Älä keksi, ja kerro kun et nähnyt.** Jos koodista ei selviä miten jokin
   toimii, merkitse `> TODO: varmistettava — <mikä>` ja jätä `tila: luonnos`. Jos
   jokin hakuluokka ei tuottanut yhtään osumaa, **sano se ääneen** ajon lopussa —

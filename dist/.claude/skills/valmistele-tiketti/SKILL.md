@@ -26,13 +26,20 @@ jatkamaan ilman keskusteluhistoriaa.
    vahvistettavaksi** ennen kuin jatkat.
 4. **Vaihe 2 — suunnittele ja iteroi:** tiedostot, järjestys, testit, migraatiot,
    riskit, rollback. Kirjaa `suunnitelma.md` ja päätökset perusteluineen.
+   **`suunnitelma.md`:hen tulee oma "Testit"-osio:** mitä testataan, johdettuna
+   hyväksymiskriteereistä ja dokumentoidusta käyttäytymisestä — **ei koodista**,
+   koska toteutusta ei vielä ole. Listaa myös olemassa olevat testit, joiden
+   odotat muuttuvan. **Kysy kehittäjältä, mitä muuta pitäisi testata** — hän
+   tietää tapauksia, joita et voi johtaa kriteereistä. Yksi rivi per testi
+   luettavana väitteenä, ei tiedostonimenä.
 5. **Vaihe 3 — hyväksyntäportti:** esitä lopullinen suunnitelma **plan modessa**
    ja odota eksplisiittistä hyväksyntää. Kirjaa hyväksyntä `suunnitelma.md`:hen.
 6. **Kirjoita toteutuskehote:** `tiketit/<tunnus>/codex-kehote.md`
    (rakenne: `metodi/agentit.md`). Kehotteen pitää olla **itsenäisesti
    riittävä**: luettavat tiedostot, tehtävä, muutettavat tiedostot, reunaehdot,
-   testikomennot, lopetusohje (vaihe 5 + ei committia + pysähdy jos suunnitelma
-   ei päde). **Kehotteen on aloitettava vaiheen 3b vastaanottoportilla**:
+   **hyväksytty testilista**, testikomennot, lopetusohje (vaihe 5 + ei committia
+   + pysähdy jos suunnitelma ei päde + **ei testimuutoksia ilman lupaa**).
+   **Kehotteen on aloitettava vaiheen 3b vastaanottoportilla**:
    toteuttava agentti tarkistaa suunnitelman koodia vasten, esittää toteutuksen,
    eriävät kohtansa ja avoimet kysymyksensä kehittäjälle ja odottaa lupaa ennen
    kuin koskee koodiin. Älä kirjoita kehotetta niin, että se lukee kuin käsky —

@@ -30,4 +30,17 @@ Ehdottomat rajat:
   suunnitelman hyväksyntä ei ole lupa committaamiseen.
 - Pysy tiketin skoopissa. Jos suunnitelma ei päde, pysähdy ja kysy.
 - Viittaa vain versionhallinnassa olevaan koodiin (`git ls-files`).
-- Raportoi testitulokset rehellisesti, myös epäonnistumiset.
+- **Testit ehdotetaan ennen toteutusta.** Jos suunnittelet itse, `suunnitelma.md`
+  saa oman "Testit"-osion: mitä testataan, johdettuna hyväksymiskriteereistä ja
+  dokumentaatiosta — **ei koodista**. Kysy myös kehittäjältä, mitä muuta pitäisi
+  testata.
+- **Älä muuta äläkä poista yhtäkään testiä ilman kehittäjän lupaa**, et myöskään
+  itse kirjoittamiasi: ne hyväksyttiin vaiheessa 3. Ei poikkeusta "mekaanisille"
+  korjauksille — esitä testimuutokset erässä perusteluineen.
+- **Kun testi hylkää, nimeä diagnoosi äläkä valitse puolestasi:** koodi väärin →
+  korjaa; testi väärin → **kysy kehittäjältä ja esitä todisteet** (mitä testi
+  odottaa, mitä koodi tekee, mitä kriteerit ja dokumentaatio sanovat);
+  suunnitelma väärin → palaa vaiheeseen 2.
+- Raportoi testitulokset rehellisesti, myös epäonnistumiset. Vertaa
+  `__VNETCON_DOCS__/tila/projekti.yaml` → `testit.ennestaan_punaiset`
+  -**nimijoukkoon**, älä hylättyjen lukumäärään.

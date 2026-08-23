@@ -91,9 +91,20 @@ viittausten rappeutumisen lähde.
    - lisää rivi `historia`-listaan (mitä muutosjoukko sisälsi, mitä tehtiin)
 2. Päivitä muutettujen dokkien frontmatter (`paivitetty`, `git-viite`).
 3. Jos moduulien tila muuttui, päivitä `../tila/rekisteri.yaml`.
-4. Lisää rivi [`../tila/edistyminen.md`](../tila/edistyminen.md):
+4. **Virkistä testien lähtötaso** (`../tila/projekti.yaml` → `testit`). Tämä on
+   se kohta, jossa tikettiprosessin **ohi** tehdyt muutokset saadaan kiinni:
+   suorat commitit, merget ja muiden kehittäjien työ eivät käy vaiheen 4
+   vertailun läpi, joten ilman tätä lähtötaso vanhenee huomaamatta ja seuraava
+   tiketti vertaa väärään tietoon.
+
+   Kysy lupa ajaa `komennot.testi`, päivitä `ennestaan_punaiset` (nimijoukko),
+   `lapi`, `ohitettu`, `pvm` ja `git-viite`. **Jos paketti on muuttunut
+   punaisemmaksi ilman tikettiä, sano se ääneen** — se on itsenäinen löydös,
+   ei kirjanpitomerkintä. Jos lupaa ajoon ei saada, jätä lähtötaso ennalleen ja
+   kerro että se on nyt vanhentunut.
+5. Lisää rivi [`../tila/edistyminen.md`](../tila/edistyminen.md):
    `pvm · <moduuli(t)> · synkronointi · <mitä päivittyi/aukot> · <baseline>..<HEAD>`.
-5. Ehdota `/generoi-html`-ajoa, jos selattava versio on käytössä.
+6. Ehdota `/generoi-html`-ajoa, jos selattava versio on käytössä.
 
 > **Versionhallinta:** älä committaa. Kerro mitkä dokit muuttuivat ja mitkä aukot
 > jäivät, ja jätä commit kehittäjälle ([`konventiot.md`](konventiot.md) kohta 9).

@@ -109,8 +109,16 @@ toteuta suunnitelmaa, jonka tiedät vääräksi.
 - <mitä EI saa muuttua, yhteensopivuus, migraatiot>
 
 ## Testaus
-- `<testikomento>` — pitää mennä läpi
-- <uudet testit, jotka pitää lisätä>
+- `<testikomento>` — aja se
+- **Hyväksytty testilista** (vaihe 2, `suunnitelma.md` → Testit). Kirjoita nämä
+  ja vain nämä:
+  - <testi luettavana väitteenä>
+- **Testien lähtötaso:** `vnetcon-docs/tila/projekti.yaml` → `testit`. Vertaa
+  `ennestaan_punaiset`-**nimijoukkoon**, älä hylättyjen lukumäärään: listalla
+  oleva hylkäys on konteksti, listalta puuttuva on sinun aiheuttamasi.
+- **Älä muuta äläkä poista yhtäkään testiä ilman kehittäjän lupaa** — et
+  myöskään omiasi. Jos testi hylkää, nimeä diagnoosi: koodi väärin → korjaa;
+  testi väärin → **kysy ja esitä todisteet**; suunnitelma väärin → vaihe 2.
 
 ## Lopetus
 1. Päivitä dokumentaatio (vaihe 5): etsi dokit, joiden `lahteet` osuu

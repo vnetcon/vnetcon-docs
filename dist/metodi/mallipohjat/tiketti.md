@@ -5,7 +5,7 @@ tila: kesken            # kesken | odottaa-hyvaksyntaa | valmis | peruttu
 pvm: YYYY-MM-DD
 git-viite: <HEAD tiketin aloitushetkellä>
 agentti: <claude | codex>
-vaihe: 0                # viimeisin valmistunut vaihe (0, 1, 2, 3, 3b, 4, 5)
+vaihe: 0                # viimeisin valmistunut vaihe (0, 1, 2, 3, 3b, 4, 4b, 5)
 ---
 
 # <TIKETTI-123> — <otsikko>
@@ -21,6 +21,9 @@ vaihe: 0                # viimeisin valmistunut vaihe (0, 1, 2, 3, 3b, 4, 5)
 <Mitä pitää muuttua ja miksi. Kehittäjän omin sanoin, ei teknisenä ratkaisuna.>
 
 ## Hyväksymiskriteerit
+
+> Näistä johdetaan vaiheen 2 testit. Kriteeri, jota ei saa käännettyä testiksi,
+> on liian epämääräinen — tarkenna kriteeriä, älä keksi testiä sen ympärille.
 
 - [ ] <tarkistettavissa oleva ehto>
 - [ ] <…>
@@ -43,8 +46,9 @@ vaihe: 0                # viimeisin valmistunut vaihe (0, 1, 2, 3, 3b, 4, 5)
 |-------|----------|------|
 | 0 Vastaanotto | `tiketti.md` | valmis |
 | 1 Konteksti | `konteksti.md` | — |
-| 2 Suunnitelma | `suunnitelma.md` | — |
+| 2 Suunnitelma + testit | `suunnitelma.md` (sis. "Testit"-osio) | — |
 | 3 Hyväksyntä | `suunnitelma.md` (merkintä) | — |
 | 3b Vastaanotto | `vastaanotto.md` | — (vain jos toteuttaja ≠ suunnittelija) |
-| 4 Toteutus | koodi | — |
+| 4 Toteutus + testiajo | koodi + testit | — |
+| 4b Diagnoosi | `lopputulos.md` (testiosio) | — (vain jos testejä hylkäsi) |
 | 5 Sulkeminen | `lopputulos.md` | — |

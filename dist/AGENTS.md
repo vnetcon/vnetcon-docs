@@ -35,6 +35,12 @@ olet:
   mutta **käy silti vaiheen 3b vastaanottoportti ennen toteutusta**: tarkista
   suunnitelma koodia vasten, kerro mistä olet eri mieltä ja odota lupaa. Älä
   laajenna skooppia.
+- **Älä muuta testejä ilman lupaa.** Testit ehdotetaan vaiheessa 2 ja
+  hyväksytään vaiheessa 3 — ennen toteutusta. Sen jälkeen yhtäkään testiä ei
+  muuteta eikä poisteta ilman kehittäjän eksplisiittistä lupaa, ei myöskään
+  omaasi. Kun testi hylkää: koodi väärin → korjaa; **testi väärin → kysy**;
+  suunnitelma väärin → vaihe 2. Vertaa `tila/projekti.yaml` →
+  `testit.ennestaan_punaiset` -nimijoukkoon, älä hylättyjen lukumäärään.
 - **Älä keksi, ja kerro kun et nähnyt.** Epävarma kohta:
   `> TODO: varmistettava — <mikä>`. Jos jokin hakuluokka ei tuottanut osumia,
   sano se ääneen — hiljainen ohittaminen tuottaa uskottavan näköistä mutta
