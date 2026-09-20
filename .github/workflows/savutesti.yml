@@ -1,0 +1,44 @@
+name: savutesti
+
+# Ajaa saman savutestin Linuxilla ja Windowsilla. Windows-ajo on se, joka
+# todistaa väitteen "toimii ilman bashia": runnerilla on Git Bash olemassa,
+# mutta testi ajetaan PowerShellissa Node-toteutusta vasten.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testaa:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Savutesti
+        run: node tyokalut/testaa.mjs
+        env:
+          NO_COLOR: '1'
+
+      - name: Windows-käynnistin (ei bashia)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Asennetaan paketti tilapäisprojektiin ja ajetaan doctor .cmd:n kautta.
+          $kohde = Join-Path $env:RUNNER_TEMP 'kohde'
+          New-Item -ItemType Directory -Force -Path $kohde | Out-Null
+          & .\tyokalut\asenna.cmd $kohde
+          if ($LASTEXITCODE -ne 0) { throw "asenna.cmd epäonnistui" }
+          & "$kohde\vnetcon-docs\tyokalut\vnetcon-ai\vnetcon-ai.cmd" doctor
+          if ($LASTEXITCODE -ne 0) { throw "vnetcon-ai.cmd doctor epäonnistui" }
+          & "$kohde\vnetcon-docs\tyokalut\vnetcon-ai\vnetcon-ai.ps1" --help
+          if ($LASTEXITCODE -ne 0) { throw "vnetcon-ai.ps1 --help epäonnistui" }

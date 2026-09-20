@@ -41,9 +41,14 @@ käynnistysasetukset, jotta Claude ja/tai Codex ajetaan halutulla tavalla.
      **Älä pyydä tunnistetta chattiin äläkä kirjoita sitä mihinkään tiedostoon
      tämän hakemiston sisällä.**
    - Claudelle: lisää `.claude/settings.json`:iin `env.ANTHROPIC_BASE_URL` ja
-     `apiKeyHelper: "./tyokalut/vnetcon-ai/hae-token.sh"`, jotta pelkkä `claude`
-     tässä hakemistossa käyttää palvelua. Säilytä olemassa olevat
-     `permissions`-säännöt — **älä ylikirjoita tiedostoa kokonaan**.
+     `apiKeyHelper: "node ./tyokalut/vnetcon-ai/hae-token.mjs"`, jotta pelkkä
+     `claude` tässä hakemistossa käyttää palvelua. Tämä muoto toimii sekä
+     macOS/Linuxilla että Windowsilla (PowerShell); `hae-token.sh` on jäljellä
+     vain vanhoja konfiguraatioita varten. Säilytä olemassa olevat
+     `permissions`-säännöt — **älä ylikirjoita tiedostoa kokonaan**. Jos
+     projektissa on `.claude/settings.json.uusi`, se on paketin uusin versio
+     (sisältää mm. PowerShell-oikeussäännöt) — yhdistä sen säännöt projektin
+     tiedostoon ja poista `.uusi`.
    - Codexille: käynnistys tapahtuu `vnetcon-ai codex` -skriptillä, joka antaa
      tarjoajan `-c`-parametreina. Käyttäjän `~/.codex/config.toml`:ia ei muokata
      ilman erillistä lupaa.

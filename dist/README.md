@@ -28,8 +28,8 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 
 | Mitä | Tarvitaan | Miksi |
 |------|-----------|-------|
-| **Pääte** | aina | macOS/Linux: mikä tahansa. **Windowsilla PowerShell riittää** — Claude Code ja Codex toimivat siinä natiivisti, samoin Node-työkalut (`kalibroi`, `moduulit`, `linkit`, HTML-generointi). WSL2 käy myös; jos valitset sen, aja koko työ sen sisällä, myös `git`. |
-| **bash** | vain `tyokalut/vnetcon-ai/…` | Paketissa on kaksi bash-skriptiä (`vnetcon-ai`, `hae-token.sh`); kaikki muu on Nodea tai ajetaan agentin sisällä. Windowsilla riittää **Git Bash** (tulee Git for Windowsin mukana) tai WSL2 — myös PowerShellista käsin: `bash tyokalut/vnetcon-ai/vnetcon-ai doctor`. Näitä tarvitaan vasta kun `tarjoaja ≠ oma`; oletuksella agentti käynnistetään pelkällä `claude`- tai `codex`-komennolla. |
+| **Pääte** | aina | macOS/Linux: mikä tahansa. **Windowsilla PowerShell riittää** — Claude Code, Codex ja kaikki paketin työkalut toimivat siinä natiivisti. WSL2 käy myös; jos valitset sen, aja koko työ sen sisällä, myös `git`. |
+| **bash** | **ei tarvita** | Koko paketti on Nodea: `vnetcon-ai.mjs`, `asenna.mjs`, `kalibroi`, `moduulit`, `linkit` ja HTML-generointi. Windowsilla aja `tyokalut\vnetcon-ai\vnetcon-ai.cmd` (tai `.ps1`, tai suoraan `node tyokalut\vnetcon-ai\vnetcon-ai.mjs`); macOS/Linuxilla `./tyokalut/vnetcon-ai/vnetcon-ai` toimii kuten ennenkin. Mukana olevat `.sh`-tiedostot ovat ohuita käynnistimiä, eivät toteutusta. |
 | **`claude` ja/tai `codex`** | aina | `/`-komennot ajetaan agentin sisällä. Yksi agentti riittää alkuun; oletustyönjako on dokumentointi Claudella, toteutus Codexilla. |
 | **Kirjautuminen agenttiin** | aina | Oletuksena oma tili (`claude`, `codex login`) — mitään ei tarvitse konfiguroida. Muut tarjoajat: ks. [Kenen AI-tiliä vasten ajetaan](#kenen-ai-tiliä-vasten-ajetaan). |
 | **Node.js 18+** (suositus 20 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
@@ -37,21 +37,20 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 | **`npm install`** html-generaattorissa | vain `/generoi-html` | Kertaluontoinen, vaatii verkon. Ilman sitä HTML syntyy, mutta haku ja Mermaid-kaaviot eivät toimi. |
 | **`~/.vnetcon/credentials.env`** | vain pilvitarjoajilla | Tunnisteet, kun agentti osoitetaan omaan pilvitiliin, suoraan API-avaimeen tai organisaation omaan välityspalvelimeen. |
 
-Pythonia, Dockeria, tietokantaa tai web-palvelinta ei tarvita. Tarkistus yhdellä
-komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
+Pythonia, bashia, Dockeria, tietokantaa tai web-palvelinta ei tarvita. Tarkistus
+yhdellä komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor` (Windows:
+`tyokalut\vnetcon-ai\vnetcon-ai.cmd doctor`).
 
-> **Windows: asenna Git for Windows ensin.** Se tuo yhdellä kertaa sekä `git`in
-> (jota dokumentoinnin skooppi tarvitsee) että `bash`in (jota `vnetcon-ai`
-> tarvitsee) — ei erillistä asennusta kummallekaan. Tarkista PowerShellissa:
-> `git --version` ja `where.exe bash`. Jos jälkimmäinen ei löydä mitään, git on
-> asennettu ilman PATH-valintaa; aja skriptit silloin Git Bash -päätteestä.
-> Huom: `doctor` on itse bash-skripti, joten se ei voi kertoa bashin
-> puuttumisesta — tämä tarkistus tehdään käsin.
+> **Windows: asenna Node 18+ ja Git for Windows.** Nodella ajetaan paketin
+> työkalut, gitillä rajataan dokumentoinnin skooppi (`git ls-files`) ja
+> synkronointi. **Bashia, Git Bashia tai WSL:ää ei tarvita.** Tarkista
+> PowerShellissa: `node -v` ja `git --version`. Loput kertoo `doctor` — se on
+> Node-ohjelma, joten se toimii myös silloin kun jokin puuttuu.
 
 ### Vaiheet
 
-1. **Avaa pääte** (macOS/Linux: *Terminal*. Windows: PowerShell, Git Bash tai
-   WSL2 — ks. [Esivaatimukset](#esivaatimukset) alla).
+1. **Avaa pääte** (macOS/Linux: *Terminal*. Windows: PowerShell tai Windows
+   Terminal — ks. [Esivaatimukset](#esivaatimukset) alla).
 2. **Siirry tähän hakemistoon:**
    ```
    cd <polku-projektiin>/vnetcon-docs
@@ -63,7 +62,7 @@ komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
    Odota, että näet syötekentän.
    > Jos `claude`-komentoa ei löydy tai kirjautuminen puuttuu, aja
    > `./tyokalut/vnetcon-ai/vnetcon-ai doctor` — se kertoo mitä puuttuu.
-   > (PowerShellissa: `bash tyokalut/vnetcon-ai/vnetcon-ai doctor`.)
+   > (PowerShellissa: `tyokalut\vnetcon-ai\vnetcon-ai.cmd doctor`.)
    > Jos agentti on osoitettu omaan pilvitiliin tai API-avaimeen, käynnistä
    > `./tyokalut/vnetcon-ai/vnetcon-ai claude` (asettaa palvelun osoitteen
    > ja tunnisteen puolestasi).
@@ -116,6 +115,15 @@ tilejä, ja toimivat myös ennen käyttöönottoa. Ajetaan tässä hakemistossa.
 ./tyokalut/vnetcon-ai/vnetcon-ai kalibroi          # lähtötilanne, katveet, laajuusarvio
 ./tyokalut/vnetcon-ai/vnetcon-ai linkit --lahteet  # rikkinäiset linkit ja lähdepolut
 ./tyokalut/vnetcon-ai/vnetcon-ai doctor            # mitä on asennettu ja konfiguroitu
+```
+
+Windowsilla (PowerShell) sama ilman bashia:
+
+```powershell
+tyokalut\vnetcon-ai\vnetcon-ai.cmd moduulit
+tyokalut\vnetcon-ai\vnetcon-ai.cmd kalibroi
+tyokalut\vnetcon-ai\vnetcon-ai.cmd linkit --lahteet
+tyokalut\vnetcon-ai\vnetcon-ai.cmd doctor
 ```
 
 `moduulit` on nopein tapa nähdä tilanne — ks. [Rakenne](#rakenne) alla.

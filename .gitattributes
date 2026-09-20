@@ -1,0 +1,13 @@
+# Rivinvaihdot: LF kaikkialla, myös Windows-checkoutissa.
+# Ilman tätä git muuntaisi .mjs/.sh/.md/.yaml-tiedostot CRLF:ksi, mikä rikkoo
+# shebangit, YAML-jäsennyksen ja hakuhahmot.
+* text=auto eol=lf
+
+# Windowsin komentotulkki vaatii CRLF:n .cmd/.bat-tiedostoissa.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binäärit
+*.png binary
+*.jpg binary
+*.zip binary

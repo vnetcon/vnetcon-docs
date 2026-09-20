@@ -5,8 +5,9 @@
 Tämä repo on **työkalun lähde**. Se tuottaa hakemiston `dist/`, joka kopioidaan
 minkä tahansa projektin juureen nimellä `vnetcon-docs/`. Sen jälkeen projektiin
 saadaan yhdellä komennolla (`/vnetcon-init`) itseohjautuva dokumentaatio­järjestelmä
-ja tikettien toteutusympäristö. Menettely on kehitetty suurissa
-tuotantokoodipohjissa ja yleistetty tässä projektiriippumattomaksi.
+ja tikettien toteutusympäristö. Menettely on kehitetty yleiseksi ja koeteltu
+suurissa tuotantokoodipohjissa; hankekohtaiset toteutukset muokataan tämän
+paketin osista.
 
 ## Arvioi oma koodipohjasi ilmaiseksi
 
@@ -14,16 +15,22 @@ tuotantokoodipohjissa ja yleistetty tässä projektiriippumattomaksi.
 komentoa ovat paikallisia Node-skriptejä: **ei tekoälyä, ei verkkoyhteyttä, ei
 tilejä, ei käyttöoikeuksia kenellekään.** Koodisi ei liiku mihinkään.
 
-Esivaatimukset: `git`, **Node 18+** ja `bash` (alla olevat skriptit ovat
-bash-skriptejä; itse työkalut ovat Nodea). **Windowsilla asenna Git for
-Windows** — se tuo yhdellä kertaa sekä `git`in että `bash`in. WSL2 käy myös.
-Komennot voi ajaa PowerShellistakin kirjoittamalla eteen `bash`, esim.
-`bash vnetcon-docs/tyokalut/asenna.sh …`.
+Esivaatimukset: `git` ja **Node 18+**. **Bashia, Git Bashia tai WSL:ää ei
+tarvita** — kaikki työkalut ovat Node-ohjelmia, ja Windowsilla riittää
+PowerShell.
 
 ```bash
 git clone https://github.com/vnetcon/vnetcon-docs.git
 vnetcon-docs/tyokalut/asenna.sh /polku/projektiisi
 cd /polku/projektiisi/vnetcon-docs
+```
+
+Windowsilla (PowerShell) sama:
+
+```powershell
+git clone https://github.com/vnetcon/vnetcon-docs.git
+vnetcon-docs\tyokalut\asenna.cmd C:\polku\projektiisi
+cd C:\polku\projektiisi\vnetcon-docs
 ```
 
 Sen jälkeen:
@@ -33,6 +40,9 @@ Sen jälkeen:
 | `./tyokalut/vnetcon-ai/vnetcon-ai moduulit` | Mitä moduuleja koodipohjassa on, kuinka isoja ne ovat ja mikä kannattaisi dokumentoida ensin. Toimii ennen käyttöönottoa |
 | `./tyokalut/vnetcon-ai/vnetcon-ai kalibroi` | Kirjoittaa `kalibrointiraportti.md`:n: laajuusarvio tunteina ja AI-kustannuksena, katvealueet, dokumentaation tila. **Koodivapaa** — voit lähettää sen eteenpäin |
 | `./tyokalut/vnetcon-ai/vnetcon-ai doctor` | Mitä on asennettu ja konfiguroitu. Aja tämä jos jokin ei toimi |
+
+Windowsilla sama komento on `tyokalut\vnetcon-ai\vnetcon-ai.cmd <komento>`
+(tai `.ps1`). Toteutus on molemmilla sama `vnetcon-ai.mjs`.
 
 ### Mitä odottaa ensimmäisellä ajolla
 
@@ -130,9 +140,9 @@ ja Clauden syötekenttään:
 ```
 
 **Esivaatimukset kohdekoneella:** `claude` ja/tai `codex` kirjautuneena, Node.js
-18+ ja mieluiten git. Agentit ja Node-työkalut toimivat Windowsilla natiivisti
-(PowerShell käy); `bash` tarvitaan vain `tyokalut/vnetcon-ai/`-skripteihin —
-Windowsilla Git Bash tai WSL2. Täydellinen lista ja perustelut:
+18+ ja mieluiten git. Agentit ja kaikki paketin työkalut toimivat Windowsilla
+natiivisti PowerShellissa — **bashia, Git Bashia tai WSL:ää ei tarvita.**
+Täydellinen lista ja perustelut:
 [`dist/README.md` → Esivaatimukset](dist/README.md#esivaatimukset). Tarkistus
 kohteessa: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 
@@ -147,8 +157,8 @@ kokonainen: kopioi oman alustasi lohko alusta loppuun.
 
 **Esivaatimukset:** `git`, Node 18+ ja `claude` ja/tai `codex` kirjautuneena.
 Linuxilla varmista myös `unzip` (puuttuu minimaalisista asennuksista:
-`apt install unzip` / `dnf install unzip`). Windowsilla asenna **Git for
-Windows** — se tuo sekä `git`in että `bash`in.
+`apt install unzip` / `dnf install unzip`). Windowsilla riittää **Git for
+Windows** gitin takia — bashia ei tarvita.
 
 #### macOS / Linux / *nix
 
@@ -205,16 +215,17 @@ tiketin alue on dokumentoimaton, työnkulku kartoittaa sen koodista suoraan
 ([`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonkulku.md) vaihe 1
 kohta 4) ja ehdottaa alueen dokumentointia osana tikettiä.
 
-**Kolme alustaeroa, ja vain kolme:**
+**Kaksi alustaeroa, ja vain kaksi:**
 
 1. **Suoritusbitti.** `paketoi.sh` ajaa `chmod +x` ennen pakkausta ja `unzip`
    säilyttää sen, joten *nixillä `./tyokalut/vnetcon-ai/vnetcon-ai` toimii.
-   `Expand-Archive` ei säilytä oikeuksia → Windowsilla kirjoita eteen `bash`.
-2. **bash.** Vain `tyokalut/vnetcon-ai/`-skriptit tarvitsevat sitä. Windowsilla
-   se tulee Git for Windowsin mukana.
-3. **Windowsilla vaihe 3 on ohitettavissa.** Oletuksella (`tarjoaja: oma`)
-   agentti käynnistetään pelkällä `claude`- tai `codex`-komennolla, jolloin
-   bashia ei tarvita missään vaiheessa.
+   `Expand-Archive` ei säilytä oikeuksia → Windowsilla käytä
+   `tyokalut\vnetcon-ai\vnetcon-ai.cmd`-käynnistintä (tai `.ps1`), joka ei
+   tarvitse suoritusbittiä.
+2. **Vaihe 3 on Windowsilla usein tarpeeton.** Oletuksella (`tarjoaja: oma`)
+   agentti käynnistetään pelkällä `claude`- tai `codex`-komennolla.
+
+**Bashia ei tarvita kummallakaan alustalla** — kaikki työkalut ovat Nodea.
 
 > **Vaihe 2 on se, joka unohtuu.** Zipistä purettu lähdekoodi ei ole git-repo,
 > ja menettely nojaa siihen: skooppi on `git -C .. ls-files`,
@@ -263,12 +274,17 @@ käytössä.
 
 ```
 dist/                  Paketti, joka kopioidaan projektiin nimellä vnetcon-docs/
-tyokalut/asenna.sh     Kopioi dist/ → <kohdeprojekti>/vnetcon-docs (idempotentti, päivittää moottorin)
-tyokalut/paketoi.sh    Tekee jaeltavan vnetcon-docs-<versio>.zip
-tyokalut/testaa.sh     Savutesti: rakentaa tilapäisprojektit ja väittää tuloksista
-VERSIO                 Paketin versio (asenna.sh kirjoittaa sen kohteeseen)
+tyokalut/asenna.mjs    Kopioi dist/ → <kohdeprojekti>/vnetcon-docs (idempotentti, päivittää moottorin)
+tyokalut/asenna.sh     Käynnistin *nixille  (asenna.cmd = sama Windowsille)
+tyokalut/testaa.mjs    Savutesti: rakentaa tilapäisprojektit ja väittää tuloksista
+tyokalut/testaa.sh     Käynnistin *nixille  (testaa.cmd = sama Windowsille)
+tyokalut/paketoi.sh    Tekee jaeltavan vnetcon-docs-<versio>.zip (vain ylläpitäjä, macOS/Linux)
+VERSIO                 Paketin versio (asenna kirjoittaa sen kohteeseen)
 LICENSE                Apache-2.0
 ```
+
+Toteutukset ovat `.mjs`-tiedostoissa ja `.sh`/`.cmd`/`.ps1` ovat ohuita
+käynnistimiä — sama koodi ajetaan kaikilla alustoilla, eikä bashia tarvita.
 
 ## Kielet
 

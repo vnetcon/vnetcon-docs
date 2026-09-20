@@ -12,8 +12,8 @@ This repository is the **source of the tool**. It produces a `dist/` directory
 that is copied into the root of any project under the name `vnetcon-docs/`. After
 that, a single command (`/vnetcon-init`) turns the project into a self-directing
 documentation system and ticket implementation environment. The method was
-developed against large production codebases and generalised here to be
-project-agnostic.
+developed to be project-agnostic and proven against large production codebases;
+project-specific implementations are shaped from the parts of this package.
 
 ## Assess your own codebase for free
 
@@ -21,16 +21,21 @@ project-agnostic.
 commands are plain local Node scripts: **no AI, no network, no accounts, no access
 granted to anyone.** Your code does not go anywhere.
 
-Prerequisites: `git`, **Node 18+** and `bash` (the scripts below are bash; the
-tools themselves are Node). **On Windows, install Git for Windows** — it gives
-you both `git` and `bash` in one step. WSL2 works too. You can also run the
-commands from PowerShell by prefixing them with `bash`, e.g.
-`bash vnetcon-docs/tyokalut/asenna.sh …`.
+Prerequisites: `git` and **Node 18+**. **No bash, Git Bash or WSL is required** —
+every tool is a Node program, and PowerShell is enough on Windows.
 
 ```bash
 git clone https://github.com/vnetcon/vnetcon-docs.git
 vnetcon-docs/tyokalut/asenna.sh /path/to/your-project
 cd /path/to/your-project/vnetcon-docs
+```
+
+On Windows (PowerShell):
+
+```powershell
+git clone https://github.com/vnetcon/vnetcon-docs.git
+vnetcon-docs\tyokalut\asenna.cmd C:\path\to\your-project
+cd C:\path\to\your-project\vnetcon-docs
 ```
 
 Then:
@@ -144,10 +149,9 @@ and in Claude's input field:
 ```
 
 **Prerequisites on the target machine:** `claude` and/or `codex` signed in,
-Node.js 18+ and preferably git. The agents and the Node tools run natively on
-Windows (PowerShell is fine); `bash` is needed only for the
-`tyokalut/vnetcon-ai/` scripts — on Windows, Git Bash or WSL2. Full list with
-reasons:
+Node.js 18+ and preferably git. The agents and every tool in the package run
+natively on Windows in PowerShell — **no bash, Git Bash or WSL needed.** Full
+list with reasons:
 [`dist/README.md` → Esivaatimukset](dist/README.md#esivaatimukset). To check a
 target: `./tyokalut/vnetcon-ai/vnetcon-ai doctor`.
 
@@ -161,7 +165,7 @@ top to bottom.
 **Prerequisites:** `git`, Node 18+, and `claude` and/or `codex` signed in. On
 Linux, make sure `unzip` is present (minimal installs omit it:
 `apt install unzip` / `dnf install unzip`). On Windows, install **Git for
-Windows** — it gives you both `git` and `bash`.
+Windows** for `git` — bash is not needed.
 
 #### macOS / Linux / *nix
 
@@ -217,16 +221,17 @@ ticket touches is undocumented, the workflow surveys it straight from the code
 ([`dist/metodi/tiketti-tyonkulku.md`](dist/metodi/tiketti-tyonkulku.md), phase 1
 item 4) and proposes documenting that area as part of the ticket.
 
-**Three platform differences, and only three:**
+**Two platform differences, and only two:**
 
 1. **The executable bit.** `paketoi.sh` runs `chmod +x` before packaging and
    `unzip` preserves it, so `./tyokalut/vnetcon-ai/vnetcon-ai` works on *nix.
-   `Expand-Archive` does not preserve permissions → on Windows, prefix the
-   command with `bash`.
-2. **bash.** Only the `tyokalut/vnetcon-ai/` scripts need it. On Windows it
-   comes with Git for Windows.
-3. **On Windows, step 3 is skippable.** With the default (`tarjoaja: oma`) the
-   agent is started with plain `claude` or `codex`, so bash is never needed.
+   `Expand-Archive` does not preserve permissions → on Windows use the
+   `tyokalut\vnetcon-ai\vnetcon-ai.cmd` launcher (or `.ps1`), which needs no
+   executable bit.
+2. **On Windows, step 3 is usually unnecessary.** With the default
+   (`tarjoaja: oma`) the agent is started with plain `claude` or `codex`.
+
+**Bash is not needed on either platform** — every tool is Node.
 
 > **Step 2 is the one people forget.** Source code unpacked from a zip is not a
 > git repo, and the method relies on it: the scope is `git -C .. ls-files`,
@@ -275,12 +280,17 @@ version is in use.
 
 ```
 dist/                  The package, copied into a project as vnetcon-docs/
-tyokalut/asenna.sh     Copies dist/ → <target>/vnetcon-docs (idempotent; --paivita updates the engine)
-tyokalut/paketoi.sh    Builds a distributable vnetcon-docs-<version>.zip
-tyokalut/testaa.sh     Smoke test: builds temporary projects and asserts on the results
-VERSIO                 Package version (asenna.sh writes it into the target)
+tyokalut/asenna.mjs    Copies dist/ → <target>/vnetcon-docs (idempotent; --paivita updates the engine)
+tyokalut/asenna.sh     Launcher for *nix   (asenna.cmd = the same for Windows)
+tyokalut/testaa.mjs    Smoke test: builds temporary projects and asserts on the results
+tyokalut/testaa.sh     Launcher for *nix   (testaa.cmd = the same for Windows)
+tyokalut/paketoi.sh    Builds a distributable vnetcon-docs-<version>.zip (maintainer only, macOS/Linux)
+VERSIO                 Package version (the installer writes it into the target)
 LICENSE                Apache-2.0
 ```
+
+The implementations live in the `.mjs` files; `.sh`/`.cmd`/`.ps1` are thin
+launchers — the same code runs on every platform and bash is never required.
 
 ## Language
 

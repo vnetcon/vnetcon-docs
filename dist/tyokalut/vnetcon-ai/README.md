@@ -35,6 +35,23 @@ vastauksen.
 
 Kaikki komennot: `./vnetcon-ai --help`.
 
+## Windows (ei bashia, ei WSL:ää)
+
+Toteutus on `vnetcon-ai.mjs` (Node). Kaikki muu on ohutta käynnistintä:
+
+| Tiedosto | Alusta | Huom |
+|----------|--------|------|
+| `vnetcon-ai.mjs` | kaikki | Varsinainen toteutus. `node vnetcon-ai.mjs doctor` toimii sellaisenaan. |
+| `vnetcon-ai` | macOS/Linux | POSIX-sh-käynnistin, jotta tuttu komento toimii ennallaan. |
+| `vnetcon-ai.cmd` | Windows | `tyokalut\vnetcon-ai\vnetcon-ai.cmd doctor` — toimii sekä cmd.exessä että PowerShellissa. |
+| `vnetcon-ai.ps1` | Windows | PowerShell-natiivi; vaatii skriptien ajoluvan (`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`). |
+| `hae-token.mjs` | kaikki | `apiKeyHelper`: `"node ./tyokalut/vnetcon-ai/hae-token.mjs"`. |
+| `hae-token.sh` / `hae-token.cmd` | *nix / Windows | Käynnistimiä vanhoille konfiguraatioille. |
+
+Windowsilla `doctor` ei tarkista tunnistetiedoston POSIX-oikeuksia (ne eivät
+kerro siellä mitään) — rajaa oikeudet tiedoston ominaisuuksista, jos konetta
+käyttää useampi.
+
 ## Kaksi kerrosta: osoitteet ja tunnisteet
 
 | | Missä | Versionhallinnassa |

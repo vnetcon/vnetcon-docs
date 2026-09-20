@@ -48,6 +48,10 @@ git -C .. ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head -40
 git -C .. ls-files | grep -oE '\.[a-z0-9]+$' | sort | uniq -c | sort -rn | head -25
 ```
 
+Windowsilla ilman Git Bashia käytössä on PowerShell-työkalu — putkityökalujen
+(`wc`, `sed`, `uniq`, `head`) tilalle: ks. `metodi/pinot/yleinen.md` →
+*Laajuus ja rakenne*. `git`-komennot itsessään toimivat molemmissa.
+
 Jos `git -C .. rev-parse` epäonnistuu, projekti ei ole git-repo →
 `projekti.versionhallinta: none` (ja käytä `ls`-listausta koko ajan).
 

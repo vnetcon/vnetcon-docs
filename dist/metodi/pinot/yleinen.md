@@ -25,6 +25,15 @@ git -C .. ls-files | grep -oE '\.[a-z0-9]+$' | sort | uniq -c | sort -rn | head 
 git -C .. ls-files '<moduuli>/**' | sort
 ```
 
+Windowsilla (PowerShell-työkalu, kun Git Bashia ei ole) sama ilman putkityökaluja:
+
+```powershell
+(git -C .. ls-files).Count
+git -C .. ls-files | ForEach-Object { ($_ -split '/')[0] } | Group-Object | Sort-Object Count -Descending | Select-Object -First 40 Count, Name
+git -C .. ls-files | ForEach-Object { [IO.Path]::GetExtension($_) } | Where-Object { $_ } | Group-Object | Sort-Object Count -Descending | Select-Object -First 25 Count, Name
+git -C .. ls-files '<moduuli>/**' | Sort-Object
+```
+
 ## Moduulien tunnistus (monorepo)
 
 ```bash

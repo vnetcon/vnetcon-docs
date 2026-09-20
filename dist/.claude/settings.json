@@ -7,7 +7,19 @@
       "Bash(git push:*)",
       "Bash(git -C .. add:*)",
       "Bash(git -C .. commit:*)",
-      "Bash(git -C .. push:*)"
+      "Bash(git -C .. push:*)",
+      "PowerShell(git add:*)",
+      "PowerShell(git add *)",
+      "PowerShell(git commit:*)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push:*)",
+      "PowerShell(git push *)",
+      "PowerShell(git -C .. add:*)",
+      "PowerShell(git -C .. add *)",
+      "PowerShell(git -C .. commit:*)",
+      "PowerShell(git -C .. commit *)",
+      "PowerShell(git -C .. push:*)",
+      "PowerShell(git -C .. push *)"
     ],
     "allow": [
       "Bash(git -C .. ls-files:*)",
@@ -16,7 +28,21 @@
       "Bash(git -C .. diff:*)",
       "Bash(git -C .. log:*)",
       "Bash(git -C .. rev-parse:*)",
-      "Bash(git -C .. show:*)"
+      "Bash(git -C .. show:*)",
+      "PowerShell(git -C .. ls-files:*)",
+      "PowerShell(git -C .. ls-files *)",
+      "PowerShell(git -C .. grep:*)",
+      "PowerShell(git -C .. grep *)",
+      "PowerShell(git -C .. status:*)",
+      "PowerShell(git -C .. status *)",
+      "PowerShell(git -C .. diff:*)",
+      "PowerShell(git -C .. diff *)",
+      "PowerShell(git -C .. log:*)",
+      "PowerShell(git -C .. log *)",
+      "PowerShell(git -C .. rev-parse:*)",
+      "PowerShell(git -C .. rev-parse *)",
+      "PowerShell(git -C .. show:*)",
+      "PowerShell(git -C .. show *)"
     ],
     "additionalDirectories": [
       ".."

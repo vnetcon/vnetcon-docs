@@ -39,7 +39,9 @@ rm -rf "$TYO/vnetcon-docs/tyokalut/html-generaattori/node_modules" \
        "$TYO/vnetcon-docs/vnetcon.config.yaml"
 find "$TYO" -name '.DS_Store' -delete 2>/dev/null || true
 chmod +x "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/vnetcon-ai" \
-         "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/hae-token.sh" 2>/dev/null || true
+         "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/vnetcon-ai.mjs" \
+         "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/hae-token.sh" \
+         "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/hae-token.mjs" 2>/dev/null || true
 
 PAKETTI="$ULOS/vnetcon-docs-$VERSIO.zip"
 rm -f "$PAKETTI"
