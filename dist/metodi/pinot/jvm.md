@@ -4,7 +4,17 @@ Käytä yhdessä [`yleinen.md`](yleinen.md):n kanssa. `<m>` = moduulin polku.
 
 ## Manifesti ja moduulirakenne
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+git -C .. ls-files '*pom.xml' '*build.gradle' '*build.gradle.kts' 'settings.gradle*'
+git -C .. show HEAD:settings.gradle           # monirepon moduulit
+git -C .. grep -n '<module>' -- 'pom.xml'     # Maven-alimoduulit
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 git -C .. ls-files '*pom.xml' '*build.gradle' '*build.gradle.kts' 'settings.gradle*'
 git -C .. show HEAD:settings.gradle           # monirepon moduulit
 git -C .. grep -n '<module>' -- 'pom.xml'     # Maven-alimoduulit
@@ -12,7 +22,24 @@ git -C .. grep -n '<module>' -- 'pom.xml'     # Maven-alimoduulit
 
 ## Sisääntulopisteet
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+# Spring MVC / WebFlux
+git -C .. grep -nE '@(RestController|Controller|RequestMapping|GetMapping|PostMapping|PutMapping|PatchMapping|DeleteMapping)' -- '<m>'
+# JAX-RS (Quarkus, Jersey)
+git -C .. grep -nE '@(Path|GET|POST|PUT|DELETE|Produces|Consumes)' -- '<m>'
+# Viestinvälitys
+git -C .. grep -nE '@(KafkaListener|RabbitListener|JmsListener|SqsListener|Incoming|Outgoing)' -- '<m>'
+# Ajastukset ja käynnistys
+git -C .. grep -nE '@(Scheduled|EnableScheduling|PostConstruct)|CommandLineRunner|ApplicationRunner' -- '<m>'
+# GraphQL
+git -C .. grep -nE '@(QueryMapping|MutationMapping|SchemaMapping)' -- '<m>'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 # Spring MVC / WebFlux
 git -C .. grep -nE '@(RestController|Controller|RequestMapping|GetMapping|PostMapping|PutMapping|PatchMapping|DeleteMapping)' -- '<m>'
 # JAX-RS (Quarkus, Jersey)
@@ -57,7 +84,17 @@ git -C .. ls-files '**/openapi*.y*ml' '**/*.json' | Select-String 'openapi|swagg
 
 ## Tietokanta
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+git -C .. ls-files '**/db/migration/**' '**/db/changelog/**' '**/*.sql'   # Flyway / Liquibase
+git -C .. grep -nE '@(Query|Modifying)|JdbcTemplate|EntityManager|createQuery|jooq' -- '<m>'
+git -C .. grep -nE 'interface \w+Repository' -- '<m>'                     # Spring Data
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 git -C .. ls-files '**/db/migration/**' '**/db/changelog/**' '**/*.sql'   # Flyway / Liquibase
 git -C .. grep -nE '@(Query|Modifying)|JdbcTemplate|EntityManager|createQuery|jooq' -- '<m>'
 git -C .. grep -nE 'interface \w+Repository' -- '<m>'                     # Spring Data
@@ -68,14 +105,32 @@ SQL:ää. Migraatiot (Flyway `V<n>__*.sql`) ovat datarakenteiden totuus.
 
 ## Ulkoiset kutsut
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+git -C .. grep -nE 'RestTemplate|WebClient|@FeignClient|HttpClient|OkHttp' -- '<m>'
+git -C .. grep -nE 'KafkaTemplate|RabbitTemplate|SqsTemplate|S3Client' -- '<m>'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 git -C .. grep -nE 'RestTemplate|WebClient|@FeignClient|HttpClient|OkHttp' -- '<m>'
 git -C .. grep -nE 'KafkaTemplate|RabbitTemplate|SqsTemplate|S3Client' -- '<m>'
 ```
 
 ## Konfiguraatio ja komennot
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+git -C .. ls-files '<m>/src/main/resources/application*'
+git -C .. grep -nE '@(Value|ConfigurationProperties|ConfigProperty)' -- '<m>'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 git -C .. ls-files '<m>/src/main/resources/application*'
 git -C .. grep -nE '@(Value|ConfigurationProperties|ConfigProperty)' -- '<m>'
 ```

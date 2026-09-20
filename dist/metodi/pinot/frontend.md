@@ -9,7 +9,18 @@ sisääntulo on **käyttäjän toiminto ja näkymä**, ja "tietokanta" on
 
 ## Näkymät ja reititys
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+# Tiedostopohjainen reititys
+git -C .. ls-files '<m>/src/pages/**' '<m>/src/routes/**' '<m>/app/**/page.tsx'
+# Konfiguroitu reititys
+git -C .. grep -nE 'createBrowserRouter|<Route |RouterModule\.forRoot|createRouter|routes:' -- '<m>'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 # Tiedostopohjainen reititys
 git -C .. ls-files '<m>/src/pages/**' '<m>/src/routes/**' '<m>/app/**/page.tsx'
 # Konfiguroitu reititys
@@ -20,7 +31,16 @@ Kirjaa: polku → näkymä → mitä käyttäjä siinä tekee → mitä rajapint
 
 ## Taustapalvelukutsut (moduulin todelliset kytkennät)
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+git -C .. grep -nE 'fetch\(|axios\.|useQuery\(|useMutation\(|createApi\(|HttpClient' -- '<m>'
+git -C .. grep -nE '(BASE_URL|API_URL|VITE_|NEXT_PUBLIC_|REACT_APP_)' -- '<m>'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 git -C .. grep -nE 'fetch\(|axios\.|useQuery\(|useMutation\(|createApi\(|HttpClient' -- '<m>'
 git -C .. grep -nE '(BASE_URL|API_URL|VITE_|NEXT_PUBLIC_|REACT_APP_)' -- '<m>'
 ```
@@ -30,7 +50,20 @@ Kirjaa ne `tila/rakenne.yaml`:n `kytkennat`-listaan.
 
 ## Tila ja datan muoto
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+# Tilanhallinta
+git -C .. grep -nE 'createSlice|configureStore|create\(\(set|atom\(|writable\(|BehaviorSubject' -- '<m>'
+# Rajapintatyypit ja validointi
+git -C .. grep -nE '^export (interface|type) |z\.object\(' -- '<m>'
+# Generoidut rajapintatyypit (= sopimus taustapalveluun)
+git -C .. ls-files '<m>/**/*api*.ts' '<m>/**/generated/**' '<m>/**/schema.graphql'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 # Tilanhallinta
 git -C .. grep -nE 'createSlice|configureStore|create\(\(set|atom\(|writable\(|BehaviorSubject' -- '<m>'
 # Rajapintatyypit ja validointi
@@ -44,7 +77,18 @@ propsit → lähetettävä payload.** Kuvaa kussakin solmussa hallitseva tyyppi.
 
 ## Komponenttien väliset rajapinnat
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+# Mikro-frontendit / web-komponentit / moduulifederaatio
+git -C .. grep -nE 'customElements\.define|defineCustomElement|ModuleFederation|remotes:' -- '<m>'
+# Tapahtumaväylät komponenttien välillä
+git -C .. grep -nE 'dispatchEvent\(|new CustomEvent\(|addEventListener\(' -- '<m>'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 # Mikro-frontendit / web-komponentit / moduulifederaatio
 git -C .. grep -nE 'customElements\.define|defineCustomElement|ModuleFederation|remotes:' -- '<m>'
 # Tapahtumaväylät komponenttien välillä
@@ -57,7 +101,15 @@ integraatiotapa. Dokumentoi se `jarjestelmaprosessit/`-kansioon.
 
 ## Käännösaikainen vs. ajonaikainen konfiguraatio
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+git -C .. ls-files '<m>/.env*' '<m>/vite.config.*' '<m>/next.config.*' '<m>/angular.json'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 git -C .. ls-files '<m>/.env*' '<m>/vite.config.*' '<m>/next.config.*' '<m>/angular.json'
 ```
 
@@ -67,7 +119,15 @@ tärkeä eikä näy koodista ilman että sitä etsii.
 
 ## Testit
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
+git -C .. ls-files '<m>/**/*.test.*' '<m>/**/*.spec.*' '<m>/**/e2e/**' '<m>/**/*.cy.*'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
 git -C .. ls-files '<m>/**/*.test.*' '<m>/**/*.spec.*' '<m>/**/e2e/**' '<m>/**/*.cy.*'
 ```
 
