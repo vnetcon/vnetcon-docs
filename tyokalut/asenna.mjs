@@ -121,11 +121,17 @@ if (!fs.existsSync(MAALI)) {
   ok(`Asennettiin vnetcon-docs ${VERSIO} → ${MAALI}`);
   rivi('');
   him('Seuraavat askeleet:');
+  // Polut ja ketjutus alustan mukaan: Windows-käyttäjälle ei näytetä
+  // ./-alkuisia polkuja eikä &&-ketjutusta, jotka eivät toimi PowerShellissa.
+  const cli = process.platform === 'win32'
+    ? 'tyokalut\\vnetcon-ai\\vnetcon-ai.cmd'
+    : './tyokalut/vnetcon-ai/vnetcon-ai';
   rivi(`  1) cd "${MAALI}"
-  2) claude                       # tai: ./tyokalut/vnetcon-ai/vnetcon-ai claude
+  2) claude                       # tai: ${cli} claude
   3) Clauden syötekenttään:  /vnetcon-init
 
-Tarkistus ilman agenttia:  cd "${MAALI}" && ./tyokalut/vnetcon-ai/vnetcon-ai doctor
+Tarkistus ilman agenttia:  cd "${MAALI}"
+                           ${cli} doctor
 Käyttöohje:                ${path.join(MAALI, 'README.md')}`);
   process.exit(0);
 }
