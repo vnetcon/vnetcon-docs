@@ -121,9 +121,13 @@ if (!fs.existsSync(MAALI)) {
   ok(`Asennettiin vnetcon-docs ${VERSIO} → ${MAALI}`);
   rivi('');
   him('Seuraavat askeleet:');
-  // Polut ja ketjutus alustan mukaan: Windows-käyttäjälle ei näytetä
-  // ./-alkuisia polkuja eikä &&-ketjutusta, jotka eivät toimi PowerShellissa.
-  const cli = process.platform === 'win32'
+  // Polut ja ketjutus kuoren mukaan, ei käyttöjärjestelmän: PowerShellissa ei
+  // näytetä ./-alkuisia polkuja eikä &&-ketjutusta, jotka eivät siellä toimi.
+  // Git Bash on Windowsissa ajava bash — siellä Node on win32, mutta
+  // kenoviivapolku ei toimi, joten se saa saman polun kuin macOS ja Linux.
+  // MSYSTEM on Git Bashin (MSYS2) oma muuttuja; WSL:ssa platform on 'linux'.
+  const gitBash = Boolean(process.env.MSYSTEM);
+  const cli = process.platform === 'win32' && !gitBash
     ? 'tyokalut\\vnetcon-ai\\vnetcon-ai.cmd'
     : './tyokalut/vnetcon-ai/vnetcon-ai';
   rivi(`  1) cd "${MAALI}"

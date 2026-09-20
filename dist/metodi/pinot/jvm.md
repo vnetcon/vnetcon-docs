@@ -27,6 +27,8 @@ git -C .. grep -nE '@(QueryMapping|MutationMapping|SchemaMapping)' -- '<m>'
 
 ## Datan muodon määrittelijät
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
 # DTO:t ja validointi (= rajapintasopimus)
 git -C .. grep -nE '@(Valid|NotNull|NotBlank|Size|Pattern|JsonProperty|JsonIgnore)' -- '<m>'
@@ -37,6 +39,20 @@ git -C .. grep -nE '@(Entity|Table|Column|Id|ManyToOne|OneToMany|Embeddable)' --
 git -C .. grep -nE '^\s*data class ' -- '<m>'
 # OpenAPI-määrittely
 git -C .. ls-files '**/openapi*.y*ml' '**/*.json' | grep -i -E 'openapi|swagger'
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
+# DTO:t ja validointi (= rajapintasopimus)
+git -C .. grep -nE '@(Valid|NotNull|NotBlank|Size|Pattern|JsonProperty|JsonIgnore)' -- '<m>'
+git -C .. ls-files '<m>/**/dto/**' '<m>/**/*Dto*' '<m>/**/*Request*' '<m>/**/*Response*'
+# Entiteetit
+git -C .. grep -nE '@(Entity|Table|Column|Id|ManyToOne|OneToMany|Embeddable)' -- '<m>'
+# Kotlin data classit
+git -C .. grep -nE '^\s*data class ' -- '<m>'
+# OpenAPI-määrittely
+git -C .. ls-files '**/openapi*.y*ml' '**/*.json' | Select-String 'openapi|swagger'
 ```
 
 ## Tietokanta
