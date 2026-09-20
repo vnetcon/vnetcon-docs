@@ -29,7 +29,7 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 | Mitä | Tarvitaan | Miksi |
 |------|-----------|-------|
 | **Pääte** | aina | macOS/Linux: mikä tahansa. **Windowsilla PowerShell riittää** — Claude Code, Codex ja kaikki paketin työkalut toimivat siinä natiivisti. WSL2 käy myös; jos valitset sen, aja koko työ sen sisällä, myös `git`. |
-| **bash** | **ei tarvita** | Koko paketti on Nodea: `vnetcon-ai.mjs`, `asenna.mjs`, `kalibroi`, `moduulit`, `linkit` ja HTML-generointi. Windowsilla aja `tyokalut\vnetcon-ai\vnetcon-ai.cmd` (tai `.ps1`, tai suoraan `node tyokalut\vnetcon-ai\vnetcon-ai.mjs`); macOS/Linuxilla `./tyokalut/vnetcon-ai/vnetcon-ai` toimii kuten ennenkin. Mukana olevat `.sh`-tiedostot ovat ohuita käynnistimiä, eivät toteutusta. |
+| **bash** | **ei tarvita** | Koko paketti on Nodea: `vnetcon-ai.mjs`, `asenna.mjs`, `kalibroi`, `moduulit`, `linkit` ja HTML-generointi. Windowsilla aja `tyokalut\vnetcon-ai\vnetcon-ai.cmd` (tai `.ps1`, tai suoraan `node tyokalut\vnetcon-ai\vnetcon-ai.mjs`); macOS/Linuxilla `./tyokalut/vnetcon-ai/vnetcon-ai` toimii kuten ennenkin. Mukana olevat `.sh`-tiedostot ovat ohuita käynnistimiä, eivät toteutusta. Myös menettelyn kartoituskomennot on kirjoitettu molemmille kuorille: jokaisessa pinoprofiilissa ([`metodi/pinot/`](metodi/pinot/)) on joka osiossa oma lohkonsa bashille ja PowerShellille, joten agentti ei ehdota Windowsilla putkia jotka kaatuisivat siellä. Lohko valitaan kuoren mukaan: Git Bash ja WSL2 käyttävät bash-lohkoja. |
 | **`claude` ja/tai `codex`** | aina | `/`-komennot ajetaan agentin sisällä. Yksi agentti riittää alkuun; oletustyönjako on dokumentointi Claudella, toteutus Codexilla. |
 | **Kirjautuminen agenttiin** | aina | Oletuksena oma tili (`claude`, `codex login`) — mitään ei tarvitse konfiguroida. Muut tarjoajat: ks. [Kenen AI-tiliä vasten ajetaan](#kenen-ai-tiliä-vasten-ajetaan). |
 | **Node.js 18+** (suositus 20 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
@@ -110,6 +110,8 @@ Kunkin täydellinen menettely on kansiossa [`metodi/`](metodi/).
 Nämä ovat **pääte**komentoja (eivät `/`-komentoja): ne eivät käytä tekoälyä eikä
 tilejä, ja toimivat myös ennen käyttöönottoa. Ajetaan tässä hakemistossa.
 
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
 ./tyokalut/vnetcon-ai/vnetcon-ai moduulit          # moduulit, tila ja mikä seuraavaksi
 ./tyokalut/vnetcon-ai/vnetcon-ai kalibroi          # lähtötilanne, katveet, laajuusarvio
@@ -117,7 +119,7 @@ tilejä, ja toimivat myös ennen käyttöönottoa. Ajetaan tässä hakemistossa.
 ./tyokalut/vnetcon-ai/vnetcon-ai doctor            # mitä on asennettu ja konfiguroitu
 ```
 
-Windowsilla (PowerShell) sama ilman bashia:
+PowerShell (Windows ilman bashia):
 
 ```powershell
 tyokalut\vnetcon-ai\vnetcon-ai.cmd moduulit

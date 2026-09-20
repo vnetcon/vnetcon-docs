@@ -17,7 +17,10 @@ tilejä, ei käyttöoikeuksia kenellekään.** Koodisi ei liiku mihinkään.
 
 Esivaatimukset: `git` ja **Node 18+**. **Bashia, Git Bashia tai WSL:ää ei
 tarvita** — kaikki työkalut ovat Node-ohjelmia, ja Windowsilla riittää
-PowerShell.
+PowerShell. Tämä koskee myös itse menettelyä: kartoituskomennot on kirjoitettu
+auki molemmille kuorille, ks. [PowerShell-tuki](#powershell-tuki).
+
+bash (macOS, Linux, WSL, Git Bash):
 
 ```bash
 git clone https://github.com/vnetcon/vnetcon-docs.git
@@ -25,7 +28,7 @@ vnetcon-docs/tyokalut/asenna.sh /polku/projektiisi
 cd /polku/projektiisi/vnetcon-docs
 ```
 
-Windowsilla (PowerShell) sama:
+PowerShell (Windows ilman bashia):
 
 ```powershell
 git clone https://github.com/vnetcon/vnetcon-docs.git
@@ -41,8 +44,8 @@ Sen jälkeen:
 | `./tyokalut/vnetcon-ai/vnetcon-ai kalibroi` | Kirjoittaa `kalibrointiraportti.md`:n: laajuusarvio tunteina ja AI-kustannuksena, katvealueet, dokumentaation tila. **Koodivapaa** — voit lähettää sen eteenpäin |
 | `./tyokalut/vnetcon-ai/vnetcon-ai doctor` | Mitä on asennettu ja konfiguroitu. Aja tämä jos jokin ei toimi |
 
-Windowsilla sama komento on `tyokalut\vnetcon-ai\vnetcon-ai.cmd <komento>`
-(tai `.ps1`). Toteutus on molemmilla sama `vnetcon-ai.mjs`.
+Windowsilla komento on `tyokalut\vnetcon-ai\vnetcon-ai.cmd <komento>`
+(tai `.ps1`). Molemmat ajavat saman `vnetcon-ai.mjs`-toteutuksen.
 
 ### Mitä odottaa ensimmäisellä ajolla
 
@@ -233,6 +236,32 @@ kohta 4) ja ehdottaa alueen dokumentointia osana tikettiä.
 > talteen aloitushetkellä. Ilman `git init`iä `/vnetcon-init` havaitsee tämän ja
 > asettaa `projekti.versionhallinta: none` — järjestelmä toimii, mutta
 > synkronointi menetetään ja päivitykset tehdään käsin.
+
+## PowerShell-tuki
+
+Alustariippumattomuus ei koske vain työkaluja vaan myös **menettelyä**.
+Kartoituksen hakukomennot tulevat pinoprofiileista
+([`dist/metodi/pinot/`](dist/metodi/pinot/)), ja jokaisessa profiilissa jokainen
+osio on kirjoitettu auki kahdesti: kerran bashille, kerran PowerShellille.
+Yhteensä 50 lohkoa kumpaakin, kahdeksassa profiilissa (yleinen, .NET, JVM,
+Node/TS, Python, PHP, Go, frontend).
+
+Miksi tämä on oleellista: profiilien komennot päätyvät projektikohtaiseen
+`metodi/kartoitus.md`:hen, jota agentti ajaa. Jos siellä on `grep`- ja
+`head`-putkia, ne kaatuvat PowerShellissa — tai pahempaa, palauttavat nollan,
+jota ei erota aidosta katvealueesta. Siksi PowerShell-vastineet on kirjoitettu
+näkyviin eikä jätetty agentin käännettäviksi.
+
+Lohko valitaan **kuoren, ei käyttöjärjestelmän** mukaan:
+
+| Kuori | Mikä lohko |
+|-------|------------|
+| macOS, Linux, WSL2, Git Bash | bash |
+| Windows ilman bashia | PowerShell |
+
+Git Bash on Windowsissa ajava bash, joten se käyttää bash-lohkoja. `asenna.mjs`
+tunnistaa sen `MSYSTEM`-muuttujasta ja tulostaa jatko-ohjeisiin kauttaviiva-
+polut kenoviivojen sijaan.
 
 ## Jakelumalli — paketti kopioidaan, sitä ei linkitetä
 

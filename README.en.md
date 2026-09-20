@@ -22,7 +22,11 @@ commands are plain local Node scripts: **no AI, no network, no accounts, no acce
 granted to anyone.** Your code does not go anywhere.
 
 Prerequisites: `git` and **Node 18+**. **No bash, Git Bash or WSL is required** —
-every tool is a Node program, and PowerShell is enough on Windows.
+every tool is a Node program, and PowerShell is enough on Windows. The same
+holds for the method itself: the survey commands are spelled out for both
+shells, see [PowerShell support](#powershell-support).
+
+bash (macOS, Linux, WSL, Git Bash):
 
 ```bash
 git clone https://github.com/vnetcon/vnetcon-docs.git
@@ -30,7 +34,7 @@ vnetcon-docs/tyokalut/asenna.sh /path/to/your-project
 cd /path/to/your-project/vnetcon-docs
 ```
 
-On Windows (PowerShell):
+PowerShell (Windows without bash):
 
 ```powershell
 git clone https://github.com/vnetcon/vnetcon-docs.git
@@ -239,6 +243,31 @@ item 4) and proposes documenting that area as part of the ticket.
 > `HEAD` when it starts. Without `git init`, `/vnetcon-init` detects this and
 > sets `projekti.versionhallinta: none` — the system works, but you lose
 > synchronisation and updates are done by hand.
+
+## PowerShell support
+
+Platform independence covers not just the tools but the **method**. The survey
+commands come from the stack profiles
+([`dist/metodi/pinot/`](dist/metodi/pinot/)), and in every profile each section
+is written out twice: once for bash, once for PowerShell. 50 blocks of each
+across eight profiles (generic, .NET, JVM, Node/TS, Python, PHP, Go, frontend).
+
+Why this matters: the commands from those profiles end up in the project's own
+`metodi/kartoitus.md`, which the agent runs. If that file contains `grep` and
+`head` pipelines, they break in PowerShell — or worse, return zero hits, which
+is indistinguishable from a genuine blind spot. That is why the PowerShell
+equivalents are written out instead of being left for the agent to translate.
+
+Pick the block by **shell, not operating system**:
+
+| Shell | Which block |
+|-------|-------------|
+| macOS, Linux, WSL2, Git Bash | bash |
+| Windows without bash | PowerShell |
+
+Git Bash is bash running on Windows, so it uses the bash blocks. `asenna.mjs`
+detects it from `MSYSTEM` and prints forward-slash paths instead of
+backslashes.
 
 ## Distribution model — the package is copied, not linked
 
