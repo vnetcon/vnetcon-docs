@@ -249,8 +249,9 @@ item 4) and proposes documenting that area as part of the ticket.
 Platform independence covers not just the tools but the **method**. The survey
 commands come from the stack profiles
 ([`dist/metodi/pinot/`](dist/metodi/pinot/)), and in every profile each section
-is written out twice: once for bash, once for PowerShell. 50 blocks of each
-across eight profiles (generic, .NET, JVM, Node/TS, Python, PHP, Go, frontend).
+is written out twice: once for bash, once for PowerShell. 53 blocks of each
+across nine profiles (generic, .NET, JVM, Node/TS, Python, PHP, Go, frontend,
+Excel workbook).
 
 Why this matters: the commands from those profiles end up in the project's own
 `metodi/kartoitus.md`, which the agent runs. If that file contains `grep` and
@@ -268,6 +269,37 @@ Pick the block by **shell, not operating system**:
 Git Bash is bash running on Windows, so it uses the bash blocks. `asenna.mjs`
 detects it from `MSYSTEM` and prints forward-slash paths instead of
 backslashes.
+
+## Excel workbooks
+
+The most common undocumented business system is not code but an **Excel
+workbook**: the logic lives in formulas, the configuration on a parameter sheet,
+and there is no version history, no tests and no review. `.xlsx` is a binary, so
+`git grep` cannot see inside it — without a method of its own the survey returns
+**zero hits for every search area**, which is indistinguishable from a genuine
+blind spot.
+
+The package ships a stack profile for this
+([`dist/metodi/pinot/excel.md`](dist/metodi/pinot/excel.md), in Finnish) and a
+tool ([`dist/tyokalut/xlsx-kartta.mjs`](dist/tyokalut/xlsx-kartta.mjs)) that
+turns a workbook into text — searchable, and quotable into documents as is:
+
+```
+node tyokalut/xlsx-kartta.mjs ../<workbook>.xlsx --osa riskit
+```
+
+| Part (`--osa`) | What it prints |
+|----------------|----------------|
+| `rakenne` (structure) | sheets, header rows, hidden sheets, named ranges |
+| `kaavat` (formulas) | formulas as rules — row numbers normalised, so 500 identical rows collapse into one |
+| `funktiot` (functions) | the functions in use, plus a warning when the risk analysis is incomplete (`INDIRECT`, `OFFSET`) or the result is not reproducible (`NOW`, `TODAY`, `RAND`) |
+| `arvot` (values) | parameter sheets in full: percentages, tiers, multipliers, thresholds |
+| `linkit` (links) | external links to other workbooks, the cells referencing them, and a Mermaid dependency graph |
+| `riskit` (risks) | `IFERROR` swallowing errors, lookup ranges shorter than the table, hard-coded conditions and numbers, hidden sheets, dates stored as text, VBA |
+
+The tool is a dependency-free Node program (`.xlsx` is a zip of XML and `zlib`
+ships with Node), so it runs in PowerShell with nothing to install. `.xlsb` is a
+binary format it does **not** parse — record that as a blind spot.
 
 ## Distribution model — the package is copied, not linked
 
@@ -363,7 +395,8 @@ target projects then run `/yhdenmukaista-dokumentaatio`.
 **Run this before every release.** It builds two temporary projects, installs the
 package into them and asserts on the results — including the cases that have been
 broken once before (a module that is not a directory, line attribution from a
-`tiedostot` list, phantom rows, blind-spot scoping):
+`tiedostot` list, phantom rows, blind-spot scoping) and the Excel workbook traps
+`xlsx-kartta.mjs` has to find:
 
 ```bash
 tyokalut/testaa.sh           # exit 0 = pass

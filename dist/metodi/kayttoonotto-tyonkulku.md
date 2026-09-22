@@ -84,7 +84,11 @@ Kansiossa [`pinot/`](pinot/) on kartoitusreseptit per teknologiapino
 (hakukomennot: reitit, tietokanta, ulkoiset kutsut, skeemat, konfiguraatio).
 
 1. Valitse osuvat profiilit (voi olla useita, esim. `node-ts` + `python`).
-   Aina mukaan [`pinot/yleinen.md`](pinot/yleinen.md).
+   Aina mukaan [`pinot/yleinen.md`](pinot/yleinen.md). **Jos dokumentoitava
+   järjestelmä on Excel-työkirja eikä lähdekoodia**, ota mukaan
+   [`pinot/excel.md`](pinot/excel.md): `.xlsx` on binääri, joten jokainen
+   `git grep` palauttaa nollan — se näyttää katvealueelta, vaikka logiikka on
+   tallessa kaavoissa. Työkirja kartoitetaan `tyokalut/xlsx-kartta.mjs`:llä.
 2. **Käy läpi kalibroinnin 0-osuman alueet.** Kullekin: etsi koodista, onko
    aluetta todella olemassa (`git -C .. grep` projektin omilla termeillä). Jos on,
    olet löytänyt **todellisen katveen** — selvitä projektin oma kaava ja kirjoita

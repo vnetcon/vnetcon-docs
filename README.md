@@ -243,8 +243,8 @@ Alustariippumattomuus ei koske vain työkaluja vaan myös **menettelyä**.
 Kartoituksen hakukomennot tulevat pinoprofiileista
 ([`dist/metodi/pinot/`](dist/metodi/pinot/)), ja jokaisessa profiilissa jokainen
 osio on kirjoitettu auki kahdesti: kerran bashille, kerran PowerShellille.
-Yhteensä 50 lohkoa kumpaakin, kahdeksassa profiilissa (yleinen, .NET, JVM,
-Node/TS, Python, PHP, Go, frontend).
+Yhteensä 53 lohkoa kumpaakin, yhdeksässä profiilissa (yleinen, .NET, JVM,
+Node/TS, Python, PHP, Go, frontend, Excel-työkirja).
 
 Miksi tämä on oleellista: profiilien komennot päätyvät projektikohtaiseen
 `metodi/kartoitus.md`:hen, jota agentti ajaa. Jos siellä on `grep`- ja
@@ -262,6 +262,36 @@ Lohko valitaan **kuoren, ei käyttöjärjestelmän** mukaan:
 Git Bash on Windowsissa ajava bash, joten se käyttää bash-lohkoja. `asenna.mjs`
 tunnistaa sen `MSYSTEM`-muuttujasta ja tulostaa jatko-ohjeisiin kauttaviiva-
 polut kenoviivojen sijaan.
+
+## Excel-työkirjat
+
+Yleisin dokumentoimaton liiketoimintajärjestelmä ei ole koodia vaan
+**Excel-työkirja**: logiikka on kaavoissa, konfiguraatio parametrivälilehdellä,
+eikä versiohistoriaa, testejä tai katselmointia ole. `.xlsx` on binääri, joten
+`git grep` ei näe sen sisään — ilman omaa menettelyä kartoitus antaa **nolla
+osumaa jokaiselle hakualueelle**, eikä sitä erota aidosta katvealueesta.
+
+Paketissa on tähän oma pinoprofiili
+([`dist/metodi/pinot/excel.md`](dist/metodi/pinot/excel.md)) ja työkalu
+([`dist/tyokalut/xlsx-kartta.mjs`](dist/tyokalut/xlsx-kartta.mjs)), joka purkaa
+työkirjan tekstiksi — haettavaksi ja dokumentteihin liitettäväksi:
+
+```
+node tyokalut/xlsx-kartta.mjs ../<työkirja>.xlsx --osa riskit
+```
+
+| Osa | Mitä tulostaa |
+|-----|---------------|
+| `rakenne` | välilehdet, otsikkorivit, piilotetut lehdet, nimetyt alueet |
+| `kaavat` | kaavat sääntöinä — rivinumerot normalisoituina 500 samanlaista riviä tiivistyy yhdeksi |
+| `funktiot` | käytetyt funktiot ja varoitus siitä, milloin riskianalyysi on vajaa (`INDIRECT`, `OFFSET`) tai tulos ei ole toistettava (`NOW`, `TODAY`, `RAND`) |
+| `arvot` | parametrivälilehdet kokonaan: prosentit, portaat, kertoimet, rajat |
+| `linkit` | ulkoiset linkit toisiin työkirjoihin, viittaavat solut ja Mermaid-riippuvuusgraafi |
+| `riskit` | `IFERROR`-nielaisut, taulukkoa lyhyemmät hakualueet, kovakoodatut ehdot ja luvut, piilotetut välilehdet, tekstinä olevat päivämäärät, VBA |
+
+Työkalu on riippuvuudeton Node-ohjelma (`.xlsx` on zip-paketti XML:ää ja `zlib`
+tulee Noden mukana), joten se toimii myös PowerShellissä ilman asennuksia.
+`.xlsb` on binäärimuoto, jota se **ei** jäsennä — se on kirjattava katveeksi.
 
 ## Jakelumalli — paketti kopioidaan, sitä ei linkitetä
 
@@ -356,7 +386,8 @@ kohdeprojekteissa ajetaan sen jälkeen `/yhdenmukaista-dokumentaatio`.
 **Aja tämä ennen jokaista julkaisua.** Se rakentaa kaksi tilapäistä projektia,
 asentaa paketin niihin ja väittää tuloksista — mukaan lukien ne tapaukset, jotka
 ovat kertaalleen olleet rikki (moduuli ei ole hakemisto, `tiedostot`-listan
-rivikohdistus, haamurivit, katveen rajaus):
+rivikohdistus, haamurivit, katveen rajaus) sekä Excel-työkirjan ansat, jotka
+`xlsx-kartta.mjs`:n on löydettävä:
 
 ```bash
 tyokalut/testaa.sh           # exit 0 = läpi

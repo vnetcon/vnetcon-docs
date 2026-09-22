@@ -130,6 +130,12 @@ tyokalut\vnetcon-ai\vnetcon-ai.cmd doctor
 
 `moduulit` on nopein tapa nähdä tilanne — ks. [Rakenne](#rakenne) alla.
 
+> **Onko dokumentoitava järjestelmä Excel-työkirja?** `.xlsx` on binääri, joten
+> `git grep` ei näe sen sisään. Työkirjan purkaa tekstiksi
+> `node tyokalut/xlsx-kartta.mjs ../<työkirja>.xlsx --osa riskit` (myös
+> `rakenne`, `kaavat`, `funktiot`, `arvot`, `linkit`). Menettely on
+> pinoprofiilissa [`metodi/pinot/excel.md`](metodi/pinot/excel.md).
+
 ## Työnjako: Claude ja Codex
 
 Oletus (muutettavissa `/agentit`-komennolla tai `vnetcon.config.yaml`:sta):
@@ -215,7 +221,7 @@ jarjestelmaprosessit/   End-to-end -kulut moduulirajojen yli (tekninen)
 moduulit/<moduuli>/     Tekninen tuotos: yleiskuvaus, prosessit, datavirrat, datarakenteet
 datamallit/             Jaetut skeemat, joihin moduulit linkittävät
 tiketit/<tunnus>/       Tikettityön jälki (vaiheet 0–5) — myös agenttien kädenojennus
-tyokalut/               html-generaattori, vnetcon-ai (agenttien käynnistys), tarkista-linkit.mjs
+tyokalut/               html-generaattori, vnetcon-ai (agenttien käynnistys), tarkista-linkit.mjs, xlsx-kartta.mjs
 html/                   Generoitu selattava HTML (johdettu md:stä; ei versioida)
 ```
 

@@ -20,11 +20,13 @@
 //   7. `syy`-kenttä ei katkea ensimmäiseen pilkkuun
 //   8. vnetcon-ai:n komennot vastaavat samoin kaikilla alustoilla (Node-portti)
 //   9. asenna --paivita säilyttää laajennuspisteet ja jättää settings.json.uusi
+//  10. xlsx-kartta löytää työkirjan ansat (lyhyt hakualue, IFERROR, piilotettu
+//      välilehti, ulkoinen linkki) ja import-rajapinta nimeää sarakkeet oikein
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const REPO = fs.realpathSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
@@ -350,6 +352,178 @@ if (fs.existsSync(path.join(P2, 'vnetcon-docs', 'tyokalut', 'vnetcon-ai', 'vnetc
   ok('Windows-käynnistin kopioitui asennukseen');
 } else {
   virhe('vnetcon-ai.cmd ei kopioitunut asennukseen');
+}
+
+// --- Tapaus 5: Excel-työkirjan kartoitus -----------------------------------
+
+// Fixtuuri rakennetaan käsin: .xlsx on zip-paketti XML:ää, ja pakkaamaton
+// (store) kelpaa lukijalle. Näin savutestissä ei ole riippuvuuksia eikä
+// binääritiedostoa versionhallinnassa — ja fixtuuriin saa juuri ne ansat, jotka
+// työkalun on löydettävä: liian lyhyt hakualue, IFERROR, piilotettu välilehti,
+// tekstinä oleva päivämäärä ja ulkoinen linkki Windows-polkuun.
+
+process.stdout.write('\n'); him('Tapaus 5 — Excel-työkirjan kartoitus (xlsx-kartta.mjs)');
+
+let CRC_TAULU = null;
+function crc32(buf) {
+  if (!CRC_TAULU) {
+    CRC_TAULU = new Int32Array(256);
+    for (let n = 0; n < 256; n += 1) {
+      let c = n;
+      for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      CRC_TAULU[n] = c;
+    }
+  }
+  let c = -1;
+  for (const b of buf) c = CRC_TAULU[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ -1) >>> 0;
+}
+
+function kirjoitaZip(kohde, tiedostot) {
+  const paikalliset = [];
+  const hakemisto = [];
+  let siirtyma = 0;
+  for (const [nimi, sisalto] of Object.entries(tiedostot)) {
+    const data = Buffer.from(sisalto, 'utf8');
+    const nimiBuf = Buffer.from(nimi, 'utf8');
+    const crc = crc32(data);
+    const otsake = Buffer.alloc(30);
+    otsake.writeUInt32LE(0x04034b50, 0);
+    otsake.writeUInt16LE(20, 4);
+    otsake.writeUInt16LE(0, 8);                  // menetelmä 0 = pakkaamaton
+    otsake.writeUInt32LE(crc, 14);
+    otsake.writeUInt32LE(data.length, 18);
+    otsake.writeUInt32LE(data.length, 22);
+    otsake.writeUInt16LE(nimiBuf.length, 26);
+    paikalliset.push(otsake, nimiBuf, data);
+
+    const kh = Buffer.alloc(46);
+    kh.writeUInt32LE(0x02014b50, 0);
+    kh.writeUInt16LE(20, 4); kh.writeUInt16LE(20, 6);
+    kh.writeUInt16LE(0, 10);
+    kh.writeUInt32LE(crc, 16);
+    kh.writeUInt32LE(data.length, 20);
+    kh.writeUInt32LE(data.length, 24);
+    kh.writeUInt16LE(nimiBuf.length, 28);
+    kh.writeUInt32LE(siirtyma, 42);
+    hakemisto.push(kh, nimiBuf);
+    siirtyma += 30 + nimiBuf.length + data.length;
+  }
+  const keskus = Buffer.concat(hakemisto);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(Object.keys(tiedostot).length, 8);
+  eocd.writeUInt16LE(Object.keys(tiedostot).length, 10);
+  eocd.writeUInt32LE(keskus.length, 12);
+  eocd.writeUInt32LE(siirtyma, 16);
+  fs.writeFileSync(kohde, Buffer.concat([...paikalliset, keskus, eocd]));
+}
+
+const TYOKIRJA = path.join(TYO, 'tyokirja.xlsx');
+{
+  const jaetut = ['Päivä', 'Myyjä', 'Summa', 'Tuoteryhmä', 'Provisio-%', 'Kaapelit', 'Keskukset'];
+  const s = (i) => `t="s"><v>${i}</v>`;
+  kirjoitaZip(TYOKIRJA, {
+    '[Content_Types].xml': '<?xml version="1.0"?><Types/>',
+    'xl/workbook.xml': '<?xml version="1.0"?><workbook><sheets>'
+      + '<sheet name="Laskenta" sheetId="1" r:id="rId1"/>'
+      + '<sheet name="Kertoimet" sheetId="2" r:id="rId2"/>'
+      + '<sheet name="Parametrit (vanha)" sheetId="3" state="hidden" r:id="rId3"/>'
+      + '</sheets><definedNames><definedName name="Provisiokanta">Kertoimet!$A$2:$B$3</definedName></definedNames>'
+      + '<externalReferences><externalReference r:id="rId9"/></externalReferences></workbook>',
+    'xl/_rels/workbook.xml.rels': '<?xml version="1.0"?><Relationships>'
+      + '<Relationship Id="rId1" Target="worksheets/sheet1.xml"/>'
+      + '<Relationship Id="rId2" Target="worksheets/sheet2.xml"/>'
+      + '<Relationship Id="rId3" Target="worksheets/sheet3.xml"/>'
+      + '<Relationship Id="rId9" Target="externalLinks/externalLink1.xml"/>'
+      + '</Relationships>',
+    // Otsikkorivi on 2 ja yhdistetty — data alkaa vasta riviltä 3.
+    'xl/worksheets/sheet1.xml': '<?xml version="1.0"?><worksheet>'
+      + '<sheetViews><sheetView><pane topLeftCell="A3"/></sheetView></sheetViews>'
+      + '<mergeCells><mergeCell ref="A1:C1"/></mergeCells><sheetData>'
+      + `<row r="2"><c r="A2" ${s(0)}</c><c r="B2" ${s(1)}</c><c r="C2" ${s(2)}</c></row>`
+      + '<row r="3"><c r="A3" t="str"><v>1.3.2025</v></c>'
+      + '<c r="B3"><f>IFERROR(VLOOKUP($C3,Kertoimet!$A$2:$B$3,2,FALSE),0)</f><v>0</v></c>'
+      + '<c r="C3"><f>IF($A3="Virtanen",$B3*0.03,[1]Budjetti!$B$2)</f><v>1</v></c></row>'
+      + '<row r="4"><c r="A4" t="str"><v>2.3.2025</v></c>'
+      + '<c r="B4"><f>IFERROR(VLOOKUP($C4,Kertoimet!$A$2:$B$3,2,FALSE),0)</f><v>0</v></c>'
+      + '<c r="C4"><f>NOW()</f><v>1</v></c></row>'
+      + '</sheetData></worksheet>',
+    // Taulukossa on rivi 4, mutta yllä oleva haku päättyy riviin 3.
+    'xl/worksheets/sheet2.xml': '<?xml version="1.0"?><worksheet><sheetData>'
+      + `<row r="1"><c r="A1" ${s(3)}</c><c r="B1" ${s(4)}</c></row>`
+      + `<row r="2"><c r="A2" ${s(5)}</c><c r="B2"><v>0.03</v></c></row>`
+      + `<row r="3"><c r="A3" ${s(6)}</c><c r="B3"><v>0.04</v></c></row>`
+      + '<row r="4"><c r="A4" t="str"><v>Valaisimet</v></c><c r="B4"><v>0.05</v></c></row>'
+      + '</sheetData></worksheet>',
+    'xl/worksheets/sheet3.xml': '<?xml version="1.0"?><worksheet><sheetData>'
+      + '<row r="1"><c r="A1"><v>1</v></c></row></sheetData></worksheet>',
+    'xl/sharedStrings.xml': `<?xml version="1.0"?><sst count="${jaetut.length}">`
+      + jaetut.map((x) => `<si><t>${x}</t></si>`).join('') + '</sst>',
+    'xl/externalLinks/externalLink1.xml': '<?xml version="1.0"?><externalLink><externalBook>'
+      + '<sheetNames><sheetName val="Budjetti"/></sheetNames></externalBook></externalLink>',
+    'xl/externalLinks/_rels/externalLink1.xml.rels': '<?xml version="1.0"?><Relationships>'
+      + '<Relationship Id="rId1" Target="C:\\Talous\\budjetti%202025.xlsx" TargetMode="External"/>'
+      + '</Relationships>',
+  });
+}
+
+const XLSX_KARTTA = path.join(REPO, 'dist', 'tyokalut', 'xlsx-kartta.mjs');
+const osaTuloste = (osa) => {
+  const r = ajaNode(XLSX_KARTTA, [TYOKIRJA, '--osa', osa]);
+  if (r.status !== 0) virhe(`--osa ${osa} epäonnistui: ${(r.stderr || '').trim()}`);
+  return r.stdout || '';
+};
+
+{
+  const t = osaTuloste('rakenne');
+  sisaltaaTeksti('rakenne: piilotettu välilehti merkitään', '[PIILOTETTU]', t);
+  sisaltaaTeksti('rakenne: otsikkorivi 2 tunnistetaan', 'otsikkorivi 2:', t);
+  sisaltaaTeksti('rakenne: rivisiirtymä sanotaan ääneen', 'data alkaa vasta riviltä 3', t);
+  sisaltaaTeksti('rakenne: nimetyt alueet listataan', 'Provisiokanta', t);
+}
+{
+  // Kaksi samanlaista riviä on yksi sääntö — muuten 500-rivinen työkirja
+  // tulostaa 500 kertaa saman kaavan eikä logiikkaa erota datasta.
+  const t = osaTuloste('kaavat');
+  sisaltaaTeksti('kaavat: toistuva kaava tiivistyy yhdeksi säännöksi', '×2', t);
+}
+{
+  const t = osaTuloste('funktiot');
+  sisaltaaTeksti('funktiot: funktiot lasketaan', '`VLOOKUP`', t);
+  sisaltaaTeksti('funktiot: haihtuvasta funktiosta varoitetaan', 'Haihtuvat funktiot: NOW', t);
+}
+{
+  const t = osaTuloste('arvot');
+  sisaltaaTeksti('arvot: parametrivälilehti tulostetaan kokonaan', 'B2=0.03', t);
+}
+{
+  const t = osaTuloste('linkit');
+  sisaltaaTeksti('linkit: ulkoinen kohde luetaan (myös välilyönnillinen polku)', 'budjetti 2025.xlsx', t);
+  sisaltaaTeksti('linkit: ehdoton polku tunnistetaan', 'ehdoton polku', t);
+  sisaltaaTeksti('linkit: viittaavat solut näytetään', 'Laskenta!C3', t);
+}
+{
+  const t = osaTuloste('riskit');
+  sisaltaaTeksti('riskit: IFERROR-nielaisu', 'Virheen nielaisu', t);
+  sisaltaaTeksti('riskit: hakualue jää taulukkoa lyhyemmäksi', 'Hakualue ei kata koko taulukkoa', t);
+  sisaltaaTeksti('riskit: kovakoodattu ehto', 'Kovakoodattu ehto kaavassa', t);
+  sisaltaaTeksti('riskit: kovakoodattu luku', 'Kovakoodattu luku kaavassa', t);
+  sisaltaaTeksti('riskit: piilotettu välilehti', 'Piilotettu välilehti', t);
+  sisaltaaTeksti('riskit: hylätyltä kuulostava nimi', 'Nimi viittaa hylättyyn', t);
+  sisaltaaTeksti('riskit: päivämäärä tekstinä', 'Päivämäärä tekstinä', t);
+  sisaltaaTeksti('riskit: ulkoinen linkki', 'Ulkoinen linkki toiseen työkirjaan', t);
+}
+{
+  // Import-rajapinta: `rivit()` lukee otsikot sarakkeittain. Jos se ottaisi ne
+  // otsikkorivi():n tiivistetystä listasta, tyhjä tai tunnistamaton otsikkorivi
+  // siirtäisi arvot väärän nimen alle — hiljainen virhe, jota ei huomaa.
+  const { lueTyokirja, valilehti, rivit } = await import(pathToFileURL(XLSX_KARTTA).href);
+  const wb = lueTyokirja(TYOKIRJA);
+  const r = rivit(valilehti(wb, 'Kertoimet'));
+  onSama('import: rivimäärä otsikkorivin alta', '3', String(r.length));
+  onSama('import: sarakkeet osuvat otsikoihin', 'Kaapelit', String(r[0]?.['Tuoteryhmä']));
+  onSama('import: arvo säilyy lukuna', '0.03', String(r[0]?.['Provisio-%']));
 }
 
 // --- Paketin omat linkit ---------------------------------------------------
