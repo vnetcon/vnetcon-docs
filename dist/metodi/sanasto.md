@@ -13,7 +13,7 @@ Muoto:
 
 <!-- Esimerkki (poista/korvaa todellisilla):
 > **Toimitusrivi** — Yksi tilauksen tuote määrineen. Erotettava tilausriviltä,
-  joka on hinnoittelun yksikkö. *(tilauspalvelu)*
+  joka on laskennan yksikkö. *(tilauspalvelu)*
 -->
 
 > TODO: täytetään dokumentoinnin edetessä.

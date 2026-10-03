@@ -47,9 +47,9 @@ agentit:
   # ALIAGENTIT (/dokumentoi-kaikki) — suurin yksittäinen kuluerä.
   # Mitattuna 39 % kulutuksesta menee aliagentteihin. Dokumentointiagentti tekee
   # rajattua luku- ja kirjoitustyötä mallipohjien mukaan, joten se on luonteva
-  # halvemmalle mallille; verifiointiagentti etsii virheitä ja on arvostelukykyä,
+  # kevyemmälle mallille; verifiointiagentti etsii virheitä ja on arvostelukykyä,
   # joten sen alentaminen on aito laaturiski. Tyhjä = peri pääagentilta.
-  # Suhteelliset hinnat, ks. metodi/agentit.md.
+  # Mallien soveltuvuus, ks. metodi/agentit.md.
   aliagentit:
     dokumentointi_malli: ""   # esim. claude-sonnet-5
     verifiointi_malli: ""     # suositus: jätä tyhjäksi
@@ -59,7 +59,7 @@ agentit:
   #                          kenenkään kolmannen läpi, ei lisäsopimuksia.
   #   2. bedrock | vertex |  asiakkaan oma pilvitili/API-avain. Avaimet ja
   #      anthropic-api |     liikenne pysyvät asiakkaan tenantissa; konfiguroinnin
-  #      openai-api          ja kustannusseurannan voi ostaa palveluna.
+  #      openai-api          ja käytön seuranta konfiguroidaan erikseen.
   #   3. gateway             organisaation OMA sisäinen välityspalvelin, jos
   #                          sellainen on käytössä. Toimittaja ei tarjoa
   #                          välityspalvelinta. Jos omaa tiliä ei ole lainkaan,
@@ -89,18 +89,16 @@ agentit:
 arvio:
   # Laajuusarvion kertoimet. Oletukset ovat YHDESTÄ mitatusta projektista
   # (62 kloc, python + react-ts) — kalibroi omiin ajoihisi: dokumentoi yksi
-  # moduuli, ota seinäkelloaika ja Claude Coden /cost-luku.
+  # moduuli ja mittaa toteutunut seinäkelloaika.
   #
   # ENSISIJAINEN on rivipainotus. Moduulien koot vaihtelevat mitatusti
   # satakertaisesti (85 → 11 852 riviä samassa projektissa), joten tasainen
   # kerroin per moduuli on väärä heti kun arviota katsotaan moduuli- tai
   # osa-aluetasolla. Moduulikertoimia käytetään vain jos rivimäärät puuttuvat.
   tunnit_per_kloc: 0.39       # agenttiaikaa per 1 000 koodiriviä
-  usd_per_kloc: 9.2           # tokenit asiakkaan omalla AI-tilillä
   tunnit_per_moduuli: 1       # varakerroin, kun rivimäärä ei ole tiedossa
-  usd_per_moduuli: 25         # varakerroin
   # HUOM: mikään näistä ei sisällä substanssiosaajan validointiaikaa, joka on
-  # se osa joka ratkaisee lopputuloksen laadun — ja hinnan.
+  # se osa joka ratkaisee lopputuloksen laadun.
 
 laskutus:
   asiakas: ""                 # laskutustunniste (näkyy käyttölokissa)

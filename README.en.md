@@ -47,7 +47,7 @@ Then:
 | Command | What it tells you |
 |---------|-------------------|
 | `./tyokalut/vnetcon-ai/vnetcon-ai moduulit` | What modules the codebase has, how large they are, and what to document first. Works before onboarding |
-| `./tyokalut/vnetcon-ai/vnetcon-ai kalibroi` | Writes `kalibrointiraportti.md`: scope estimate in hours and AI cost, blind spots, documentation state. **Contains no code** — you can forward it |
+| `./tyokalut/vnetcon-ai/vnetcon-ai kalibroi` | Writes `kalibrointiraportti.md`: scope estimate in hours and tokens, blind spots, documentation state. **Contains no code** — you can forward it |
 | `./tyokalut/vnetcon-ai/vnetcon-ai doctor` | What is installed and configured. Run this if something fails |
 
 > The output and the report are in Finnish by default. Set
@@ -71,8 +71,7 @@ running the tool again.
 
 When you want the real module split instead of generic candidates, start an agent
 in this directory and run `/vnetcon-init` (see
-[Installing into a target project](#installing-into-a-target-project)). Measured
-cost: about **$16 on your own AI account** for a 60,000-line project.
+[Installing into a target project](#installing-into-a-target-project)).
 
 A browsable sample of what finished documentation looks like:
 [vnetcon.com/nayte](https://vnetcon.com/nayte/).
@@ -98,6 +97,42 @@ By default it uses the
 providers (your own cloud tenant, a direct API key, or your organisation's own
 internal proxy) are configurable; see
 [`dist/metodi/agentit.md`](dist/metodi/agentit.md).
+
+## Multi-project MCP
+
+This repository also contains a local MVP that assembles documentation from
+multiple Git projects and their different branches into controlled releases and
+serves them to AI clients over stdio or Streamable HTTP MCP. Every project, ref,
+and source commit remains separate: project contents are not merged into one
+search corpus, and cross-project relationships exist only as explicit interface
+records.
+
+```bash
+npm install --prefix multiproject-mcp
+node tyokalut/multiproject-mcp.mjs init ../my-documentation-service
+cd ../my-documentation-service
+./multiproject-mcp help
+```
+
+The MVP supports both a `vnetcon-docs` directory maintained in the application
+repository and documentation maintained in a publication-side workspace. The
+latter neither modifies nor pushes the source repository. Different branches
+have separate checkouts, documentation workspaces, and releases.
+
+- [Local setup and command reference](multiproject-mcp/README.en.md)
+- [HTTP server and deployment](multiproject-mcp/docs/http-server.md)
+- [Authentication and authorization](multiproject-mcp/docs/authentication.md)
+- [Git change detection and refresh](multiproject-mcp/docs/refresh.md)
+- [AI client MCP compatibility](multiproject-mcp/docs/clients.md)
+- [Suomenkielinen käyttöohje](multiproject-mcp/README.md)
+- [Architecture and implementation specification (Finnish)](multiproject-mcp.md)
+
+The current version uses local filesystem storage and supports both stdio and
+Streamable HTTP. HTTP offers an open local mode, bearer tokens, username and
+password, or OIDC, with optional project and channel restrictions. Git changes
+can be detected by polling or a protected webhook without automatically
+starting AI. AWS storage and a management UI belong to later phases. A helper
+prints the Secure MCP Tunnel commands needed for a private ChatGPT connection.
 
 ## How it is used
 
@@ -309,7 +344,7 @@ plainly: `asenna.sh` **copies** the `dist/` directory into the target project as
 
 The reason is self-containment: it works without network access, without
 `npm install` (except for HTML generation) and without adding a dependency to the
-customer's build pipeline. The price is that **updating is a deliberate act**:
+customer's build pipeline. The trade-off is that **updating is a deliberate act**:
 
 ```bash
 cd /path/to/this/repo && git pull
@@ -341,8 +376,11 @@ version is in use.
 
 ```
 dist/                  The package, copied into a project as vnetcon-docs/
+multiproject-mcp/      Local multi-project MCP, schema, tests, and user guides
+multiproject-mcp.md    Architecture and implementation specification (Finnish)
 tyokalut/asenna.mjs    Copies dist/ → <target>/vnetcon-docs (idempotent; --paivita updates the engine)
 tyokalut/asenna.sh     Launcher for *nix   (asenna.cmd = the same for Windows)
+tyokalut/multiproject-mcp.mjs  Multi-project MCP launcher from this source repository
 tyokalut/testaa.mjs    Smoke test: builds temporary projects and asserts on the results
 tyokalut/testaa.sh     Launcher for *nix   (testaa.cmd = the same for Windows)
 tyokalut/paketoi.sh    Builds a distributable vnetcon-docs-<version>.zip (maintainer only, macOS/Linux)

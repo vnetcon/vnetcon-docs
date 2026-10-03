@@ -645,11 +645,9 @@ const nimieroja = dokTila.dokumentoidutModuulit.size - dokumentoidutKandidaatit;
 
 // Kertoimet ovat konfiguroitavissa, koska oletukset ovat YHDESTÄ mitatusta
 // projektista (62 kloc, python + react-ts). Kalibroi omista ajoistasi:
-// dokumentoi yksi moduuli, ota seinäkelloaika ja Claude Coden /cost-luku.
+// dokumentoi yksi moduuli ja mittaa toteutunut seinäkelloaika.
 const TUNNIT_PER_KLOC = Number(konf('arvio.tunnit_per_kloc')) || 0.39;
-const USD_PER_KLOC = Number(konf('arvio.usd_per_kloc')) || 9.2;
 const TUNNIT_PER_MODUULI = Number(konf('arvio.tunnit_per_moduuli')) || 1;
-const USD_PER_MODUULI = Number(konf('arvio.usd_per_moduuli')) || 25;
 // Yhdestä mittauksesta ei saa haarukkaa, joten se levitetään karkeasti.
 const ALA = 0.6, YLA = 1.4;
 
@@ -665,17 +663,15 @@ const rivipainotus = dokumentoimattomatRivit > 0;
 const kloc = dokumentoimattomatRivit / 1000;
 
 const tunnitPohja = rivipainotus ? kloc * TUNNIT_PER_KLOC : dokumentoimatta * TUNNIT_PER_MODUULI;
-const usdPohja = rivipainotus ? kloc * USD_PER_KLOC : dokumentoimatta * USD_PER_MODUULI;
 
-// Moduulikohtainen erittely: tämä on se taso, jolla osa-alue kerrallaan myyminen
-// ja priorisointi tapahtuu — kokonaissumma peittää satakertaiset erot.
+// Moduulikohtainen erittely tukee priorisointia; kokonaissumma peittää
+// satakertaiset kokoerot.
 const arvioModuuleittain = dokumentoimattomatModuulit
   .map((m) => {
     const nimi = m.nimi || nimiPolusta(m.hakemisto);
     const loc = m.loc || 0;
     const t = loc > 0 ? (loc / 1000) * TUNNIT_PER_KLOC : TUNNIT_PER_MODUULI;
-    const u = loc > 0 ? (loc / 1000) * USD_PER_KLOC : USD_PER_MODUULI;
-    return { nimi, loc, tunnit: +t.toFixed(2), usd: Math.round(u) };
+    return { nimi, loc, tunnit: +t.toFixed(2) };
   })
   .sort((a, b) => b.loc - a.loc);
 
@@ -690,16 +686,14 @@ const arvio = {
   painotus: rivipainotus ? 'koodirivit' : 'moduulimäärä',
   tunnit_min: +(tunnitPohja * ALA).toFixed(2),
   tunnit_max: +(tunnitPohja * YLA).toFixed(2),
-  usd_min: Math.round(usdPohja * ALA),
-  usd_max: Math.round(usdPohja * YLA),
   tokenit_min_M: +(dokumentoimatta * 0.15).toFixed(2),
   tokenit_max_M: +(dokumentoimatta * 0.35).toFixed(2),
   dokkeja_min: dokumentoimatta * 6,
   dokkeja_max: dokumentoimatta * 20,
   moduuleittain: arvioModuuleittain,
   perusta: rivipainotus
-    ? `toteutuneet ajot — ~${TUNNIT_PER_KLOC} h agenttiaikaa ja ~$${USD_PER_KLOC} tokenikulutusta per 1 000 koodiriviä`
-    : `toteutuneet ajot — per moduuli ~${TUNNIT_PER_MODUULI} h agenttiaikaa ja ~$${USD_PER_MODUULI} tokenikulutusta`,
+    ? `toteutuneet ajot — ~${TUNNIT_PER_KLOC} h agenttiaikaa per 1 000 koodiriviä`
+    : `toteutuneet ajot — per moduuli ~${TUNNIT_PER_MODUULI} h agenttiaikaa`,
 };
 
 // --- Löydökset -----------------------------------------------------------
@@ -1006,31 +1000,26 @@ Karkea arvio, perusta: ${t.arvio.perusta}.
 - Dokumentoimattomia moduuleja: **${t.arvio.dokumentoimatta}**${t.arvio.dokumentoimatta_rivit ? ` (${t.arvio.dokumentoimatta_rivit.toLocaleString('fi-FI')} koodiriviä)` : ''}
 - Arvioitu dokumenttimäärä: **${t.arvio.dokkeja_min}–${t.arvio.dokkeja_max}**
 - Arvioitu **agenttiaika**: **${tunnit(t.arvio.tunnit_min)}–${tunnit(t.arvio.tunnit_max)} h**
-- Arvioitu **AI-kustannus**: **$${t.arvio.usd_min}–${t.arvio.usd_max}** omalla AI-tililläsi
 - Arvioitu tokenikulutus: **${t.arvio.tokenit_min_M}–${t.arvio.tokenit_max_M} M tokenia** _(moduulimäärästä, ei rivipainotettu)_
 ${t.arvio.moduuleittain && t.arvio.moduuleittain.length > 1 ? `
 Kokonaissumma peittää sen, että moduulit ovat eri kokoisia. Priorisointi ja
-osa-alue kerrallaan myyminen tapahtuvat tällä tasolla:
+osa-alue kerrallaan eteneminen tapahtuvat tällä tasolla:
 
-${taulu(['Moduuli', 'Koodirivejä', 'Agenttiaika', 'AI-kustannus'],
+${taulu(['Moduuli', 'Koodirivejä', 'Agenttiaika'],
     t.arvio.moduuleittain.slice(0, 30).map((m) => [
       `\`${m.nimi}\``,
       m.loc ? m.loc.toLocaleString('fi-FI') : '—',
       `${tunnit(m.tunnit)} h`,
-      `$${m.usd}`,
     ]))}${t.arvio.moduuleittain.length > 30 ? `_(${t.arvio.moduuleittain.length - 30} muuta jätetty pois listasta)_\n` : ''}` : ''}
 
 > ⚠️ **Arvio ei sisällä sitä osaa, joka ratkaisee lopputuloksen laadun:
 > substanssiosaajan validointiaikaa** ja TODO-kysymysten läpikäyntiä. Agenttiaika
-> ja AI-kustannus ovat koneen osuus; ne ovat mitattuja ja pieniä. Ihmisen osuutta
+> ja tokenikulutus ovat koneen osuus. Ihmisen osuutta
 > ei voi arvioida koneellisesti — se selviää vain käymällä ensimmäisen moduulin
 > dokumentit läpi ja mittaamalla.
 >
-> Aika- ja kustannuskertoimet ovat **yhdestä mitatusta projektista**. Kalibroi ne
-> omiin ajoihisi: \`vnetcon.config.yaml\` → \`arvio.tunnit_per_moduuli\` ja
-> \`arvio.usd_per_moduuli\`. Kustannus laskettiin sillä mallilla, jolla mittaus
-> tehtiin — halvempi malli aliagenteille pudottaa sitä olennaisesti
-> (ks. [\`metodi/agentit.md\`](metodi/agentit.md)).
+> Aikakerroin on **yhdestä mitatusta projektista**. Kalibroi se omiin ajoihisi:
+> \`vnetcon.config.yaml\` → \`arvio.tunnit_per_moduuli\`.
 
 ## Mitä tämä raportti ei kerro
 

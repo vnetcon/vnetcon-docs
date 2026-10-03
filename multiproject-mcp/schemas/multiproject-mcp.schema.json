@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vnetcon.example/schemas/multiproject-mcp.schema.json",
+  "title": "Vnetcon multiproject MCP configuration",
+  "type": "object",
+  "required": ["schema_version", "service", "projects", "channels"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "service": {
+      "type": "object",
+      "required": ["instance_id"],
+      "properties": {
+        "instance_id": { "type": "string", "minLength": 1 },
+        "default_channel": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "transport": { "enum": ["stdio", "http"] },
+        "http": {
+          "type": "object",
+          "properties": {
+            "host": { "type": "string", "minLength": 1 },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "path": { "type": "string", "pattern": "^/" },
+            "allowed_hosts": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+            "session_idle_seconds": { "type": "integer", "minimum": 5 },
+            "max_sessions": { "type": "integer", "minimum": 1 },
+            "keep_alive_seconds": { "type": "integer", "minimum": 1 },
+            "json_responses": { "type": "boolean" },
+            "authentication": {
+              "type": "object",
+              "required": ["mode"],
+              "properties": {
+                "mode": { "enum": ["none", "bearer", "basic", "oidc"] },
+                "allow_unauthenticated_network": { "type": "boolean" },
+                "oidc": {
+                  "type": "object",
+                  "required": ["issuer", "audience", "resource"],
+                  "properties": {
+                    "issuer": { "type": "string", "pattern": "^https?://" },
+                    "audience": {
+                      "oneOf": [
+                        { "type": "string", "minLength": 1 },
+                        { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+                      ]
+                    },
+                    "resource": { "type": "string", "pattern": "^https?://" },
+                    "resource_metadata_url": { "type": "string", "pattern": "^https?://" },
+                    "discovery_url": { "type": "string", "pattern": "^https?://" },
+                    "jwks_uri": { "type": "string", "pattern": "^https?://" },
+                    "principal_claim": { "type": "string", "minLength": 1 },
+                    "required_scopes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+                    "algorithms": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+                    "clock_tolerance_seconds": { "type": "integer", "minimum": 0, "maximum": 300 },
+                    "allow_insecure_http": { "type": "boolean" },
+                    "access_rules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["claim", "values"],
+                        "properties": {
+                          "name": { "type": "string", "minLength": 1 },
+                          "claim": { "type": "string", "minLength": 1 },
+                          "values": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+                          "channels": { "type": "array", "items": { "type": "string" } },
+                          "projects": { "type": "array", "items": { "type": "string" } }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "refresh": {
+      "type": "object",
+      "properties": {
+        "mode": { "enum": ["manual", "poll", "webhook", "ci"] },
+        "debounce_seconds": { "type": "integer", "minimum": 0 },
+        "poll_interval_seconds": { "type": "integer", "minimum": 5 },
+        "worker_interval_seconds": { "type": "integer", "minimum": 1 },
+        "auto_apply": { "type": "boolean" },
+        "max_parallel_jobs": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["project_id", "repository", "refs", "documentation"],
+        "properties": {
+          "project_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{1,62}$" },
+          "repository": {
+            "type": "object",
+            "anyOf": [{ "required": ["path"] }, { "required": ["url"] }]
+          },
+          "refs": {
+            "type": "object",
+            "required": ["default", "include"],
+            "properties": {
+              "default": { "type": "string" },
+              "include": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+            }
+          },
+          "documentation": {
+            "type": "object",
+            "required": ["mode"],
+            "properties": { "mode": { "enum": ["managed", "repository"] } }
+          }
+        }
+      }
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["channel_id", "project_refs"],
+        "properties": {
+          "channel_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,62}$" },
+          "project_refs": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

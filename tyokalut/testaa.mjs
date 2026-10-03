@@ -122,6 +122,11 @@ const mjsTiedostot = [
   path.join(REPO, 'dist', 'tyokalut', 'vnetcon-ai', 'hae-token.mjs'),
   path.join(REPO, 'tyokalut', 'asenna.mjs'),
   path.join(REPO, 'tyokalut', 'testaa.mjs'),
+  path.join(REPO, 'tyokalut', 'multiproject-mcp.mjs'),
+  ...['auth', 'cli', 'config', 'errors', 'git', 'http-server', 'mcp-server', 'publisher', 'refresh', 'search', 'util', 'workspace']
+    .map((f) => path.join(REPO, 'multiproject-mcp', 'src', `${f}.mjs`)),
+  path.join(REPO, 'multiproject-mcp', 'bin', 'multiproject-mcp.mjs'),
+  path.join(REPO, 'multiproject-mcp', 'test', 'integration.test.mjs'),
 ];
 for (const f of mjsTiedostot) {
   if (!fs.existsSync(f)) { virhe(`puuttuu: ${path.basename(f)}`); continue; }
@@ -139,6 +144,8 @@ for (const f of [
   'dist/tyokalut/vnetcon-ai/hae-token.cmd',
   'tyokalut/asenna.sh',
   'tyokalut/asenna.cmd',
+  'tyokalut/multiproject-mcp.sh',
+  'tyokalut/multiproject-mcp.cmd',
 ]) {
   if (fs.existsSync(path.join(REPO, f))) ok(`käynnistin ${path.basename(f)}`);
   else virhe(`käynnistin puuttuu: ${f}`);
@@ -534,6 +541,24 @@ process.stdout.write('\n'); him('Dokumentaation linkit');
   const teksti = (r.stdout || '') + (r.stderr || '');
   if (teksti.includes('(0 rikki)')) ok('dist: ei rikkinäisiä linkkejä');
   else { virhe('dist: rikkinäisiä linkkejä'); process.stdout.write(teksti.split('\n').slice(-5).join('\n') + '\n'); }
+}
+
+// --- Moniprojekti-MCP ------------------------------------------------------
+
+process.stdout.write('\n'); him('Moniprojekti-MCP');
+{
+  const riippuvuudet = path.join(REPO, 'multiproject-mcp', 'node_modules');
+  if (!fs.existsSync(riippuvuudet)) {
+    him('(multiproject-mcp/node_modules puuttuu — integraatiotesti ohitettiin; aja npm install)');
+  } else {
+    const testi = path.join(REPO, 'multiproject-mcp', 'test', 'integration.test.mjs');
+    const r = spawnSync(process.execPath, ['--test', testi], { cwd: REPO, encoding: 'utf8' });
+    if (r.status === 0) ok('multiproject-mcp: integraatiotestit läpi');
+    else {
+      virhe('multiproject-mcp: integraatiotestit epäonnistuivat');
+      process.stdout.write(`${r.stdout || ''}${r.stderr || ''}`);
+    }
+  }
 }
 
 // --- Yhteenveto -----------------------------------------------------------

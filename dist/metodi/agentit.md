@@ -221,31 +221,27 @@ Claudelle on lisäksi automaattinen polku: kun `/agentit` on kirjoittanut
 `apiKeyHelper`-skriptin, pelkkä `claude` tässä hakemistossa käyttää palvelua
 ilman käynnistysskriptiä.
 
-## Aliagenttien malli (suurin yksittäinen kuluerä)
+## Aliagenttien malli
 
 `/dokumentoi-kaikki` spawnaa kaksi aliagenttia per moduuli: **dokumentointiagentin**
 (lukee koodin, kirjoittaa dokumentit mallipohjista) ja **verifiointiagentin**
-(etsii dokumenteista virheitä koodia vasten). Mitatussa ajossa **39 %
-kokonaiskulutuksesta oli näissä aliagenteissa.**
+(etsii dokumenteista virheitä koodia vasten). Aliagenttien mallivalinta vaikuttaa
+sekä dokumentoinnin laatuun että käytettyyn agenttiaikaan.
 
 Molempien malli on konfiguroitavissa: `vnetcon.config.yaml` →
 `agentit.aliagentit.dokumentointi_malli` / `verifiointi_malli`. Tyhjä = peri
 pääagentilta.
 
-| Malli | Hinta suhteessa Opus 5:een | Soveltuvuus |
-|-------|---------------------------|-------------|
-| `claude-opus-5` | 1,0× | Oletus |
-| `claude-sonnet-5` | ~0,6× | **Dokumentointiagentille luonteva:** työ on rajattua lukemista ja kirjoittamista mallipohjien mukaan |
-| `claude-haiku-4-5` | ~0,2× | Halvin, mutta aito laaturiski — "mitä tämä koodi tekee" on arvostelukykyä |
+| Malli | Soveltuvuus |
+|-------|-------------|
+| `claude-opus-5` | Oletus |
+| `claude-sonnet-5` | **Dokumentointiagentille luonteva:** työ on rajattua lukemista ja kirjoittamista mallipohjien mukaan |
+| `claude-haiku-4-5` | Kevyin vaihtoehto, mutta aito laaturiski — "mitä tämä koodi tekee" vaatii arvostelukykyä |
 
-**Verifiointiagenttia ei kannata alentaa.** Sen tehtävä on olettaa että
+**Verifiointiagentin mallia ei kannata keventää.** Sen tehtävä on olettaa että
 dokumentaatiossa on virheitä ja löytää ne — se on juuri sitä arvostelukykyä, jonka
-vuoksi kalliimpi malli on olemassa. Halvempi verifiointi tuottaa hyväksyntöjä, ei
+vuoksi vahvempi malli on tarpeen. Kevyempi verifiointi tuottaa hyväksyntöjä, ei
 löydöksiä, ja silloin koko adversariaalinen vaihe on teatteria.
-
-Hinnat ovat suhteellisia eivätkä absoluuttisia — tarkista voimassa oleva hinnasto
-mallin tarjoajalta. **Kustannus on asiakkaan omalla AI-tilillä** (oletus
-`tarjoaja: oma`), joten mallin valinta on asiakkaan päätös, ei Vnetconin.
 
 ## Laskutus ja käytön seuranta
 
