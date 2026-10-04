@@ -27,6 +27,14 @@ dokumentaatio:
   moduuli_yksikko: "moduuli"
   moduuli_monikko: "moduulit"
 
+# Ihmisen ohjaus (metodi/konventiot.md kohta 11). Projektin oma ohjaus on aina
+# metodi/ohjaus.md. Yhteinen, kaikkia MCP-työtilan projekteja koskeva ohjaus ja
+# integraatiotietueet ovat oletuksena mcp-tyotila/yhteiset/ ja mcp-tyotila/interfaces/.
+# Moniprojekti-MCP asettaa nämä itse managed-työtiloille.
+ohjaus:
+  yhteiset: ""                # esim. mcp-tyotila/yhteiset
+  integraatiot: ""            # esim. mcp-tyotila/interfaces
+
 # Mistä ja miten koodi kartoitetaan. /vnetcon-init täyttää nämä ja kirjoittaa
 # yksityiskohtaiset hakukomennot tiedostoon metodi/kartoitus.md.
 pino:

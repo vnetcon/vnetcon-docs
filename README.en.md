@@ -100,38 +100,58 @@ internal proxy) are configurable; see
 
 ## Multi-project MCP
 
-This repository also contains a local MVP that assembles documentation from
+`vnetcon-docs` also contains the multi-project MCP (`tyokalut/mcp/`), a local MVP that assembles documentation from
 multiple Git projects and their different branches into controlled releases and
 serves them to AI clients over stdio or Streamable HTTP MCP. Every project, ref,
 and source commit remains separate: project contents are not merged into one
 search corpus, and cross-project relationships exist only as explicit interface
 records.
 
+The MCP ships with every installation and package at `tyokalut/mcp/` and is
+used through the `vnetcon-ai mcp` command. Its dependencies are installed only
+when you start using it. Run the commands in the `vnetcon-docs` directory.
+
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
-npm install --prefix multiproject-mcp
-node tyokalut/multiproject-mcp.mjs init ../my-documentation-service
-cd ../my-documentation-service
-./multiproject-mcp help
+npm ci --prefix tyokalut/mcp
+./tyokalut/vnetcon-ai/vnetcon-ai mcp init
 ```
 
-The MVP supports both a `vnetcon-docs` directory maintained in the application
-repository and documentation maintained in a publication-side workspace. The
-latter neither modifies nor pushes the source repository. Different branches
+PowerShell (Windows):
+
+```powershell
+npm ci --prefix tyokalut\mcp
+tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp init
+```
+
+`init` creates the workspace in `vnetcon-docs/mcp-tyotila/` and offers the
+parent project, the project whose root `vnetcon-docs` is installed in, as the
+first project. You can add 1–N other projects next to it or instead of it.
+
+In this source repository, the contents of the `vnetcon-docs` directory live in `dist/`.
+
+The MVP supports three documentation models: `vnetcon-docs` in the project's own
+repository (`repository`), `vnetcon-docs` in its own local repository outside the
+project's Git (`separate`), and documentation maintained in a publication-side
+workspace (`managed`). The latter two neither modify nor push the source
+repository. Different branches
 have separate checkouts, documentation workspaces, and releases.
 
-- [Local setup and command reference](multiproject-mcp/README.en.md)
-- [HTTP server and deployment](multiproject-mcp/docs/http-server.md)
-- [Authentication and authorization](multiproject-mcp/docs/authentication.md)
-- [Git change detection and refresh](multiproject-mcp/docs/refresh.md)
-- [AI client MCP compatibility](multiproject-mcp/docs/clients.md)
-- [Suomenkielinen käyttöohje](multiproject-mcp/README.md)
-- [Architecture and implementation specification (Finnish)](multiproject-mcp.md)
+- [Local setup and command reference](dist/tyokalut/mcp/README.en.md)
+- [HTTP server and deployment](dist/tyokalut/mcp/docs/http-server.md)
+- [Authentication and authorization](dist/tyokalut/mcp/docs/authentication.md)
+- [Git change detection and refresh](dist/tyokalut/mcp/docs/refresh.md)
+- [AI client MCP compatibility](dist/tyokalut/mcp/docs/clients.md)
+- [Suomenkielinen käyttöohje](dist/tyokalut/mcp/README.md)
+- [Architecture and implementation specification (Finnish)](dist/tyokalut/mcp/docs/arkkitehtuuri.md)
 
 The current version uses local filesystem storage and supports both stdio and
 Streamable HTTP. HTTP offers an open local mode, bearer tokens, username and
 password, or OIDC, with optional project and channel restrictions. Git changes
 can be detected by polling or a protected webhook without automatically
-starting AI. AWS storage and a management UI belong to later phases. A helper
+starting AI. The management UI (`vnetcon-ai mcp ui`, at `/ui`) covers setup and
+maintenance without the command line. AWS storage belongs to a later phase. A helper
 prints the Secure MCP Tunnel commands needed for a private ChatGPT connection.
 
 ## How it is used
@@ -376,11 +396,9 @@ version is in use.
 
 ```
 dist/                  The package, copied into a project as vnetcon-docs/
-multiproject-mcp/      Local multi-project MCP, schema, tests, and user guides
-multiproject-mcp.md    Architecture and implementation specification (Finnish)
+dist/tyokalut/mcp/     Multi-project MCP (vnetcon-ai mcp), schema, tests, and user guides
 tyokalut/asenna.mjs    Copies dist/ → <target>/vnetcon-docs (idempotent; --paivita updates the engine)
 tyokalut/asenna.sh     Launcher for *nix   (asenna.cmd = the same for Windows)
-tyokalut/multiproject-mcp.mjs  Multi-project MCP launcher from this source repository
 tyokalut/testaa.mjs    Smoke test: builds temporary projects and asserts on the results
 tyokalut/testaa.sh     Launcher for *nix   (testaa.cmd = the same for Windows)
 tyokalut/paketoi.sh    Builds a distributable vnetcon-docs-<version>.zip (maintainer only, macOS/Linux)

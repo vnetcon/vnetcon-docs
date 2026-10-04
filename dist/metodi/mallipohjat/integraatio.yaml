@@ -1,0 +1,44 @@
+# Integraatiotietue: kahden tai useamman järjestelmän (Git-repon) välinen rajapinta.
+# Tallennetaan MCP-työtilan interfaces/-hakemistoon nimellä <interface_id>.yaml.
+# Ihmisen hyväksymä: tekoäly voi luonnostella, mutta status: active vasta hyväksynnän jälkeen.
+# Ks. ../integraatio-tyonkulku.md
+schema_version: 1
+interface_id: <lyhyt-tunniste-v1>            # pienet kirjaimet, numerot ja -, ei muutu
+display_name: <ihmisluettava nimi>
+status: draft                                # draft | active | deprecated
+description: >-
+  <1–3 lausetta: mitä tietoa kulkee, mihin suuntaan ja miksi>
+
+provider:                                    # osapuoli, joka tarjoaa rajapinnan tai lähettää datan
+  project_id: <MCP-työtilan project_id>
+  role: <esim. HTTP API provider, viestien julkaisija, tiedoston tuottaja>
+  contract:                                  # sopimus, jos sellainen on versionhallinnassa
+    type: <openapi | asyncapi | json-schema | sql | muu | ei sopimusta>
+    source: <polku projektin juuresta>
+    version: "<versio>"
+  source_references:
+    - <polku projektin juuresta>
+
+consumers:                                   # osapuolet, jotka käyttävät rajapintaa tai vastaanottavat datan
+  - project_id: <MCP-työtilan project_id>
+    role: <esim. HTTP API consumer, viestien kuluttaja>
+    source_references:
+      - <polku projektin juuresta>
+
+transport:
+  protocol: <HTTPS | AMQP | Kafka | SFTP | tietokanta | muu>
+  authentication: <esim. OAuth2 client credentials, mTLS, ei tiedossa>
+
+data_mappings:                               # vastaavuudet; sama nimi ei tarkoita samaa käsitettä
+  - provider_type: <projekti:Tyyppi>
+    consumer_type: <projekti:Tyyppi>
+    description: <mitä kenttiä käytetään ja miten ne vastaavat toisiaan>
+
+documentation:                               # kummankin osapuolen omat dokumentit
+  - project_id: <project_id>
+    path: <polku vnetcon-docs-hakemiston juuresta, esim. moduulit/x/yleiskuvaus.md>
+
+review:                                      # hyväksyntä
+  approved_by: <kuka>
+  approved_at: <YYYY-MM-DD>
+  source: <katselmointi PVM tai muu peruste>

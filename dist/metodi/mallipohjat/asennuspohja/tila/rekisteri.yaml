@@ -1,0 +1,52 @@
+# Moduulirekisteri — dokumentoinnin tila
+#
+# Skooppi: vain versionhallinnassa oleva tuotantokoodi.
+# Lähde: `git -C .. ls-files` — EI tiedostojärjestelmän `ls`-listaus.
+# Tilat: tekematta | kesken | valmis | rajattu-pois
+#
+# Uusi sessio: valitse ensimmäinen `tekematta` (pilotti ensin), aseta `kesken`,
+# dokumentoi (ks. ../metodi/tyonkulku.md), lopuksi `valmis` + päivitä pvm.
+# Kun projektiin tulee uusi moduuli, lisää se tänne.
+#
+# /vnetcon-init luo tämän listan. Kentät:
+#   nimi        moduulit/<nimi> ja moduulin polku projektissa (jos eri, lisää `polku`)
+#   polku       moduulin hakemisto projektin juuresta
+#   tyyppi      vapaamuotoinen, esim. node-ts / python / java / react
+#   tila        ks. yllä
+#   pilotti     true yhdelle moduulille: dokumentoidaan ensin menettelyn tarkistukseksi
+#   kuvaus      1–2 lausetta: mitä moduuli tekee ja miksi se on rajattu näin
+#   tiedostot   valinnainen lista (ks. alla) — pakollinen jos moduuli ei ole hakemisto
+#   paivitetty  milloin dokumentoitiin
+#   syy         miksi rajattu pois (vain rajattu-pois)
+#
+# MODUULI EI AINA OLE HAKEMISTO. Jos yhdessä hakemistossa on kymmeniä tuhansia
+# rivejä, se jaetaan loogisiin moduuleihin, jotka jakavat saman `polku`n. Silloin
+# `tiedostot`-lista ratkaisee, mikä kuuluu mihin — lue se ennen dokumentointia.
+# Lista voi sisältää sekä tiedostoja että hakemistoja. Kun se on annettu, `polku`
+# on pelkkä viite eikä vaikuta rajaukseen. Kalibrointi laskee moduulin koodirivit
+# tästä listasta, ja `vnetcon-ai moduulit` varoittaa koodista, joka ei kuulu
+# yhteenkään moduuliin.
+
+paivitetty: TÄYTTÄMÄTÖN
+
+moduulit: []
+  # - nimi: esimerkkipalvelu
+  #   polku: services/esimerkki
+  #   tyyppi: node-ts
+  #   tila: tekematta
+  #   pilotti: true
+  #   kuvaus: "Tilausten vastaanotto ja validointi. Pilotti: pieni, mutta koskettaa sekä rajapintaa että tallennusta."
+  #
+  # - { nimi: toinen-moduuli, tyyppi: node-ts, tila: tekematta }
+  #
+  # Moduuli ilman omaa hakemistoa — tiedostot ratkaisevat rajauksen:
+  # - nimi: laskutus
+  #   polku: backend/palvelut
+  #   tyyppi: python
+  #   tila: tekematta
+  #   kuvaus: "Laskujen muodostus ja hyvitykset. Asuu samassa hakemistossa kuin tilaukset."
+  #   tiedostot:
+  #     - backend/palvelut/laskutus.py
+  #     - backend/palvelut/hyvitys.py
+  #
+  # - { nimi: generoitu-sdk, tila: rajattu-pois, syy: "generoitu koodi" }

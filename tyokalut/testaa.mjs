@@ -122,11 +122,11 @@ const mjsTiedostot = [
   path.join(REPO, 'dist', 'tyokalut', 'vnetcon-ai', 'hae-token.mjs'),
   path.join(REPO, 'tyokalut', 'asenna.mjs'),
   path.join(REPO, 'tyokalut', 'testaa.mjs'),
-  path.join(REPO, 'tyokalut', 'multiproject-mcp.mjs'),
-  ...['auth', 'cli', 'config', 'errors', 'git', 'http-server', 'mcp-server', 'publisher', 'refresh', 'search', 'util', 'workspace']
-    .map((f) => path.join(REPO, 'multiproject-mcp', 'src', `${f}.mjs`)),
-  path.join(REPO, 'multiproject-mcp', 'bin', 'multiproject-mcp.mjs'),
-  path.join(REPO, 'multiproject-mcp', 'test', 'integration.test.mjs'),
+  ...['auth', 'cli', 'config', 'errors', 'git', 'http-server', 'mcp-server', 'publisher', 'refresh', 'search', 'ui-server', 'util', 'workspace']
+    .map((f) => path.join(REPO, 'dist', 'tyokalut', 'mcp', 'src', `${f}.mjs`)),
+  path.join(REPO, 'dist', 'tyokalut', 'mcp', 'bin', 'multiproject-mcp.mjs'),
+  path.join(REPO, 'dist', 'tyokalut', 'mcp', 'ui', 'app.js'),
+  path.join(REPO, 'dist', 'tyokalut', 'mcp', 'test', 'integration.test.mjs'),
 ];
 for (const f of mjsTiedostot) {
   if (!fs.existsSync(f)) { virhe(`puuttuu: ${path.basename(f)}`); continue; }
@@ -144,8 +144,6 @@ for (const f of [
   'dist/tyokalut/vnetcon-ai/hae-token.cmd',
   'tyokalut/asenna.sh',
   'tyokalut/asenna.cmd',
-  'tyokalut/multiproject-mcp.sh',
-  'tyokalut/multiproject-mcp.cmd',
 ]) {
   if (fs.existsSync(path.join(REPO, f))) ok(`käynnistin ${path.basename(f)}`);
   else virhe(`käynnistin puuttuu: ${f}`);
@@ -326,6 +324,15 @@ agentit:
   const r = ajaNode(CLI, ['tama-komentoa-ei-ole'], { env: ymparisto });
   onSama('tuntematon komento → 1', 1, r.status);
   sisaltaaTeksti('tuntematon komento kirjoittaa stderriin', 'Tuntematon komento', r.stderr);
+}
+{
+  // MCP kulkee asennuksen mukana, mutta riippuvuudet asennetaan vasta käyttöön otettaessa.
+  const mcp = path.join(P2, 'vnetcon-docs', 'tyokalut', 'mcp');
+  onSama('asennus sisältää MCP:n', true, fs.existsSync(path.join(mcp, 'package.json')));
+  onSama('asennukseen ei kopioidu node_modulesia', false, fs.existsSync(path.join(mcp, 'node_modules')));
+  const r = ajaNode(CLI, ['mcp', 'help'], { env: ymparisto });
+  onSama('mcp ilman riippuvuuksia → 1', 1, r.status);
+  sisaltaaTeksti('mcp neuvoo asentamaan riippuvuudet', 'npm ci --prefix', r.stdout);
 }
 {
   // token ilman konfiguroitua lähdettä: paluukoodi 1 eikä mitään stdoutiin —
@@ -543,15 +550,57 @@ process.stdout.write('\n'); him('Dokumentaation linkit');
   else { virhe('dist: rikkinäisiä linkkejä'); process.stdout.write(teksti.split('\n').slice(-5).join('\n') + '\n'); }
 }
 
+// --- Vahvistetut kohdat (konventiot.md 11.2) --------------------------------
+
+process.stdout.write('\n'); him('Vahvistetut kohdat');
+{
+  const v = fs.mkdtempSync(path.join(os.tmpdir(), 'vnetcon-vahvistus-'));
+  fs.mkdirSync(path.join(v, 'vnetcon-docs', 'tyokalut'), { recursive: true });
+  fs.mkdirSync(path.join(v, 'vnetcon-docs', 'moduulit', 'm'), { recursive: true });
+  fs.copyFileSync(path.join(REPO, 'dist', 'tyokalut', 'tarkista-linkit.mjs'), path.join(v, 'vnetcon-docs', 'tyokalut', 'tarkista-linkit.mjs'));
+  const doc = path.join(v, 'vnetcon-docs', 'moduulit', 'm', 'yleiskuvaus.md');
+  const aja = () => ajaNode(path.join(v, 'vnetcon-docs', 'tyokalut', 'tarkista-linkit.mjs'), []);
+  fs.writeFileSync(doc, '# M\n\n<!-- vahvistettu: 2026-10-04 · katselmointi · T -->\nOk.\n<!-- /vahvistettu -->\n\n`<!-- vahvistettu -->` tekstinä\n');
+  onSama('ehjä vahvistettu kohta hyväksytään', 0, aja().status);
+  fs.writeFileSync(doc, '# M\n\n<!-- vahvistettu: 2026-10-04 · katselmointi · T -->\nAuki jäi.\n');
+  const r = aja();
+  onSama('sulkematon vahvistettu kohta hylätään', 1, r.status);
+  sisaltaaTeksti('virhe nimeää tiedoston', 'VAHVISTUS  moduulit/m/yleiskuvaus.md', r.stdout);
+  if (!PIDA) fs.rmSync(v, { recursive: true, force: true });
+}
+
 // --- Moniprojekti-MCP ------------------------------------------------------
 
 process.stdout.write('\n'); him('Moniprojekti-MCP');
 {
-  const riippuvuudet = path.join(REPO, 'multiproject-mcp', 'node_modules');
-  if (!fs.existsSync(riippuvuudet)) {
-    him('(multiproject-mcp/node_modules puuttuu — integraatiotesti ohitettiin; aja npm install)');
+  // Managed-työtila luodaan asennuspohjasta. Pohjan pitää vastata paketin omia
+  // käyttöönottoa edeltäviä tiedostoja, tai uusi työtila saa vanhentuneen pohjan.
+  const pohja = path.join(REPO, 'dist', 'metodi', 'mallipohjat', 'asennuspohja');
+  const parit = {
+    'tila/edistyminen.md': 'tila/edistyminen.md', 'tila/projekti.yaml': 'tila/projekti.yaml',
+    'tila/rakenne.yaml': 'tila/rakenne.yaml', 'tila/rekisteri.yaml': 'tila/rekisteri.yaml',
+    'tila/synkronoitu.yaml': 'tila/synkronoitu.yaml', 'metodi/kartoitus.md': 'metodi/kartoitus.md',
+    'metodi/sanasto.md': 'metodi/sanasto.md', 'metodi/ohjaus.md': 'metodi/ohjaus.md', 'johdanto.md': 'johdanto.md',
+    'claude-settings.json': '.claude/settings.json',
+  };
+  for (const [kopio, alkuperainen] of Object.entries(parit)) {
+    const a = path.join(pohja, ...kopio.split('/'));
+    const b = path.join(REPO, 'dist', ...alkuperainen.split('/'));
+    const sama = fs.existsSync(a) && fs.existsSync(b) && fs.readFileSync(a).equals(fs.readFileSync(b));
+    if (sama) ok(`asennuspohja vastaa: ${alkuperainen}`);
+    else virhe(`asennuspohja eroaa tai puuttuu: ${kopio} (kopioi dist/${alkuperainen} → dist/metodi/mallipohjat/asennuspohja/${kopio})`);
+  }
+}
+{
+  const mcp = path.join(REPO, 'dist', 'tyokalut', 'mcp');
+  if (!fs.existsSync(path.join(mcp, 'node_modules'))) {
+    him('(dist/tyokalut/mcp/node_modules puuttuu — integraatiotesti ohitettiin; aja npm ci --prefix dist/tyokalut/mcp)');
   } else {
-    const testi = path.join(REPO, 'multiproject-mcp', 'test', 'integration.test.mjs');
+    const ohje = ajaNode(path.join(REPO, 'dist', 'tyokalut', 'vnetcon-ai', 'vnetcon-ai.mjs'), ['mcp', 'help'],
+      { env: { ...process.env, NO_COLOR: '1' } });
+    onSama('vnetcon-ai mcp help palauttaa 0', 0, ohje.status);
+    sisaltaaTeksti('vnetcon-ai mcp ohjaa MCP:lle', 'multiproject-mcp init', ohje.stdout);
+    const testi = path.join(mcp, 'test', 'integration.test.mjs');
     const r = spawnSync(process.execPath, ['--test', testi], { cwd: REPO, encoding: 'utf8' });
     if (r.status === 0) ok('multiproject-mcp: integraatiotestit läpi');
     else {

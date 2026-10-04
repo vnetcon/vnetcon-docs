@@ -50,6 +50,9 @@ Jokaiselle dokille:
 4. Jos uusi malli tuo uuden jaetun rakenteen (esim. `datamallit/`) → luo
    puuttuvat datamallit ja **linkitä** dokista niihin.
 5. Epävarmat/dynaamiset kohdat: `> TODO:` -merkintä, ei arvausta.
+6. **Vahvistettuja kohtia ei yhdenmukaisteta.** `<!-- vahvistettu … -->`-merkintöjen
+   välinen sisältö jää ennalleen, myös jos uusi malli muotoilisi sen toisin
+   ([`konventiot.md`](konventiot.md) 11.2).
 
 ## Vaihe Y4 — Merkitse yhdenmukaistetuksi
 

@@ -285,7 +285,11 @@ miten kysymys on muotoiltu. Portin laatu **on** kysymyksen laatu.
 1. Tunnista kosketetut tiedostot: `git -C .. diff --name-only`.
 2. Etsi dokumentit joiden `lahteet` osuu niihin ([`tyonkulku.md`](tyonkulku.md)
    vaihe P2) ja **päivitä** ne päivitystilassa (P3). Kehittäjä hyväksyy
-   päivitykset kuten koodimuutoksetkin.
+   päivitykset kuten koodimuutoksetkin. Vahvistettuja kohtia ei muuteta; jos
+   tiketti muuttaa niiden kuvaamaa toimintaa, lisää huomautus ja kerro siitä
+   ([`konventiot.md`](konventiot.md) 11.2). Tiketin tarkoitus on ihmisen
+   hyväksymää tietoa, joten vahvistetun kohdan voi päivittää, **jos kehittäjä
+   hyväksyy sen** vaiheessa 3.
 3. Kirjoita `tiketit/<tunnus>/lopputulos.md`: mitä toteutettiin, **linkit
    committiin / PR:ään / haaraan** (ei koodin duplikointia) ja mitkä dokumentit
    päivitettiin. Aseta tiketin `tila: valmis`.

@@ -1,0 +1,15 @@
+# Dokumentaation synkronoinnin lähtötaso (baseline)
+#
+# Kertoo mihin committiin nähden dokumentaatio on kokonaisuutena ajan tasalla.
+# /synkronoi-dokumentaatio vertaa tätä HEADiin ja päivittää muuttuneet dokit.
+# Ks. ../metodi/synkronointi-tyonkulku.md
+#
+# Kunkin dokin oma `git-viite` (frontmatter) toimii tarkennuksena/varmistuksena,
+# jos tämä globaali merkki puuttuu tai on epäluotettava.
+
+viimeisin_synkronoitu_commit: ""
+synkronoitu_pvm: ""
+
+# Historia (uusin ylimmäs) — auttaa jäljittämään synkronointiajot.
+historia: []
+  # - { commit: abc1234, pvm: 2026-08-10, huomio: "lähtötaso asetettu käyttöönotossa" }

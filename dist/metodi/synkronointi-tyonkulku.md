@@ -40,6 +40,11 @@ git -C .. diff --name-status <viimeisin_synkronoitu_commit>..HEAD
 
 ## Vaihe S3 — Luokittele ja toimi
 
+Lue ensin ihmisen ohjaus ([`konventiot.md`](konventiot.md) kohta 11):
+[`ohjaus.md`](ohjaus.md), [`sanasto.md`](sanasto.md) ja yhteinen ohjaus.
+**Vahvistettuja kohtia ei muuteta**; jos diff näyttää koskevan niitä, lisää
+huomautus ja luettele ne raportissa.
+
 Käy muuttuneet polut läpi. Etsi kutakin polkua koskevat dokumentit
 frontmatterin `lahteet`-kentästä:
 

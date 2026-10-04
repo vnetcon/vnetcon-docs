@@ -497,6 +497,38 @@ function ajaNode(skripti, args) {
   if (r.status !== 0) process.exit(r.status || 1);
 }
 
+// Moniprojekti-MCP (tyokalut/mcp). Ajetaan käyttäjän nykyisessä hakemistossa,
+// koska MCP:n komennot kohdistuvat MCP-työtilaan, eivät tähän projektiin.
+function cmdMcp(args) {
+  const mcp = path.join(JUURI, 'tyokalut', 'mcp');
+  if (!fs.existsSync(path.join(mcp, 'node_modules', '@modelcontextprotocol', 'sdk'))) {
+    virhe('MCP:n riippuvuudet puuttuvat. Asenna ne kerran:');
+    rivi('');
+    rivi('  bash:        npm ci --prefix "' + mcp + '"');
+    rivi('  PowerShell:  npm ci --prefix "' + mcp + '"');
+    process.exit(1);
+  }
+  // Oletustyötila on tämän hakemiston mcp-tyotila/. Sitä käytetään, kun käyttäjä
+  // ei ole toisessa MCP-työtilassa eikä anna --config-valitsinta. Hakemistoa ei
+  // vaihdeta, jotta suhteelliset polut (esim. add-project --path) toimivat.
+  const oletus = path.join(JUURI, 'mcp-tyotila', 'multiproject-mcp.yaml');
+  const tyotilassa = (() => {
+    for (let d = process.cwd(); ; d = path.dirname(d)) {
+      if (fs.existsSync(path.join(d, 'multiproject-mcp.yaml'))) return true;
+      if (path.dirname(d) === d) return false;
+    }
+  })();
+  const valitsimet = [...args];
+  if (args[0] && !['init', 'help', '--help', '-h'].includes(args[0])
+    && !args.some((a) => a === '--config' || a.startsWith('--config='))
+    && !tyotilassa && fs.existsSync(oletus)) {
+    valitsimet.push('--config', oletus);
+  }
+  const r = spawnSync(process.execPath, [path.join(mcp, 'bin', 'multiproject-mcp.mjs'), ...valitsimet], { stdio: 'inherit' });
+  if (r.error) kuole(`Ei voitu ajaa MCP:tä: ${r.error.message}`);
+  process.exit(r.status ?? 1);
+}
+
 function cmdToteuta(args) {
   const tunnus = args[0] || '';
   if (!tunnus) kuole('Käyttö: vnetcon-ai toteuta <tiketin-tunnus>');
@@ -546,7 +578,7 @@ function cmdAsennaKehotteet() {
   }
   if (n > 0) {
     ok(`Asennettiin ${n} kehotetta hakemistoon ${dir}`);
-    him('Käytettävissä Codexissa: /vnetcon-tiketti, /vnetcon-dokumentoi, /vnetcon-synkronoi');
+    him('Käytettävissä Codexissa: /vnetcon-tiketti, /vnetcon-dokumentoi, /vnetcon-synkronoi, /vnetcon-katselmoi, /vnetcon-integraatio');
     varo('Kehotteet ovat GLOBAALEJA ja sisältävät tämän projektin polun.');
   } else {
     varo(`Ei kehotteita hakemistossa ${lahde}`);
@@ -582,6 +614,7 @@ Käyttö: vnetcon-ai <komento> [argumentit]
   dokumentoi [moduuli]    Käynnistä dokumentointiagentti
   toteuta <tunnus>        Käynnistä toteutusagentti tiketin valmiilla kehotteella
   html [--zip]            Generoi selattava HTML (ja paketoi)
+  mcp <komento> [...]     Moniprojekti-MCP: julkaisu ja jakelu AI-clienteille (ks. tyokalut/mcp/README.md)
   linkit [--lahteet]      Tarkista dokumentaation linkit ja lähdepolut
   tunnisteet [--alusta]   Näytä / luo ~/.vnetcon/credentials.env
   token <claude|codex>    Tulosta tunniste (Claude Coden apiKeyHelperille)
@@ -618,6 +651,9 @@ switch (komento) {
     break;
   case 'html':
     cmdHtml(args);
+    break;
+  case 'mcp':
+    cmdMcp(args);
     break;
   case 'linkit':
     ajaNode('tarkista-linkit.mjs', args);

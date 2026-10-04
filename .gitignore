@@ -4,6 +4,9 @@ vnetcon-docs-*.zip
 # Riippuvuudet
 node_modules/
 
+# Kehityksen aikana luotu MCP-työtila (vnetcon-ai mcp init lähderepossa)
+dist/mcp-tyotila/
+
 # Henkilökohtaiset overridet — sisältävät paikallisia polkuja
 .claude/settings.local.json
 
@@ -13,3 +16,7 @@ node_modules/
 
 # Käyttöjärjestelmä
 .DS_Store
+
+# LinkedIn-materiaali (video, postaustekstit) — ei koskaan versionhallintaan
+/linkdein/
+/linkedin/

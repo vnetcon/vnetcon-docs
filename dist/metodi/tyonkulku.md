@@ -7,6 +7,9 @@ olemassa.
 
 Lue ensin [`konventiot.md`](konventiot.md) ja [`kartoitus.md`](kartoitus.md)
 (projektikohtaiset hakukomennot). Lue myös `../tila/projekti.yaml`.
+**Lue ihmisen ohjaus ennen kirjoittamista:** [`ohjaus.md`](ohjaus.md),
+[`sanasto.md`](sanasto.md) ja yhteinen ohjaus, jos sellainen on
+([`konventiot.md`](konventiot.md) kohta 11). Ohjaus menee oman päättelysi edelle.
 Muista invariantti: **vain versionhallinnassa oleva koodi**.
 
 > Jos `../vnetcon.config.yaml` puuttuu, projektia ei ole otettu käyttöön → ohjaa
@@ -145,6 +148,9 @@ grep -rl "<muuttunut/polku>" moduulit liiketoimintaprosessit jarjestelmaprosessi
 ### Vaihe P3 — Päivitä vain osuvat kohdat
 
 - Säilytä rungon otsikot ja **vaihe-tunnisteet** ennallaan.
+- **Älä muuta `<!-- vahvistettu … -->`-merkintöjen välistä sisältöä.** Jos muutos
+  koskee vahvistettua kohtaa, lisää sen perään huomautus ja kerro siitä
+  ([`konventiot.md`](konventiot.md) 11.2).
 - Päivitä vain muuttuneet vaiheet/kentät/kaaviot.
 - Jos prosessiin tuli uusi vaihe, lisää se; **älä uudelleennumeroi** vanhoja
   tunnisteita (lisää esim. `#vaihe-3b`), jotta linkit eivät rikkoudu.

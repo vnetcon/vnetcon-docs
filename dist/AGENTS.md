@@ -41,6 +41,11 @@ olet:
   omaasi. Kun testi hylkää: koodi väärin → korjaa; **testi väärin → kysy**;
   suunnitelma väärin → vaihe 2. Vertaa `tila/projekti.yaml` →
   `testit.ennestaan_punaiset` -nimijoukkoon, älä hylättyjen lukumäärään.
+- **Ihmisen ohjaus menee oman päättelyn edelle.** Lue ennen kirjoittamista
+  `vnetcon-docs/metodi/ohjaus.md`, `metodi/sanasto.md` ja yhteinen ohjaus, jos
+  sellainen on. **Älä muuta `<!-- vahvistettu … -->`-merkintöjen välistä
+  sisältöä**; jos koodi näyttää muuttaneen sen, lisää huomautus ja kerro siitä.
+  Ks. `vnetcon-docs/metodi/konventiot.md` kohta 11.
 - **Älä keksi, ja kerro kun et nähnyt.** Epävarma kohta:
   `> TODO: varmistettava — <mikä>`. Jos jokin hakuluokka ei tuottanut osumia,
   sano se ääneen — hiljainen ohittaminen tuottaa uskottavan näköistä mutta
@@ -60,6 +65,8 @@ sitä vaihe vaiheelta. Nämä ovat samat menettelyt kuin Clauden skillit.
 | "kuvaa end-to-end -kulku" | `vnetcon-docs/metodi/jarjestelmaprosessi-tyonkulku.md` |
 | "päivitä dokumentaatio muutosten mukaan" | `vnetcon-docs/metodi/synkronointi-tyonkulku.md` |
 | "yhdenmukaista dokumentit" | `vnetcon-docs/metodi/yhdenmukaistus-tyonkulku.md` |
+| "katselmointi", "korjaa tulkinta", "väärä oletus" | `vnetcon-docs/metodi/katselmointi-tyonkulku.md` |
+| "kuvaa integraatio", "rajapinta järjestelmään X" | `vnetcon-docs/metodi/integraatio-tyonkulku.md` |
 | "generoi datamallit" | `vnetcon-docs/metodi/datamalli-tyonkulku.md` |
 | "generoi HTML" | `vnetcon-docs/metodi/generointi-tyonkulku.md` |
 | "ota käyttöön", "init" | `vnetcon-docs/metodi/kayttoonotto-tyonkulku.md` |

@@ -10,6 +10,10 @@ Sama dokumentaatio toimii **kontekstipohjana**, kun tikettejä (rajattuja
 koodimuutoksia) toteutetaan tekoälyavusteisesti — kehittäjän ei tarvitse itse
 koota tietoja eikä muistaa menettelyä. Ohjeet ovat tiedostoissa, eivät promptissa.
 
+Valmis dokumentaatio voidaan lisäksi **jakaa AI-chatteihin** (ChatGPT, Claude,
+Copilot, Cursor) tämän hakemiston moniprojekti-MCP:llä, ks.
+[Jakelu AI-chattiin (MCP)](#jakelu-ai-chattiin-mcp).
+
 > **Uusi projekti?** Aja `/vnetcon-init` (ks. alla). Se kartoittaa projektin ja
 > konfiguroi tämän hakemiston sen mukaan. Ilman sitä muut komennot eivät tiedä,
 > mistä projektista on kysymys.
@@ -101,6 +105,8 @@ yhdellä komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor` (Windows:
 | `/toteuta-tiketti` | Toteuttaa rajatun koodimuutoksen dokumentaatio kontekstipohjana, ajaa hyväksytyt testit ja päivittää lopuksi dokit. **Ei muuta yhtäkään testiä ilman lupaasi.** Käytettävissä sekä Claudessa että Codexissa. |
 | `/synkronoi-dokumentaatio` | Päivittää dokumentaation vastaamaan koodimuutoksia, jotka tehtiin **ilman** tikettiprosessia (suorat commitit, merget). |
 | `/yhdenmukaista-dokumentaatio` | Päivittää vanhat dokit nykyisten mallipohjien mukaisiksi, kun **menettely** on muuttunut. |
+| `/katselmoi [palaute]` | **Ihmisen korjaukset.** Vie katselmoinnin havainnot oikeisiin paikkoihin: dokumentin tekstiin vahvistettuna kohtana, `metodi/ohjaus.md`:hen (väärät oletukset ja periaatteet), sanastoon tai integraatiotietueeseen. Vahvistettuja kohtia mikään työnkulku ei muuta, ja ohjaus luetaan ennen jokaista kirjoitusta, joten korjaus säilyy. |
+| `/kuvaa-integraatio [nimi]` | Kuvaa järjestelmien (Git-repojen) välisen rajapinnan integraatiotietueeksi moniprojekti-MCP:n `interfaces/`-hakemistoon. Tietue on luonnos, kunnes ihminen hyväksyy sen. |
 | `/agentit` | Konfiguroi kumpi agentti tekee mitä ja kenen AI-tiliä vasten ne ajetaan (oma kirjautuminen, oma pilvitili tai organisaation välityspalvelin). |
 
 Kunkin täydellinen menettely on kansiossa [`metodi/`](metodi/).
@@ -211,6 +217,38 @@ Tunnisteet **eivät koskaan ole tässä hakemistossa** vaan tiedostossa
 ./tyokalut/vnetcon-ai/vnetcon-ai doctor        # mitä on asennettu ja konfiguroitu
 ```
 
+## Jakelu AI-chattiin (MCP)
+
+Hakemistossa [`tyokalut/mcp/`](tyokalut/mcp/README.md) on moniprojekti-MCP. Se
+julkaisee yhden tai useamman projektin ja haaran dokumentaation ja tarjoaa sen
+AI-clienteille stdio- tai Streamable HTTP -yhteydellä, ChatGPT:lle myös OpenAI:n
+Secure MCP Tunnelin kautta. Riippuvuudet asennetaan vasta käyttöönotossa.
+
+bash (macOS, Linux, WSL, Git Bash):
+
+```bash
+npm ci --prefix tyokalut/mcp
+./tyokalut/vnetcon-ai/vnetcon-ai mcp init
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
+npm ci --prefix tyokalut\mcp
+tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp init
+```
+
+`init` luo työtilan hakemistoon `mcp-tyotila/` ja ehdottaa tätä projektia
+ensimmäiseksi julkaistavaksi projektiksi. Muita projekteja voi lisätä sen
+rinnalle. Työtilan konfiguraation voi commitoida; kloonit ja julkaisut jäävät
+gitin ulkopuolelle.
+
+Käyttöönoton ja ylläpidon voi tehdä myös selaimessa: `vnetcon-ai mcp ui` käynnistää
+hallintakäyttöliittymän osoitteeseen `http://127.0.0.1:8799/ui/`.
+
+Jatko-ohjeet: [`tyokalut/mcp/README.md`](tyokalut/mcp/README.md) ja
+ChatGPT-yhteys [`tyokalut/mcp/docs/chatgpt.md`](tyokalut/mcp/docs/chatgpt.md).
+
 ## Rakenne
 
 ```
@@ -222,6 +260,7 @@ moduulit/<moduuli>/     Tekninen tuotos: yleiskuvaus, prosessit, datavirrat, dat
 datamallit/             Jaetut skeemat, joihin moduulit linkittävät
 tiketit/<tunnus>/       Tikettityön jälki (vaiheet 0–5) — myös agenttien kädenojennus
 tyokalut/               html-generaattori, vnetcon-ai (agenttien käynnistys), tarkista-linkit.mjs, xlsx-kartta.mjs
+tyokalut/mcp/           Moniprojekti-MCP: dokumentaation julkaisu ja jakelu AI-clienteille (vnetcon-ai mcp)
 html/                   Generoitu selattava HTML (johdettu md:stä; ei versioida)
 ```
 
@@ -275,4 +314,69 @@ kohta 8.
 
 | Committoidaan | Ei committoida |
 |---------------|----------------|
-| `vnetcon-docs/**` paitsi alla olevat | `html/`, `node_modules/`, `**/settings.local.json`, `.paikallinen/` |
+| `vnetcon-docs/**` paitsi alla olevat | `html/`, `node_modules/`, `**/settings.local.json`, `.paikallinen/`, `mcp-tyotila/.multiproject/` |
+
+### vnetcon-docs gitin ulkopuolelle
+
+Jos `vnetcon-docs`-hakemistoa ei haluta projektin Git-repositoryyn, esimerkiksi
+kokeiluvaiheessa, sen voi jättää gitin ulkopuolelle kahdella tavalla.
+
+**Vain omalla koneella** (suositus alkuun): `.git/info/exclude` ei ole
+versionhallinnassa, joten repositoryyn ei tule mitään muutosta eikä kukaan muu
+näe asetusta. Aja projektin juuressa:
+
+bash (macOS, Linux, WSL, Git Bash):
+
+```bash
+echo '/vnetcon-docs/' >> .git/info/exclude
+git status --short          # vnetcon-docs/ ei enää näy
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
+Add-Content -Path .git\info\exclude -Value '/vnetcon-docs/'
+git status --short          # vnetcon-docs/ ei enää näy
+```
+
+**Koko tiimille:** sama rivi `/vnetcon-docs/` projektin `.gitignore`-tiedostoon.
+Tämä on muutos repositoryyn, joten se commitoidaan kuten muutkin muutokset.
+
+Kun `vnetcon-docs` on gitin ulkopuolella, dokumentointi, kalibrointi ja tiketit
+toimivat kuten ennenkin. Ne lukevat projektin koodia gitistä eivätkä tarvitse omaa
+versiointiaan.
+
+**Anna dokumentaatiolle oma paikallinen git-repo.** Silloin dokumentaatiolla on
+versiohistoria, ja moniprojekti-MCP voi julkaista sen. MCP julkaisee vain
+commitoidun dokumentaation, ja ilman omaa repoa sitä ei ole commitoitu mihinkään.
+Repoa ei pushata minnekään, eikä emoprojektin repositoryyn tule muutoksia. Aja
+`vnetcon-docs`-hakemistossa:
+
+bash (macOS, Linux, WSL, Git Bash):
+
+```bash
+git init -b main
+git add -A
+git commit -m "vnetcon-docs: lähtötila"
+```
+
+PowerShell (Windows ilman bashia):
+
+```powershell
+git init -b main
+git add -A
+git commit -m "vnetcon-docs: lähtötila"
+```
+
+Tämän jälkeen `vnetcon-ai mcp init` tunnistaa oman repon ja ehdottaa emoprojektia
+`separate`-mallilla: koodi luetaan emoprojektin reposta ja dokumentaatio
+`vnetcon-docs`-hakemiston reposta, kumpikin tarkasta commitista. Dokumentaation
+muutokset julkaistaan, kun ne on commitoitu `vnetcon-docs`-hakemiston repoon.
+
+Ilman omaa repoa `vnetcon-ai mcp init` jättää emoprojektin lisäämättä ja kertoo
+syyn. MCP:hen voi silti lisätä muita projekteja.
+
+Jos myöhemmin päätätte versioida dokumentaation emoprojektin mukana, poista rivi
+tiedostosta `.git/info/exclude` tai `.gitignore`, poista `vnetcon-docs/.git` ja
+commitoi `vnetcon-docs/` emoprojektiin. MCP:ssä projektin malli vaihdetaan
+silloin `repository`-malliksi.

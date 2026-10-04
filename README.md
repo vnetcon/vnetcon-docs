@@ -91,39 +91,58 @@ oma välityspalvelin) ovat konfiguroitavissa; ks.
 
 ## Moniprojekti-MCP
 
-Repository sisältää myös paikallisen MVP:n, jolla useiden Git-projektien ja
+`vnetcon-docs` sisältää myös moniprojekti-MCP:n (`tyokalut/mcp/`), jolla useiden Git-projektien ja
 niiden eri haarojen dokumentaatio kootaan hallituiksi julkaisuiksi ja tarjotaan
 AI-asiakkaille stdio- tai Streamable HTTP MCP:n kautta. Jokainen projekti, refi
 ja lähdecommit säilyvät erillisinä: projektien sisältöä ei yhdistetä samaksi
 hakukorpukseksi, ja projektien väliset yhteydet kuvataan vain erillisillä
 rajapintatietueilla.
 
+MCP kulkee jokaisen asennuksen ja paketin mukana, ja sitä käytetään
+`vnetcon-ai mcp` -komennolla. Riippuvuudet asennetaan vasta käyttöönotossa.
+Komennot ajetaan `vnetcon-docs`-hakemistossa.
+
+bash (macOS, Linux, WSL, Git Bash):
+
 ```bash
-npm install --prefix multiproject-mcp
-node tyokalut/multiproject-mcp.mjs init ../oma-dokumentaatiopalvelu
-cd ../oma-dokumentaatiopalvelu
-./multiproject-mcp help
+npm ci --prefix tyokalut/mcp
+./tyokalut/vnetcon-ai/vnetcon-ai mcp init
 ```
 
-MVP tukee sekä projektin omassa repossa olevaa `vnetcon-docs`-hakemistoa että
-julkaisutyötilassa ylläpidettävää dokumentaatiota. Jälkimmäinen ei muuta eikä
-pushaa lähderepositorya. Eri haarat saavat omat checkoutinsa, dokumentaationsa
+PowerShell (Windows):
+
+```powershell
+npm ci --prefix tyokalut\mcp
+tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp init
+```
+
+`init` luo työtilan hakemistoon `vnetcon-docs/mcp-tyotila/` ja ehdottaa
+emoprojektia, eli projektia jonka juureen `vnetcon-docs` on asennettu,
+ensimmäiseksi projektiksi. Sen rinnalle tai sijaan voi lisätä 1–N muuta projektia.
+
+Tässä lähderepossa `vnetcon-docs`-hakemiston sisältö on `dist/`-hakemistossa.
+
+MVP tukee kolmea dokumentaatiomallia: `vnetcon-docs` projektin omassa repossa
+(`repository`), `vnetcon-docs` omassa paikallisessa repossaan projektin gitin
+ulkopuolella (`separate`) ja julkaisutyötilassa ylläpidettävä dokumentaatio
+(`managed`). Kaksi jälkimmäistä eivät muuta eivätkä pushaa lähderepositorya. Eri haarat saavat omat checkoutinsa, dokumentaationsa
 ja julkaisunsa.
 
-- [Paikallinen käyttöönotto ja komentojen kuvaus](multiproject-mcp/README.md)
-- [HTTP-palvelin ja käyttöönotto](multiproject-mcp/docs/http-palvelin.md)
-- [Autentikointi ja käyttöoikeudet](multiproject-mcp/docs/autentikointi.md)
-- [Git-muutosten havaitseminen ja virkistys](multiproject-mcp/docs/virkistys.md)
-- [AI-clienttien MCP-yhteensopivuus](multiproject-mcp/docs/asiakkaat.md)
-- [Local setup and command reference in English](multiproject-mcp/README.en.md)
-- [Arkkitehtuuri- ja toteutusspeksi](multiproject-mcp.md)
+- [Paikallinen käyttöönotto ja komentojen kuvaus](dist/tyokalut/mcp/README.md)
+- [HTTP-palvelin ja käyttöönotto](dist/tyokalut/mcp/docs/http-palvelin.md)
+- [Autentikointi ja käyttöoikeudet](dist/tyokalut/mcp/docs/autentikointi.md)
+- [Git-muutosten havaitseminen ja virkistys](dist/tyokalut/mcp/docs/virkistys.md)
+- [AI-clienttien MCP-yhteensopivuus](dist/tyokalut/mcp/docs/asiakkaat.md)
+- [Local setup and command reference in English](dist/tyokalut/mcp/README.en.md)
+- [Arkkitehtuuri- ja toteutusspeksi](dist/tyokalut/mcp/docs/arkkitehtuuri.md)
 
 Nykyinen versio käyttää paikallista tiedostotallennusta ja tukee sekä stdio- että
 Streamable HTTP -siirtotapaa. HTTP-palvelussa ovat valittavissa avoin
 paikallistila, bearer-token, käyttäjätunnus/salasana ja OIDC sekä projekti- ja
 kanavakohtaiset rajaukset. Git-muutokset voidaan havaita pollingilla tai
-suojatulla webhookilla ilman automaattista AI-ajoa. AWS-tallennus ja
-hallintakäyttöliittymä kuuluvat myöhempään vaiheeseen. ChatGPT-yhteyden
+suojatulla webhookilla ilman automaattista AI-ajoa. Hallintakäyttöliittymä
+(`vnetcon-ai mcp ui`, osoitteessa `/ui`) kattaa käyttöönoton ja ylläpidon ilman
+komentoriviä. AWS-tallennus kuuluu myöhempään vaiheeseen. ChatGPT-yhteyden
 valmisteluun on Secure MCP Tunnel -komento-ohje.
 
 ## Käyttömalli
@@ -369,11 +388,9 @@ käytössä.
 
 ```
 dist/                  Paketti, joka kopioidaan projektiin nimellä vnetcon-docs/
-multiproject-mcp/      Paikallinen moniprojekti-MCP, skeema, testit ja käyttöohjeet
-multiproject-mcp.md    Moniprojekti-MCP:n arkkitehtuuri- ja toteutusspeksi
+dist/tyokalut/mcp/     Moniprojekti-MCP (vnetcon-ai mcp), skeema, testit ja käyttöohjeet
 tyokalut/asenna.mjs    Kopioi dist/ → <kohdeprojekti>/vnetcon-docs (idempotentti, päivittää moottorin)
 tyokalut/asenna.sh     Käynnistin *nixille  (asenna.cmd = sama Windowsille)
-tyokalut/multiproject-mcp.mjs  Moniprojekti-MCP:n käynnistin tästä lähdereposta
 tyokalut/testaa.mjs    Savutesti: rakentaa tilapäisprojektit ja väittää tuloksista
 tyokalut/testaa.sh     Käynnistin *nixille  (testaa.cmd = sama Windowsille)
 tyokalut/paketoi.sh    Tekee jaeltavan vnetcon-docs-<versio>.zip (vain ylläpitäjä, macOS/Linux)

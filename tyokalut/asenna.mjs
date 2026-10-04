@@ -32,7 +32,8 @@ projektin oman sisällön koskematta.
 --paivita säilyttää aina:
   vnetcon.config.yaml, tila/, johdanto.md, moduulit/, liiketoimintaprosessit/,
   jarjestelmaprosessit/, datamallit/, tiketit/, html/,
-  metodi/kartoitus.md, metodi/sanasto.md, .claude/settings.json
+  metodi/kartoitus.md, metodi/sanasto.md, metodi/ohjaus.md, .claude/settings.json,
+  mcp-tyotila/
 ja päivittää: metodi/** (muut), tyokalut/**, .claude/skills|workflows (paketin
   omat), CLAUDE.md, AGENTS.md, README.md, vnetcon.config.example.yaml, .gitignore`;
 
@@ -97,6 +98,14 @@ function suorituskelpoiset() {
   }
 }
 
+// Lähderepon kehitysaikaiset riippuvuudet (esim. tyokalut/mcp/node_modules) ja
+// käyttöjärjestelmän roskat eivät kuulu asennukseen.
+const KOPIOITAVA = (lahde) => {
+  const osat = path.relative(DIST, lahde).split(path.sep);
+  if (osat[0] === 'mcp-tyotila') return false;   // kehitysaikainen MCP-työtila
+  return !osat.some((osa) => osa === 'node_modules' || osa === '.DS_Store');
+};
+
 // Kopioi paketin oman tiedoston tai hakemiston päälle.
 // Ei poista projektin omia lisäyksiä.
 function paalle(suhteellinen) {
@@ -104,7 +113,7 @@ function paalle(suhteellinen) {
   if (!fs.existsSync(src)) return;
   const kohde = path.join(MAALI, suhteellinen);
   fs.mkdirSync(path.dirname(kohde), { recursive: true });
-  fs.cpSync(src, kohde, { recursive: true, force: true });
+  fs.cpSync(src, kohde, { recursive: true, force: true, filter: KOPIOITAVA });
 }
 
 const samat = (a, b) => {
@@ -115,7 +124,7 @@ const samat = (a, b) => {
 
 if (!fs.existsSync(MAALI)) {
   fs.mkdirSync(MAALI, { recursive: true });
-  fs.cpSync(DIST, MAALI, { recursive: true, force: true });
+  fs.cpSync(DIST, MAALI, { recursive: true, force: true, filter: KOPIOITAVA });
   fs.writeFileSync(path.join(MAALI, '.vnetcon-docs-versio'), VERSIO + '\n');
   suorituskelpoiset();
   ok(`Asennettiin vnetcon-docs ${VERSIO} → ${MAALI}`);
@@ -149,7 +158,7 @@ try { VANHA = fs.readFileSync(path.join(MAALI, '.vnetcon-docs-versio'), 'utf8').
 him(`Päivitetään moottori: ${VANHA} → ${VERSIO}  (${MAALI})`);
 
 // Projektin omat tiedostot, joita paketti EI koskaan ylikirjoita.
-const SUOJATUT = ['metodi/kartoitus.md', 'metodi/sanasto.md', '.claude/settings.json'];
+const SUOJATUT = ['metodi/kartoitus.md', 'metodi/sanasto.md', 'metodi/ohjaus.md', '.claude/settings.json'];
 
 const TALLE = fs.mkdtempSync(path.join(os.tmpdir(), 'vnetcon-asenna-'));
 const siivoa = () => { try { fs.rmSync(TALLE, { recursive: true, force: true }); } catch { /* ohita */ } };
@@ -173,7 +182,7 @@ for (const p of ['metodi', 'tyokalut', '.claude/skills', '.claude/workflows', 't
   paalle(p);
 }
 
-// Palauta suojatut tiedostot. metodi/kartoitus.md ja metodi/sanasto.md ovat
+// Palauta suojatut tiedostot. metodi/kartoitus.md, metodi/sanasto.md ja metodi/ohjaus.md ovat
 // projektin sisältöä (paketin versio on pelkkä pohja) → palautetaan hiljaisesti.
 // .claude/settings.json voi sisältää sekä paketin sääntöjä että projektin
 // pilviasetuksia → paketin uusi versio jätetään viereen yhdistettäväksi.

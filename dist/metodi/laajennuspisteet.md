@@ -24,6 +24,7 @@ jättää projektin pysyvästi vanhaan versioon. Molemmat ovat kalliita.
 | `tila/synkronoitu.yaml`, `tila/edistyminen.md` | Synkronoinnin lähtötaso ja sessioloki |
 | **`metodi/kartoitus.md`** | **Projektikohtaiset hakukomennot — tärkein laajennuspiste** |
 | `metodi/sanasto.md` | Projektin domain-termit |
+| **`metodi/ohjaus.md`** | **Ihmisen korjaamat oletukset ja periaatteet, jotka kaikki työnkulut lukevat ennen kirjoittamista** (konventiot.md kohta 11) |
 | `metodi/pinot/<oma-pino>.md` | Oma pinoprofiili, jos projektin teknologia ei ole valmiissa |
 | `metodi/mallipohjat/<oma>.md` | Oma mallipohja, jos projekti tarvitsee dokkityypin jota ei ole |
 | `johdanto.md` | HTML-etusivun johdanto |
@@ -44,8 +45,8 @@ jättää projektin pysyvästi vanhaan versioon. Molemmat ovat kalliita.
 | `CLAUDE.md`, `AGENTS.md`, `README.md`, `vnetcon.config.example.yaml` | Reitittimet ja ohjeet |
 | **`tila/metodi.yaml`** | **Menettelyn versio ja muutosloki.** Asuu `tila/`-hakemistossa mutta on moottoria: sama luku kaikille projekteille. `/yhdenmukaista-dokumentaatio` vertaa dokumenttien `metodi-versio`ta tähän, joten jos päivitys ei koskisi sitä, menettelymuutos ei koskaan saavuttaisi projektia |
 
-`asenna.sh --paivita` säilyttää `metodi/kartoitus.md`:n, `metodi/sanasto.md`:n ja
-`.claude/settings.json`:in vaikka ne ovat samoissa hakemistoissa kuin moottori.
+`asenna.sh --paivita` säilyttää `metodi/kartoitus.md`:n, `metodi/sanasto.md`:n,
+`metodi/ohjaus.md`:n ja `.claude/settings.json`:in vaikka ne ovat samoissa hakemistoissa kuin moottori.
 Muut laajennuspisteet ovat omissa hakemistoissaan eivätkä ole päivityksen tiellä.
 
 ---
@@ -58,6 +59,7 @@ Muut laajennuspisteet ovat omissa hakemistoissaan eivätkä ole päivityksen tie
 | Teknologiaa ei ole valmiissa profiileissa | `metodi/pinot/<oma>.md` + viite `vnetcon.config.yaml`:n `pino.profiilit`-listaan |
 | Moduulijako on väärä | `tila/rekisteri.yaml` + perustelu `tila/projekti.yaml`:iin |
 | Osa-alueet eivät vastaa domainia | `tila/rakenne.yaml` |
+| Katselmoinnissa korjattu tulkinta, termi tai integraatio | `/katselmoi` → dokumentti (vahvistettu kohta), `metodi/ohjaus.md`, `metodi/sanasto.md` tai integraatiotietue ([`katselmointi-tyonkulku.md`](katselmointi-tyonkulku.md)) |
 | Testikomentoa ei löytynyt | `tila/projekti.yaml` → `komennot.testi` |
 | Skeemalähteitä ei löytynyt tai ne ovat epätyypillisiä | `tila/projekti.yaml` → `skeemalahteet`, tarvittaessa oma generaattori |
 | Projekti tarvitsee dokkityypin jota mallipohjissa ei ole | `metodi/mallipohjat/<oma>.md` |

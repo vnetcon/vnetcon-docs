@@ -50,6 +50,11 @@ pino, moduulit, komennot, hakemistokartta).
   myöskään sinun itse kirjoittamaasi. Kun testi hylkää: koodi väärin → korjaa;
   **testi väärin → kysy kehittäjältä ja esitä todisteet**; suunnitelma väärin →
   vaihe 2.
+- **Ihmisen ohjaus menee oman päättelyn edelle.** Lue ennen kirjoittamista
+  [`metodi/ohjaus.md`](metodi/ohjaus.md), [`metodi/sanasto.md`](metodi/sanasto.md)
+  ja yhteinen ohjaus, jos sellainen on. **Älä muuta `<!-- vahvistettu … -->`
+  -merkintöjen välistä sisältöä**; jos koodi näyttää muuttaneen sen, lisää
+  huomautus ja kerro siitä. Ks. [`metodi/konventiot.md`](metodi/konventiot.md) kohta 11.
 - **Älä keksi, ja kerro kun et nähnyt.** Jos koodista ei selviä miten jokin
   toimii, merkitse `> TODO: varmistettava — <mikä>` ja jätä `tila: luonnos`. Jos
   jokin hakuluokka ei tuottanut yhtään osumaa, **sano se ääneen** ajon lopussa —
@@ -74,6 +79,9 @@ Tämä CLAUDE.md on vain reititin. Varsinainen menettely on `metodi/`-kansiossa:
 - **Tiketin toteutus** (vaiheet 0–5, sis. vaiheen 3b vastaanottoportti) → [`metodi/tiketti-tyonkulku.md`](metodi/tiketti-tyonkulku.md)
 - **Synkronointi** (muutokset ilman tikettiä) → [`metodi/synkronointi-tyonkulku.md`](metodi/synkronointi-tyonkulku.md)
 - **Yhdenmukaistus** (menettelymuutos → vanhat dokit) → [`metodi/yhdenmukaistus-tyonkulku.md`](metodi/yhdenmukaistus-tyonkulku.md)
+- **Katselmointi** (ihmisen korjaukset → oikeat paikat) → [`metodi/katselmointi-tyonkulku.md`](metodi/katselmointi-tyonkulku.md)
+- **Integraatio** (järjestelmien välinen rajapinta → integraatiotietue) → [`metodi/integraatio-tyonkulku.md`](metodi/integraatio-tyonkulku.md)
+- **Ohjaus** (korjatut oletukset ja periaatteet) → [`metodi/ohjaus.md`](metodi/ohjaus.md)
 - **Datamallit** (jaetut skeemat) → [`metodi/datamalli-tyonkulku.md`](metodi/datamalli-tyonkulku.md)
 - **HTML-generointi** (selattava versio md:stä) → [`metodi/generointi-tyonkulku.md`](metodi/generointi-tyonkulku.md)
 - **Agenttien työnjako** (Claude/Codex, työnjako, tarjoaja) → [`metodi/agentit.md`](metodi/agentit.md)
@@ -103,6 +111,9 @@ metodi-ohjeisiin:
 - `/toteuta-tiketti` — toteuta rajattu koodimuutos dokumentaatio kontekstipohjana
 - `/synkronoi-dokumentaatio` — dokit ajan tasalle koodimuutosten kanssa
 - `/yhdenmukaista-dokumentaatio` — vanhat dokit nykyisiin mallipohjiin
+- `/katselmoi [palaute]` — katselmoinnin korjaukset dokumentteihin, ohjaukseen,
+  sanastoon ja integraatiotietueisiin
+- `/kuvaa-integraatio [nimi]` — järjestelmien välinen rajapinta integraatiotietueeksi
 - `/agentit` — konfiguroi agentit ja tarjoaja (kenen AI-tiliä vasten ajetaan)
 
 ## Hakemistokartta
@@ -116,5 +127,6 @@ datamallit/             Jaetut skeemat; moduulit linkittävät
 moduulit/<moduuli>/     Tekninen tuotos: yleiskuvaus, prosessit, datavirrat, datarakenteet
 tiketit/<tunnus>/       Tikettityön jälki (vaiheet 0–5, 3b), audit-jälki + agenttien kädenojennus
 tyokalut/               html-generaattori, vnetcon-ai (agenttien käynnistys)
+mcp-tyotila/            Moniprojekti-MCP:n työtila (vnetcon-ai mcp init) — ei dokumentaatiota, älä dokumentoi
 html/                   Generoitu selattava HTML (johdettu md:stä; ei versioida)
 ```

@@ -33,8 +33,8 @@ mkdir -p "$TYO/vnetcon-docs"
 printf '%s\n' "$VERSIO" > "$TYO/vnetcon-docs/.vnetcon-docs-versio"
 
 # Ei viedä pakettiin: riippuvuudet, generoitu HTML, paikallinen tila.
-rm -rf "$TYO/vnetcon-docs/tyokalut/html-generaattori/node_modules" \
-       "$TYO/vnetcon-docs/html" "$TYO/vnetcon-docs/html.zip" \
+find "$TYO" -type d -name node_modules -prune -exec rm -rf {} +
+rm -rf "$TYO/vnetcon-docs/html" "$TYO/vnetcon-docs/html.zip" "$TYO/vnetcon-docs/mcp-tyotila" \
        "$TYO/vnetcon-docs/.claude/settings.local.json" \
        "$TYO/vnetcon-docs/vnetcon.config.yaml"
 find "$TYO" -name '.DS_Store' -delete 2>/dev/null || true

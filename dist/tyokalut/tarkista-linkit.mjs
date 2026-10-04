@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Tarkistaa dokumentaation sisäiset linkit: osoittavatko ne olemassa oleviin
 // tiedostoihin. Lisäksi valinnaisesti frontmatterin `lahteet`-polut projektin
-// puuhun. Ei riippuvuuksia — toimii ilman npm installia.
+// puuhun, ja aina vahvistettujen kohtien merkinnät (konventiot.md kohta 11.2):
+// parit täsmäävät eivätkä ole sisäkkäin. Ei riippuvuuksia — toimii ilman npm installia.
 //
 //   node tyokalut/tarkista-linkit.mjs            # linkit
 //   node tyokalut/tarkista-linkit.mjs --lahteet  # myös lahteet-polut
@@ -34,7 +35,7 @@ function md_tiedostot(d, acc = []) {
 }
 
 const tiedostot = md_tiedostot(JUURI);
-let rikki = 0, linkkeja = 0, lahdeVirheet = 0, lahteita = 0;
+let rikki = 0, linkkeja = 0, lahdeVirheet = 0, lahteita = 0, vahvistuksia = 0, vahvistusVirheet = 0;
 const rel = (p) => path.relative(JUURI, p);
 
 for (const f of tiedostot) {
@@ -54,7 +55,22 @@ for (const f of tiedostot) {
     }
   }
 
-  // 2. Frontmatterin lahteet-polut (projektin juuresta)
+  // 2. Vahvistettujen kohtien merkinnät. Koodilohkot ja rivinsisäinen koodi
+  //    ohitetaan, koska ohjeissa merkintä esiintyy esimerkkinä.
+  {
+    const ilmanKoodia = teksti.replace(/^[ \t]*```[\s\S]*?^[ \t]*```/gm, '').replace(/`[^`\n]*`/g, '');
+    let auki = false;
+    for (const m of ilmanKoodia.matchAll(/<!--\s*(\/?)vahvistettu\b/g)) {
+      const sulkeva = m[1] === '/';
+      if (!sulkeva && auki) { console.log(`VAHVISTUS  ${rel(f)}  ->  sisäkkäinen tai sulkematon vahvistettu-merkintä`); vahvistusVirheet++; }
+      if (sulkeva && !auki) { console.log(`VAHVISTUS  ${rel(f)}  ->  /vahvistettu ilman avaavaa merkintää`); vahvistusVirheet++; }
+      if (!sulkeva) vahvistuksia++;
+      auki = !sulkeva;
+    }
+    if (auki) { console.log(`VAHVISTUS  ${rel(f)}  ->  vahvistettu-merkintä jäi sulkematta`); vahvistusVirheet++; }
+  }
+
+  // 3. Frontmatterin lahteet-polut (projektin juuresta)
   if (TARKISTA_LAHTEET) {
     const fm = teksti.match(/^---\n([\s\S]*?)\n---/);
     if (!fm) continue;
@@ -76,6 +92,7 @@ for (const f of tiedostot) {
 }
 
 console.log(`\n${tiedostot.length} dokumenttia · ${linkkeja} linkkiä (${rikki} rikki)`
-  + (TARKISTA_LAHTEET ? ` · ${lahteita} lähdepolkua (${lahdeVirheet} ei löydy)` : ''));
+  + (TARKISTA_LAHTEET ? ` · ${lahteita} lähdepolkua (${lahdeVirheet} ei löydy)` : '')
+  + (vahvistuksia || vahvistusVirheet ? ` · ${vahvistuksia} vahvistettua kohtaa (${vahvistusVirheet} virhettä)` : ''));
 if (!MUKAAN_MALLIPOHJAT) console.log('(mallipohjat ohitettu — lisää --mallipohjat jos haluat ne mukaan)');
-process.exit(rikki + lahdeVirheet ? 1 : 0);
+process.exit(rikki + lahdeVirheet + vahvistusVirheet ? 1 : 0);

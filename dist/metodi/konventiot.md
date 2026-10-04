@@ -130,3 +130,49 @@ portti, joten noudata sitä erityisen tarkasti (ks. [`agentit.md`](agentit.md)).
 `> TODO: varmistettava — <mikä>` ja jätä se `tila: luonnos`. Älä arvaa
 liiketoimintamerkitystä; merkitse se avoimeksi kysymykseksi substanssiosaajalle
 (`> TODO: substanssiosaajan vahvistus`).
+
+## 11. Ihmisen ohjaus: ohjaustiedosto ja vahvistetut kohdat
+
+Katselmoinnissa ja käytössä ihmiset korjaavat tekoälyn tulkintoja. Korjausten
+pitää säilyä myös seuraavissa ajoissa. Siksi ohjaus on kahdessa muodossa, ja
+**jokainen dokumentteja kirjoittava työnkulku noudattaa molempia.**
+
+### 11.1 Ohjaustiedosto: lue ennen kirjoittamista
+
+Ennen kuin kirjoitat tai päivität yhtään dokumenttia, lue:
+
+1. [`ohjaus.md`](ohjaus.md): tämän projektin korjatut oletukset ja periaatteet
+2. [`sanasto.md`](sanasto.md): projektin termit
+3. **yhteinen ohjaus**, jos sellainen on: hakemisto, johon
+   `vnetcon.config.yaml`:n `ohjaus.yhteiset` osoittaa, tai oletuksena
+   `mcp-tyotila/yhteiset/` (`ohjaus.md`, `sanasto.md`). Se koskee kaikkia saman
+   MCP-työtilan projekteja, esimerkiksi käsitteitä, jotka ylittävät
+   järjestelmärajat.
+
+Ohjaus on vahvempi kuin oma päättelysi. Jos koodi näyttää olevan ristiriidassa
+ohjauksen kanssa, **älä ohita ohjausta**. Kirjoita kohtaan
+`> HUOM: ristiriita ohjauksen <tunniste> kanssa — <mitä havaitsit>` ja kerro siitä
+ajon lopussa. Ohjaus voi olla vanhentunut, mutta sen päättää ihminen.
+
+### 11.2 Vahvistetut kohdat: älä muuta
+
+Ihmisen vahvistama tai korjaama sisältö merkitään näin:
+
+```markdown
+<!-- vahvistettu: 2026-10-04 · katselmointi · <kuka> -->
+Lasku muodostetaan vasta, kun tilaus on toimitettu. Ennakkolaskutusta ei ole.
+<!-- /vahvistettu -->
+```
+
+- Merkintöjen välistä sisältöä **ei muuteta** päivitys-, synkronointi-,
+  yhdenmukaistus- eikä tikettityönkulussa.
+- Jos koodimuutos näyttää vaikuttavan vahvistettuun kohtaan, jätä kohta ennalleen
+  ja lisää heti sen perään
+  `> HUOM: vahvistettu kohta voi olla vanhentunut — <syy> (<commit>)`.
+  Luettele nämä ajon lopussa. Vahvistuksen poistaa tai päivittää vain ihminen,
+  tai `/katselmoi` ihmisen antaman havainnon perusteella.
+- Merkinnät tulevat aina pareittain eivätkä ole sisäkkäisiä.
+- Dokumentin frontmatteriin voi lisätä `katselmoitu: YYYY-MM-DD`, kun koko
+  dokumentti on käyty läpi katselmoinnissa.
+
+Korjausten vienti oikeisiin paikkoihin: [`katselmointi-tyonkulku.md`](katselmointi-tyonkulku.md).
