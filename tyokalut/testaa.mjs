@@ -565,7 +565,7 @@ process.stdout.write('\n'); him('Vahvistetut kohdat');
   fs.writeFileSync(doc, '# M\n\n<!-- vahvistettu: 2026-10-04 · katselmointi · T -->\nAuki jäi.\n');
   const r = aja();
   onSama('sulkematon vahvistettu kohta hylätään', 1, r.status);
-  sisaltaaTeksti('virhe nimeää tiedoston', 'VAHVISTUS  moduulit/m/yleiskuvaus.md', r.stdout);
+  sisaltaaTeksti('virhe nimeää tiedoston', `VAHVISTUS  ${path.join('moduulit', 'm', 'yleiskuvaus.md')}`, r.stdout);
   if (!PIDA) fs.rmSync(v, { recursive: true, force: true });
 }
 
