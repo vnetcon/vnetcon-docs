@@ -16,13 +16,26 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        node: ['24']
+        # Vähimmäisversio, jonka READMEt ja MCP:n package.json lupaavat.
+        include:
+          - os: ubuntu-latest
+            node: '18'
+    name: testaa (${{ matrix.os }}, Node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version: ${{ matrix.node }}
+
+      # MCP:n riippuvuudet, jotta savutesti ajaa myös MCP:n integraatiotestit.
+      # Windowsilla integraatiotesti käynnistää sh-käynnistimen, joten se ajetaan
+      # toistaiseksi vain Linuxilla.
+      - name: MCP:n riippuvuudet
+        if: runner.os == 'Linux'
+        run: npm ci --prefix dist/tyokalut/mcp
 
       - name: Savutesti
         run: node tyokalut/testaa.mjs

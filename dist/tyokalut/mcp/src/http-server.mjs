@@ -1,4 +1,8 @@
 import crypto from 'node:crypto';
+
+// MCP-SDK käyttää globaalia Web Cryptoa (crypto.randomUUID), joka on globaali vasta
+// Node 20:ssä. Node 18 tarvitsee sen tähän, muuten jokainen HTTP-pyyntö kaatuu.
+if (!globalThis.crypto) globalThis.crypto = crypto.webcrypto;
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
