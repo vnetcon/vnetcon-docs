@@ -29,7 +29,7 @@ import {
 import { UserError } from './errors.mjs';
 import { inspectRepository, resolveRef, revisionKey, separateDocs } from './git.mjs';
 import { serveStdio } from './mcp-server.mjs';
-import { isLoopback, serveHttp } from './http-server.mjs';
+import { isLoopback, serveHttp, serveSetup } from './http-server.mjs';
 import { calculateDocumentationRevision, loadChannel, publishChannel } from './publisher.mjs';
 import {
   detectChanges,
@@ -40,6 +40,11 @@ import {
   startRefreshController,
 } from './refresh.mjs';
 import { fetchDocument, listProjects, searchProject } from './search.mjs';
+import { helpText } from './commands.mjs';
+import { channelManageCommand, guidanceCommand, interfaceCommand, projectSetCommand, publicationsCommand, removeProjectCommand, trashCommand } from './manage.mjs';
+import { commandLines, computeProcess } from './process.mjs';
+import { agentCommand, docsCommand } from './agent.mjs';
+import { detectParentProject, runOptional } from './parent.mjs';
 import {
   approveWorkspace,
   bootstrapProject,
@@ -89,6 +94,16 @@ async function dispatch(argv) {
   const rest = argv.slice(1);
   if (command === 'help' || command === '--help' || command === '-h') return help();
   if (command === 'init') return initCommand(rest);
+  if (command === 'ui') {
+    const uiFlags = parseArgs(rest).flags;
+    try {
+      return uiCommand(rest, loadConfig({ explicit: uiFlags.config || '', profile: uiFlags.profile || 'local' }));
+    } catch (error) {
+      if (!(error instanceof UserError) || uiFlags.config || !error.message.includes('ei löydy')) throw error;
+      const listen = uiFlags.listen ? parseListen(String(uiFlags.listen)) : { host: '127.0.0.1', port: 8799 };
+      return serveSetup(listen);
+    }
+  }
 
   const { flags } = parseArgs(rest);
   const loaded = loadConfig({ explicit: flags.config || '', profile: flags.profile || 'local' });
@@ -97,6 +112,13 @@ async function dispatch(argv) {
     case 'inspect-project': return inspectProjectCommand(rest, loaded);
     case 'add-project': return addProjectCommand(rest, loaded);
     case 'remove-project': return removeProjectCommand(rest, loaded);
+    case 'interface': return interfaceCommand(rest, loaded);
+    case 'guidance': return guidanceCommand(rest, loaded);
+    case 'trash': return trashCommand(rest, loaded);
+    case 'process': return processCommand(rest, loaded);
+    case 'agent': return agentCommand(rest, loaded);
+    case 'docs': return docsCommand(rest, loaded);
+    case 'publications': return publicationsCommand(rest, loaded);
     case 'project': return projectCommand(rest, loaded);
     case 'channel': return channelCommand(rest, loaded);
     case 'config': return configCommand(rest, loaded);
@@ -116,48 +138,12 @@ async function dispatch(argv) {
     case 'ui': return uiCommand(rest, loaded);
     case 'smoke-test': return smokeTestCommand(rest, loaded);
     case 'pilot': return pilotCommand(rest, loaded);
-    default: throw new UserError(`Tuntematon komento: ${command}. Aja multiproject-mcp help.`);
+    default: throw new UserError(`Tuntematon komento: ${command}. Katso komennot: vnetcon-ai mcp help`);
   }
 }
 
 function help() {
-  out(`multiproject-mcp — paikallinen moniprojektidokumentaation julkaisu ja MCP
-
-Käyttö:
-  multiproject-mcp init [<hakemisto>] [--emoprojekti | --ilman-emoprojektia]
-  multiproject-mcp discover --root <hakemisto>
-  multiproject-mcp inspect-project --path <repo>
-  multiproject-mcp add-project --id <id> --path <repo> --refs main,development --docs-mode <managed|repository>
-  multiproject-mcp add-project --id <id> --path <repo> --refs main --docs-mode separate --docs-repo <polku|url> [--docs-ref <ref>]
-  multiproject-mcp channel create <id>
-  multiproject-mcp channel set-ref <kanava> <projekti> <ref>
-  multiproject-mcp config validate
-  multiproject-mcp doctor
-  multiproject-mcp plan refresh --all
-  multiproject-mcp bootstrap --all
-  multiproject-mcp refresh detect --all
-  multiproject-mcp refresh run [--now]
-  multiproject-mcp refresh configure-poll --interval 300 --debounce 900
-  multiproject-mcp refresh configure-webhook --debounce 300
-  multiproject-mcp document --project <id> --ref <ref> [--module <moduuli>]
-  multiproject-mcp review --project <id> --ref <ref>
-  multiproject-mcp approve --project <id> --ref <ref> [--revision <sha>]
-  multiproject-mcp publish --channel <id>
-  multiproject-mcp server configure-http --listen 127.0.0.1:8793 [--channel <id>]
-  multiproject-mcp server set-transport <stdio|http>
-  multiproject-mcp server status
-  multiproject-mcp auth set-mode <none|bearer|basic|oidc>
-  multiproject-mcp auth configure-oidc --issuer <url> --audience <arvo> --resource <https-url>
-  multiproject-mcp auth oidc-rule add --name <nimi> --claim <claim> --values <arvo,...> [--admin]
-  multiproject-mcp auth status
-  multiproject-mcp auth token create --name <nimi> [--channels <id,...>] [--projects <id,...>] [--admin]
-  multiproject-mcp auth token list|revoke ...
-  multiproject-mcp auth user add --username <nimi> [--password-stdin] [--admin]
-  multiproject-mcp auth user list|remove ...
-  multiproject-mcp tunnel prepare openai [--profile <nimi>] [--tunnel-id <id>]
-  multiproject-mcp serve [--transport <stdio|http>] [--channel <id>]
-  multiproject-mcp ui [--listen <host:port>]     HTTP-palvelin ja hallintakäyttöliittymä (/ui)
-  multiproject-mcp smoke-test --channel <id>`);
+  out(helpText());
 }
 
 async function initCommand(argv) {
@@ -216,27 +202,6 @@ function createSharedGuidance(root) {
   }
 }
 
-// Emoprojekti = Git-repository, jonka juureen tämä vnetcon-docs on asennettu.
-// Lähderepon dist/-hakemistolla ei ole asennusversiota, joten sitä ei tarjota.
-function detectParentProject() {
-  const docsRoot = packageRoot();
-  if (!fs.existsSync(path.join(docsRoot, '.vnetcon-docs-versio'))) return null;
-  const projectRoot = path.dirname(docsRoot);
-  let topLevel = '';
-  try {
-    topLevel = run('git', ['-C', projectRoot, 'rev-parse', '--show-toplevel']);
-  } catch {
-    return null;
-  }
-  if (!topLevel || fs.realpathSync(topLevel) !== fs.realpathSync(projectRoot)) return null;
-  const docsDirectory = path.basename(docsRoot);
-  const ignored = runOptional(() => run('git', ['-C', projectRoot, 'check-ignore', docsDirectory])) !== '';
-  // vnetcon-docsilla voi olla oma paikallinen repo (yleensä emoprojektin gitin ulkopuolella).
-  const docsTop = runOptional(() => run('git', ['-C', docsRoot, 'rev-parse', '--show-toplevel']));
-  const docsRepository = Boolean(docsTop) && fs.realpathSync(docsTop) === fs.realpathSync(docsRoot);
-  return { root: projectRoot, name: path.basename(projectRoot), docsRoot, docsDirectory, ignored, docsRepository };
-}
-
 // Oletussijainnin työtila (vnetcon-docs/mcp-tyotila) kuuluu emoprojektille, joten
 // se lisätään myös ilman päätettä. Muualle luotuun työtilaan emoprojekti lisätään
 // ilman päätettä vain pyydettäessä, jotta skriptit eivät saa yllättävää projektia.
@@ -281,14 +246,6 @@ function addParentProject(root, parent) {
   if (!committed) {
     info(`Huom: ${parent.docsDirectory}/ ei ole vielä commitoituna${parent.docsRepository ? ' omaan repoonsa' : ` haaraan ${ref}`}. `
       + 'MCP julkaisee vain commitoidun dokumentaation, joten commitoi se ennen bootstrap-komentoa.');
-  }
-}
-
-function runOptional(fn) {
-  try {
-    return fn();
-  } catch {
-    return '';
   }
 }
 
@@ -390,25 +347,10 @@ function addProjectCommand(argv, loaded) {
   out(`Lisättiin projekti ${projectId} (${mode}), refit: ${refs.join(', ')}`);
 }
 
-function removeProjectCommand(argv, loaded) {
-  const { positional, flags } = parseArgs(argv);
-  const projectId = positional[0];
-  if (!projectId) throw new UserError('Käyttö: remove-project <id> --plan');
-  getProject(loaded.base, projectId);
-  if (!flags.confirm) {
-    out(`Suunnitelma: poistetaan ${projectId} konfiguraatiosta. Työtiloja tai julkaisuja ei poisteta.`);
-    out('Suorita --confirm vahvistaaksesi.');
-    return;
-  }
-  loaded.base.projects = loaded.base.projects.filter((item) => item.project_id !== projectId);
-  for (const channel of loaded.base.channels) delete channel.project_refs?.[projectId];
-  saveBase(loaded);
-  out(`Poistettiin projekti konfiguraatiosta: ${projectId}`);
-}
-
 function projectCommand(argv, loaded) {
   const { positional } = parseArgs(argv);
   const action = positional[0];
+  if (action === 'set') return projectSetCommand(argv.slice(1), loaded);
   const projectId = positional[1];
   const project = getProject(loaded.base, projectId);
   if (action === 'set-refs') {
@@ -422,15 +364,16 @@ function projectCommand(argv, loaded) {
       ? { mode, workspace_template: 'default' }
       : { mode, source_path: 'vnetcon-docs' };
   } else {
-    throw new UserError('Käyttö: project set-refs <id> <ref...> | project set-docs-mode <id> <tila>');
+    throw new UserError('Käyttö: project set --id <id> [--name …] [--refs …] [--docs-mode …] | project set-refs <id> <ref...> | project set-docs-mode <id> <tila>');
   }
   saveBase(loaded);
   out(`Päivitettiin projekti ${projectId}.`);
 }
 
 function channelCommand(argv, loaded) {
-  const { positional } = parseArgs(argv);
+  const { positional, flags } = parseArgs(argv);
   const action = positional[0];
+  if (['remove', 'unset-ref', 'set-default'].includes(action)) return channelManageCommand(action, positional, flags, loaded);
   if (action === 'create') {
     const id = positional[1] ? safeChannelId(positional[1]) : '';
     if (!id) throw new UserError('Käyttö: channel create <id>');
@@ -462,7 +405,7 @@ function channelCommand(argv, loaded) {
     out(YAML.stringify(result, { lineWidth: 100 }));
     return;
   }
-  throw new UserError('Käyttö: channel create|set-ref|show ...');
+  throw new UserError('Käyttö: channel create|set-ref|unset-ref|set-default|remove|show ...');
 }
 
 function configCommand(argv, loaded) {
@@ -804,6 +747,7 @@ async function authCommand(argv, loaded) {
     validateHttpsUrl(issuer, 'issuer', flags['allow-insecure-http']);
     validateHttpsUrl(resource, 'resource', flags['allow-insecure-http']);
     const http = ensureHttpProfile(loaded);
+    const previousRules = http.authentication?.oidc?.access_rules;
     http.authentication = {
       mode: 'oidc',
       oidc: {
@@ -815,6 +759,9 @@ async function authCommand(argv, loaded) {
         ...(flags.scopes ? { required_scopes: csvFlag(flags.scopes) } : {}),
         ...(flags['principal-claim'] ? { principal_claim: String(flags['principal-claim']) } : {}),
         ...(flags['allow-insecure-http'] ? { allow_insecure_http: true } : {}),
+        ...(flags['ui-client-id'] ? { ui_client_id: String(flags['ui-client-id']) } : {}),
+        ...(flags['ui-scopes'] ? { ui_scopes: String(flags['ui-scopes']) } : {}),
+        ...(previousRules ? { access_rules: previousRules } : {}),
       },
     };
     saveProfile(loaded);
@@ -827,7 +774,7 @@ async function authCommand(argv, loaded) {
     out(YAML.stringify({
       mode: authConfig(loaded).mode || 'none',
       oidc: authConfig(loaded).mode === 'oidc' ? authConfig(loaded).oidc : undefined,
-      bearer_tokens: secrets.bearer_tokens.map((item) => ({ name: item.name, channels: item.channels, projects: item.projects })),
+      bearer_tokens: secrets.bearer_tokens.map((item) => ({ name: item.name, channels: item.channels, projects: item.projects, admin: item.admin === true })),
       basic_users: secrets.basic_users.map((item) => ({ username: item.username, channels: item.channels, projects: item.projects })),
     }, { lineWidth: 100 }));
     return;
@@ -944,6 +891,34 @@ async function uiCommand(argv, loaded) {
   const http = loaded.config.runtime?.http || {};
   const listen = flags.listen ? parseListen(String(flags.listen)) : { host: http.host || '127.0.0.1', port: http.port || 8799 };
   return serveHttp(loaded, { host: listen.host, port: listen.port, channel: flags.channel });
+}
+
+const STATUS_MARK = { valmis: '[x]', kesken: '[~]', odottaa: '[ ]', 'ei-koske': '[-]', tieto: '[i]' };
+
+function processCommand(argv, loaded) {
+  const { flags } = parseArgs(argv);
+  const result = computeProcess(loaded);
+  if (flags.project) result.projects = result.projects.filter((item) => item.project_id === String(flags.project));
+  if (flags.json) return out(JSON.stringify(result, null, 2));
+  const print = (item, indent) => {
+    out(`${indent}${STATUS_MARK[item.status] || '[?]'} ${item.title}: ${item.detail}`);
+    if (item.status !== 'valmis' && item.status !== 'ei-koske') {
+      if (item.slash) out(`${indent}    agentissa: ${item.slash}`);
+      for (const args of item.cli || []) out(`${indent}    ${commandLines(args).bash}`);
+    }
+  };
+  out(`Työtila ${loaded.root}`);
+  for (const item of result.workspace) print(item, '  ');
+  for (const project of result.projects) {
+    for (const ref of project.refs) {
+      out('');
+      out(`Projekti ${project.display_name} (${project.project_id}@${ref.ref}, ${project.mode})`);
+      for (const item of ref.steps) print(item, '  ');
+    }
+  }
+  out('');
+  out('[x] valmis  [~] kesken  [ ] odottaa  [-] ei koske  [i] tieto. Komennot PowerShellissä: tyokalut\\vnetcon-ai\\vnetcon-ai.cmd mcp …');
+  return undefined;
 }
 
 function smokeTestCommand(argv, loaded) {

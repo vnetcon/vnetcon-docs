@@ -122,10 +122,11 @@ const mjsTiedostot = [
   path.join(REPO, 'dist', 'tyokalut', 'vnetcon-ai', 'hae-token.mjs'),
   path.join(REPO, 'tyokalut', 'asenna.mjs'),
   path.join(REPO, 'tyokalut', 'testaa.mjs'),
-  ...['auth', 'cli', 'config', 'errors', 'git', 'http-server', 'mcp-server', 'publisher', 'refresh', 'search', 'ui-server', 'util', 'workspace']
+  ...['agent', 'auth', 'cli', 'commands', 'config', 'errors', 'git', 'http-server', 'manage', 'mcp-server', 'parent', 'process', 'publisher', 'refresh', 'search', 'ui-server', 'util', 'workspace']
     .map((f) => path.join(REPO, 'dist', 'tyokalut', 'mcp', 'src', `${f}.mjs`)),
   path.join(REPO, 'dist', 'tyokalut', 'mcp', 'bin', 'multiproject-mcp.mjs'),
   path.join(REPO, 'dist', 'tyokalut', 'mcp', 'ui', 'app.js'),
+  path.join(REPO, 'dist', 'tyokalut', 'mcp', 'kaynnista', 'kaynnista.mjs'),
   path.join(REPO, 'dist', 'tyokalut', 'mcp', 'test', 'integration.test.mjs'),
 ];
 for (const f of mjsTiedostot) {
@@ -599,7 +600,7 @@ process.stdout.write('\n'); him('Moniprojekti-MCP');
     const ohje = ajaNode(path.join(REPO, 'dist', 'tyokalut', 'vnetcon-ai', 'vnetcon-ai.mjs'), ['mcp', 'help'],
       { env: { ...process.env, NO_COLOR: '1' } });
     onSama('vnetcon-ai mcp help palauttaa 0', 0, ohje.status);
-    sisaltaaTeksti('vnetcon-ai mcp ohjaa MCP:lle', 'multiproject-mcp init', ohje.stdout);
+    sisaltaaTeksti('vnetcon-ai mcp ohjaa MCP:lle', 'init [<hakemisto>]', ohje.stdout);
     const testi = path.join(mcp, 'test', 'integration.test.mjs');
     const r = spawnSync(process.execPath, ['--test', testi], { cwd: REPO, encoding: 'utf8' });
     if (r.status === 0) ok('multiproject-mcp: integraatiotestit läpi');

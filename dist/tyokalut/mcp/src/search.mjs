@@ -6,7 +6,10 @@ import { UserError } from './errors.mjs';
 import { loadChannel, storageRoot } from './publisher.mjs';
 import { listFilesRecursive } from './util.mjs';
 
-function releaseForProject(bundle, projectId) {
+function releaseForProject(bundle, projectId, loaded) {
+  if (loaded && !loaded.config.projects.some((project) => project.project_id === projectId)) {
+    throw new UserError(`Projektia ${projectId} ei ole konfiguraatiossa.`);
+  }
   const release = bundle.projects.find((item) => item.project_id === projectId);
   if (!release) throw new UserError(`Projekti ${projectId} ei kuulu kanavaan ${bundle.channel_id}.`);
   return release;
@@ -27,7 +30,9 @@ function loadChunks(loaded, release) {
 
 export function listProjects(loaded, channelId, selectedBundle) {
   const bundle = selectedBundle || loadChannel(channelId, loaded);
-  return bundle.projects.map((release) => {
+  // Konfiguraatiosta poistettu projekti voi olla vielä vanhassa julkaisussa.
+  const configured = new Set(loaded.config.projects.map((project) => project.project_id));
+  return bundle.projects.filter((release) => configured.has(release.project_id)).map((release) => {
     const project = getProject(loaded.config, release.project_id);
     return {
       project_id: release.project_id,
@@ -42,14 +47,14 @@ export function listProjects(loaded, channelId, selectedBundle) {
 
 export function getProjectVersion(loaded, channelId, projectId, selectedBundle) {
   const bundle = selectedBundle || loadChannel(channelId, loaded);
-  const release = releaseForProject(bundle, projectId);
+  const release = releaseForProject(bundle, projectId, loaded);
   return { ...release, bundle_id: bundle.bundle_id, channel_id: bundle.channel_id };
 }
 
 export function searchProject(loaded, channelId, projectId, query, limit = 8, selectedBundle) {
   if (!query.trim()) throw new UserError('Hakukysely on tyhjä.');
   const bundle = selectedBundle || loadChannel(channelId, loaded);
-  const release = releaseForProject(bundle, projectId);
+  const release = releaseForProject(bundle, projectId, loaded);
   const terms = [...new Set(query.toLocaleLowerCase('fi').split(/[^\p{L}\p{N}_-]+/u).filter((term) => term.length > 1))];
   const hits = loadChunks(loaded, release).map((chunk) => {
     const haystack = `${chunk.heading}\n${chunk.content}`.toLocaleLowerCase('fi');
@@ -80,7 +85,7 @@ export function searchProject(loaded, channelId, projectId, query, limit = 8, se
 
 export function fetchDocument(loaded, channelId, projectId, documentId, selectedBundle) {
   const bundle = selectedBundle || loadChannel(channelId, loaded);
-  const release = releaseForProject(bundle, projectId);
+  const release = releaseForProject(bundle, projectId, loaded);
   const chunks = loadChunks(loaded, release).filter((chunk) => chunk.document_id === documentId);
   if (chunks.length === 0) throw new UserError(`Dokumenttia ei löytynyt projektista ${projectId}: ${documentId}`);
   return {

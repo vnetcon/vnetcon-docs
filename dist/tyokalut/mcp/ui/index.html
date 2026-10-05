@@ -14,12 +14,17 @@
 </header>
 
 <nav class="tabs" id="tabs">
-  <button data-tab="yleiskatsaus" class="active">Yleiskatsaus</button>
-  <button data-tab="projektit">Projektit ja kanavat</button>
+  <button data-tab="prosessi" class="active">Prosessi</button>
+  <button data-tab="projektit">Projektit</button>
+  <button data-tab="kanavat">Kanavat ja julkaisu</button>
+  <button data-tab="ajot">Agenttiajot</button>
   <button data-tab="ohjaus">Yhteinen ohjaus</button>
   <button data-tab="integraatiot">Integraatiot</button>
   <button data-tab="haku">Haku</button>
   <button data-tab="yhteys">Yhteys</button>
+  <button data-tab="asetukset">Asetukset</button>
+  <button data-tab="roskakori">Roskakori</button>
+  <button data-tab="ohjeet">Ohjeet</button>
 </nav>
 
 <main>
@@ -30,29 +35,36 @@
       <label data-mode="basic">Käyttäjätunnus <input name="username" autocomplete="username"></label>
       <label data-mode="basic">Salasana <input name="password" type="password" autocomplete="current-password"></label>
       <label data-mode="bearer oidc">Token <textarea name="token" rows="3"></textarea></label>
-      <button type="submit">Kirjaudu</button>
+      <div class="actions">
+        <button type="submit">Kirjaudu</button>
+        <button type="button" id="oidc-kirjaudu" class="ghost" hidden>Kirjaudu tunnistuspalvelussa</button>
+      </div>
     </form>
   </section>
 
-  <section id="yleiskatsaus" class="tab">
-    <div class="toolbar">
-      <h2>Projektit</h2>
-      <button class="admin" id="paivita-kaikki">Päivitä kaikki projektit</button>
-      <button id="lataa-uudelleen" class="ghost">Lataa tila uudelleen</button>
-    </div>
-    <p class="hint">Päivitys hakee projektien uusimmat commitit ja tarkistaa dokumentaation. Julkaisu vie ne MCP:n kautta AI-clienteille.</p>
-    <div id="projektilista"></div>
-    <h2>Kanavat</h2>
-    <div id="kanavalista"></div>
+  <section id="aloitus" class="panel" hidden>
+    <h2>MCP-työtilaa ei ole vielä luotu</h2>
+    <p class="hint" id="aloitus-ohje"></p>
+    <div id="aloitus-toiminnot"></div>
+  </section>
+
+  <section id="prosessi" class="tab">
+    <h2>Prosessi</h2>
+    <p class="hint">Vaiheet päätellään työtilasta ja dokumentaatiosta. Jokaisen vaiheen voi tehdä tästä käyttöliittymästä tai komentorivillä; avaa <em>Komentorivillä</em> nähdäksesi saman komennon.</p>
+    <div id="prosessikaavio" class="flow"></div>
+    <div id="prosessi-tyotila"></div>
+    <div id="prosessi-projektit"></div>
   </section>
 
   <section id="projektit" class="tab" hidden>
-    <h2>Lisää projekti</h2>
+    <h2>Projektit</h2>
+    <div id="projektilista"></div>
+    <h3 id="projekti-lomake-otsikko">Lisää projekti</h3>
     <form id="projekti-lomake" class="form grid">
       <label>Tunnus <input name="id" required placeholder="laskutus" pattern="[a-z0-9][a-z0-9._-]{1,62}"></label>
       <label>Nimi <input name="name" placeholder="Laskutus"></label>
-      <label class="wide">Repositorion polku tai URL <input name="location" required placeholder="../../laskutus tai git@github.com:org/laskutus.git"></label>
-      <label>Haarat <input name="refs" required value="main" placeholder="main,development"></label>
+      <label class="wide">Repositorion polku tai URL <input name="location" placeholder="../../laskutus tai git@github.com:org/laskutus.git"></label>
+      <label>Haarat <input name="refs" value="main" placeholder="main,development"></label>
       <label>Dokumentaatiomalli
         <select name="docs_mode">
           <option value="repository">repository: vnetcon-docs projektin repossa</option>
@@ -62,52 +74,83 @@
       </label>
       <label class="separate-only" hidden>Dokumentaatiorepo <input name="docs_repo" placeholder="../../laskutus/vnetcon-docs"></label>
       <label class="separate-only" hidden>Dokumentaation haara <input name="docs_ref" placeholder="(oletus: repon nykyinen haara)"></label>
-      <p class="hint wide">Suhteelliset polut lasketaan MCP-työtilasta. Projektien repoihin ei kirjoiteta mitään.</p>
-      <button type="submit" class="admin">Lisää projekti</button>
+      <p class="hint wide">Suhteelliset polut lasketaan MCP-työtilasta. Muokatessa tyhjät kentät jäävät ennalleen.</p>
+      <div class="wide" id="projekti-lomake-toiminnot"></div>
     </form>
+  </section>
 
-    <h2>Kanavat</h2>
-    <p class="hint">Kanava valitsee jokaisesta projektista yhden haaran, joka julkaistaan AI-clienteille.</p>
-    <form id="kanava-lomake" class="form inline">
-      <label>Uusi kanava <input name="id" required placeholder="local" pattern="[a-z0-9][a-z0-9._-]{0,62}"></label>
-      <button type="submit" class="admin">Luo kanava</button>
-    </form>
-    <form id="kanava-ref-lomake" class="form inline">
-      <label>Kanava <select name="channel"></select></label>
-      <label>Projekti <select name="project_id"></select></label>
-      <label>Haara <input name="ref" required value="main"></label>
-      <button type="submit" class="admin">Aseta</button>
-    </form>
+  <section id="kanavat" class="tab" hidden>
+    <h2>Kanavat ja julkaisu</h2>
+    <p class="hint">Kanava valitsee jokaisesta projektista yhden haaran. Julkaisu vie kanavan sisällön MCP:n kautta AI-clienteille.</p>
+    <div id="kanavalista"></div>
+    <h3>Uusi kanava tai haara kanavaan</h3>
+    <div class="form inline">
+      <label>Uusi kanava <input id="uusi-kanava" placeholder="local" pattern="[a-z0-9][a-z0-9._-]{0,62}"></label>
+      <div id="uusi-kanava-toiminto"></div>
+    </div>
+    <div class="form inline">
+      <label>Kanava <select id="ref-kanava"></select></label>
+      <label>Projekti <select id="ref-projekti"></select></label>
+      <label>Haara <input id="ref-haara" value="main"></label>
+      <div id="ref-toiminto"></div>
+    </div>
+  </section>
+
+  <section id="ajot" class="tab" hidden>
+    <h2>Agenttiajot</h2>
+    <p class="hint">Dokumentoiva agentti ajetaan koneelle asennetulla agentilla ja sen tilillä (vnetcon-ai). Agentti ei kysy kesken ajon: se kirjaa kysymyksensä, ja ajo jatkuu vastauksillasi. Agentti ei commitoi; tarkista muutokset ja commitoi välilehdellä Projektit.</p>
+    <div class="form grid">
+      <label>Projekti <select id="ajo-projekti"></select></label>
+      <label>Haara <input id="ajo-haara" placeholder="(oletushaara)"></label>
+      <label>Työnkulku
+        <select id="ajo-tyonkulku">
+          <option value="vnetcon-init">Käyttöönotto (/vnetcon-init)</option>
+          <option value="dokumentoi">Dokumentoi moduuli (/dokumentoi)</option>
+          <option value="dokumentoi-kaikki">Kattava dokumentointi (/dokumentoi-kaikki)</option>
+          <option value="synkronoi">Synkronoi koodimuutoksiin (/synkronoi-dokumentaatio)</option>
+          <option value="katselmoi">Katselmoinnin korjaukset (/katselmoi)</option>
+          <option value="kuvaa-integraatio">Kuvaa integraatio (/kuvaa-integraatio)</option>
+          <option value="yhdenmukaista">Yhdenmukaista (/yhdenmukaista-dokumentaatio)</option>
+        </select>
+      </label>
+      <label class="ajo-moduuli">Moduuli <input id="ajo-moduuli" placeholder="(seuraava tekemätön)"></label>
+      <label class="wide ajo-syote" hidden>Syöte (katselmoinnin palaute tai integraation kuvaus) <textarea id="ajo-syote" rows="6"></textarea></label>
+      <div class="wide" id="ajo-toiminto"></div>
+    </div>
+    <div class="split">
+      <ul id="ajolista" class="list"></ul>
+      <div id="ajo-tiedot"></div>
+    </div>
   </section>
 
   <section id="ohjaus" class="tab" hidden>
     <h2>Yhteinen ohjaus ja sanasto</h2>
-    <p class="hint">Kaikkia projekteja koskeva, ihmisen ylläpitämä ohjaus. Dokumentoivat agentit lukevat sen ennen kirjoittamista, ja MCP tarjoaa sen AI-clienteille (<code>get_shared_guidance</code>). Muutos näkyy heti ilman julkaisua. Projektikohtainen ohjaus on kunkin projektin <code>vnetcon-docs/metodi/ohjaus.md</code>:ssä, ja se korjataan <code>/katselmoi</code>-työnkululla.</p>
+    <p class="hint">Kaikkia projekteja koskeva, ihmisen ylläpitämä ohjaus. Dokumentoivat agentit lukevat sen ennen kirjoittamista, ja MCP tarjoaa sen AI-clienteille (<code>get_shared_guidance</code>). Muutos näkyy heti. Projektikohtainen ohjaus korjataan <em>Katselmoinnin korjaukset</em> -agenttiajolla.</p>
     <div class="split">
       <ul id="ohjaus-tiedostot" class="list"></ul>
       <div class="editor">
         <label>Tiedosto <input id="ohjaus-nimi" placeholder="ohjaus.md"></label>
         <textarea id="ohjaus-sisalto" rows="22" spellcheck="true"></textarea>
-        <button id="ohjaus-tallenna" class="admin">Tallenna</button>
+        <div id="ohjaus-toiminnot"></div>
       </div>
     </div>
   </section>
 
   <section id="integraatiot" class="tab" hidden>
     <h2>Integraatiotietueet</h2>
-    <p class="hint">Järjestelmien väliset rajapinnat. Luonnokset (<code>draft</code>) eivät näy AI-clienteille; hyväksy tietue muuttamalla tilaksi <code>active</code> ja täyttämällä <code>review</code>-kentät.</p>
+    <p class="hint">Järjestelmien väliset rajapinnat. Luonnokset (<code>draft</code>) eivät näy AI-clienteille; hyväksy tietue tilalla <code>active</code>.</p>
     <div class="split">
       <div>
         <ul id="integraatio-lista" class="list"></ul>
-        <form id="integraatio-uusi" class="form inline">
-          <label>Uusi tunniste <input name="id" placeholder="tilaus-crm-v1" pattern="[a-z0-9][a-z0-9._-]{1,62}"></label>
-          <button type="submit" class="admin">Uusi pohjasta</button>
-        </form>
+        <div class="form inline">
+          <label>Uusi tunniste <input id="integraatio-uusi-id" placeholder="tilaus-crm-v1" pattern="[a-z0-9][a-z0-9._-]{1,62}"></label>
+          <button type="button" id="integraatio-uusi" class="admin">Uusi pohjasta</button>
+        </div>
       </div>
       <div class="editor">
         <label>interface_id <input id="integraatio-id" readonly></label>
-        <textarea id="integraatio-yaml" rows="26" spellcheck="false" class="mono"></textarea>
-        <button id="integraatio-tallenna" class="admin">Tallenna</button>
+        <textarea id="integraatio-yaml" rows="24" spellcheck="false" class="mono"></textarea>
+        <div id="integraatio-toiminnot"></div>
       </div>
     </div>
   </section>
@@ -138,8 +181,33 @@
     <pre id="tunneli-powershell" class="mono"></pre>
   </section>
 
+  <section id="asetukset" class="tab" hidden>
+    <h2>Asetukset</h2>
+    <div id="asetukset-sisalto"></div>
+  </section>
+
+  <section id="roskakori" class="tab" hidden>
+    <h2>Roskakori</h2>
+    <p class="hint">Poistetut projektit, kanavat, integraatiotietueet ja ohjaustiedostot. Palautus tuo kohteen takaisin sellaisenaan. <code>--purge</code>-poisto ei tule roskakoriin.</p>
+    <div id="roskakori-sisalto"></div>
+  </section>
+
+  <section id="ohjeet" class="tab" hidden>
+    <h2>Ohjeet</h2>
+    <div class="split">
+      <div>
+        <h3>Ohjeet</h3>
+        <ul id="ohjelista" class="list"></ul>
+        <h3>Komennot</h3>
+        <ul class="list"><li id="komentoviite-linkki">Kaikki komennot</li></ul>
+      </div>
+      <article id="ohje" class="doc md"></article>
+    </div>
+  </section>
+
   <section class="panel">
     <div class="toolbar"><h3>Viimeisin toiminto</h3><span id="tila"></span></div>
+    <pre id="komento" class="mono" hidden></pre>
     <pre id="loki" class="mono log">—</pre>
   </section>
 </main>

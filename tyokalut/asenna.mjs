@@ -92,8 +92,9 @@ if (KOHDE === REPO) kuole('Kohde on tämä repo itse — asenna johonkin toiseen
 
 function suorituskelpoiset() {
   if (process.platform === 'win32') return;   // ei suoritusbittiä
-  for (const f of ['vnetcon-ai', 'vnetcon-ai.mjs', 'hae-token.sh', 'hae-token.mjs']) {
-    const p = path.join(MAALI, 'tyokalut', 'vnetcon-ai', f);
+  for (const f of ['vnetcon-ai/vnetcon-ai', 'vnetcon-ai/vnetcon-ai.mjs', 'vnetcon-ai/hae-token.sh', 'vnetcon-ai/hae-token.mjs',
+    'mcp/kaynnista/MCP-kayttoliittyma.command', 'mcp/kaynnista/mcp-kayttoliittyma.sh', 'mcp/kaynnista/kaynnista.mjs']) {
+    const p = path.join(MAALI, 'tyokalut', ...f.split('/'));
     try { fs.chmodSync(p, 0o755); } catch { /* ei pakollinen */ }
   }
 }

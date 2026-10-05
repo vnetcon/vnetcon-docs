@@ -28,9 +28,11 @@ local stdio process or as a shared Streamable HTTP server.
   webhook; the debounced queue never starts AI or publication by itself.
 
 Filesystem storage, manual/poll/webhook refresh, stdio, Streamable HTTP, an
-OIDC resource server, and the management UI (`/ui`) are implemented. Cloud
-storage, native Git-provider payload adapters, and OIDC browser sign-in are not
-yet part of this version.
+OIDC resource server, the management UI (`/ui`) with OIDC browser sign-in, agent
+runs, editing, removal and trash, and release retention are implemented. Cloud
+storage and native Git-provider payload adapters are not yet part of this version.
+OIDC browser sign-in is tested on the server side but not yet against a real
+identity provider.
 
 ## Prerequisites
 
@@ -217,13 +219,17 @@ Focused guides:
 
 ## Management UI
 
-The management UI runs in the same HTTP server as the MCP, at `/ui`. It covers
-setup and maintenance without the command line: adding projects, creating
-channels, refreshing and publishing, approving managed documentation, editing
-shared guidance, the glossary and interface records, searching published
-documentation, and copying AI client connection settings.
+Everything can be done either in the management UI or on the command line. Each
+UI action runs one `vnetcon-ai mcp` command, and the same command is shown under
+**Komentorivillä** (command line) for bash and PowerShell. The UI runs in the same
+HTTP server as the MCP, at `/ui`.
 
-Start it in the `vnetcon-docs` directory:
+### Starting
+
+Double-click in `tyokalut/mcp/kaynnista/`: `MCP-kayttoliittyma.command` (macOS),
+`MCP-kayttoliittyma.cmd` (Windows) or `mcp-kayttoliittyma.sh` (Linux). The launcher
+installs dependencies when needed, starts the server and opens the browser. In a
+terminal, in the `vnetcon-docs` directory:
 
 bash (macOS, Linux, WSL, Git Bash):
 
@@ -237,33 +243,78 @@ PowerShell (Windows):
 tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp ui
 ```
 
-Without HTTP settings the server listens only on the local machine at
-`http://127.0.0.1:8799/ui/` (MCP: `http://127.0.0.1:8799/mcp`). Use
-`--listen <host:port>` for another address. An HTTP server started with `serve`
-serves the UI at the same path; disable it with `runtime.http.ui.enabled: false`.
-The server also starts before the first publication, so setup can be done from
-the UI.
+Without HTTP settings the address is `http://127.0.0.1:8799/ui/` (MCP:
+`http://127.0.0.1:8799/mcp`); use `--listen <host:port>` for another one. If no MCP
+workspace exists yet, the UI offers to create it (with or without the parent
+project) and then switches to the full UI at the same address. An HTTP server
+started with `serve` serves the UI at the same path; disable it with
+`runtime.http.ui.enabled: false`.
 
-**Authentication is the same as for the MCP.** Reading requires sign-in and
-changes require the **admin** right:
+### Tabs
+
+| Tab | What it does | Command line |
+|---|---|---|
+| Prosessi (process) | Where each project is, what remains and how to do it | `process` |
+| Projektit (projects) | Add, edit, remove; documentation changes and commit | `add-project`, `project set`, `remove-project`, `docs diff`, `docs commit` |
+| Kanavat ja julkaisu (channels) | Channels, refs, default channel, publishing | `channel …`, `publish`, `smoke-test` |
+| Agenttiajot (agent runs) | Setup, documentation, sync, review corrections and integrations with an agent | `agent run`, `agent answer`, `agent cancel` |
+| Yhteinen ohjaus, Integraatiot | Shared guidance and glossary, interface records | `guidance …`, `interface …` |
+| Haku (search) | The same search as AI clients | (MCP tools `search`, `fetch`) |
+| Yhteys (connection) | MCP address, client settings, ChatGPT tunnel | `tunnel prepare openai` |
+| Asetukset (settings) | Authentication, tokens and users, HTTP, automatic refresh, retention | `auth …`, `server configure-http`, `refresh configure-…`, `publications prune` |
+| Roskakori (trash) | Restoring removed items | `trash list`, `trash restore`, `trash empty` |
+| Ohjeet (guides) | Process description, guides and all commands | `help` |
+
+### Editing, removal and restore
+
+Removal first shows a plan; `--confirm` carries it out. A removed project,
+channel, interface record or guidance file moves to the trash
+(`.multiproject/roskakori/`), from which `trash restore` brings it back as it was,
+including the project's channel refs. `--purge` removes permanently and leaves
+nothing to restore; for a project it also removes workspaces and releases. The UI
+asks for a typed confirmation.
+
+### Agent runs
+
+`agent run` runs a documentation agent non-interactively with the agent installed
+on the machine or server and its account (`vnetcon-ai`, settings `/agentit`). The
+method's approval gates remain:
+
+1. The agent follows the workflow. When it needs a decision, it writes its
+   questions with proposals and stops (status *needs answers*).
+2. A person answers (`agent answer`), and the run continues from the answers.
+3. The agent does not commit. Changes are reviewed (`docs diff`) and committed
+   (`docs commit`); managed documentation is approved (`approve`).
+
+A run is possible when the documentation is editable locally: repository mode
+with a local repository, separate mode with a local documentation repository, or
+managed mode. The MCP never writes to a remote repository. A project can have one
+run at a time. The UI runs agents in the background and shows the log.
+
+### Authentication
+
+The same as for the MCP. Reading requires sign-in and changes the **admin** right:
 
 | Mode | Admin right |
 |---|---|
 | `none` | When the server listens only on the local machine. On a network without authentication, read only. |
 | `bearer` | `auth token create --name <name> --admin` |
-| `basic` | `auth user add --username <name> --admin` |
+| `basic` | `auth user add --username <name> --password-stdin --admin` |
 | `oidc` | `auth oidc-rule add … --admin` (for example by group claim) |
 
-Project and channel restrictions (`--projects`, `--channels`) also apply to the UI.
+In OIDC mode the UI signs in to the identity provider in the browser
+(authorization code + PKCE) when a public client is registered for it:
+`auth configure-oidc … --ui-client-id <id> [--ui-scopes "openid api://…/.default"]`.
+Register the UI address (for example `https://mcp.example/ui/`) as the redirect
+URI; the token audience is the same as for the MCP. Without a client, sign in by
+pasting a valid access token.
 
-**Limitations in this version:**
+### Retention
 
-- Generating documentation runs an agent (`document`), so it is still done in a
-  terminal or IDE. The UI shows the command.
-- In OIDC mode there is no browser sign-in to the identity provider yet: sign in
-  by pasting a valid access token.
-- The server itself is started with one command (`vnetcon-ai mcp ui`) or as a
-  service.
+`publications prune --keep <n>` removes old bundles and releases. Current channel
+releases, the `n` newest bundles and the latest release per project ref are kept.
+An open MCP connection reads its own bundle's releases, so keep `n` at least at
+the default 3.
 
 ## Refresh after a Git change
 
@@ -326,6 +377,13 @@ pushed to the source repository.
 | `tunnel prepare openai` | Print Secure MCP Tunnel setup commands |
 | `serve` | Start the selected MCP transport |
 | `ui` | Start the HTTP server and the management UI (`/ui`) |
+| `process` | Process steps: what is done, what remains and with which command |
+| `project set` / `remove-project` / `trash …` | Edit a project, remove to trash or permanently (`--purge`), restore |
+| `channel unset-ref/set-default/remove` | Edit and remove channels |
+| `agent run/answer/cancel/list/show` | Documentation agent runs with questions and answers |
+| `docs diff` / `docs commit` | Documentation changes and commit (repository and separate mode) |
+| `guidance …` / `interface …` | Shared guidance and interface records |
+| `publications prune` | Remove old releases according to retention |
 
 Run `./multiproject-mcp help` for all command forms.
 

@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import YAML from 'yaml';
 import { authConfig, authenticateRequest } from './auth.mjs';
 import { loadConfig, resolveRootPath } from './config.mjs';
 import { revisionKey, separateDocs } from './git.mjs';
@@ -10,7 +9,11 @@ import { loadChannel } from './publisher.mjs';
 import { refreshSettings } from './refresh.mjs';
 import { fetchDocument, listInterfaces, readSharedGuidance, searchProject } from './search.mjs';
 import { packageRoot, readWorkspaceState } from './workspace.mjs';
-import { ensureDirectory, writeFileAtomic } from './util.mjs';
+import { COMMANDS, matchCommand } from './commands.mjs';
+import { computeProcess } from './process.mjs';
+import { jobDetails, listJobs } from './agent.mjs';
+import { listTrash } from './manage.mjs';
+import { detectParentProject } from './parent.mjs';
 
 // Hallintakäyttöliittymä. Lukunäkymät kootaan prosessin sisällä; muutokset ajetaan
 // samalla CLI:llä kuin päätteessä, jotta validointi ja logiikka eivät kahdennu.
@@ -22,31 +25,84 @@ const UI_DIR = path.join(HERE, '..', 'ui');
 const CLI = path.join(HERE, '..', 'bin', 'multiproject-mcp.mjs');
 const STATIC = { '/': ['index.html', 'text/html; charset=utf-8'], '/app.js': ['app.js', 'text/javascript; charset=utf-8'], '/style.css': ['style.css', 'text/css; charset=utf-8'] };
 const SAFE_ID = /^[a-z0-9][a-z0-9._-]{1,62}$/;
-const SAFE_GUIDANCE = /^[a-z0-9][a-z0-9._-]{0,62}\.md$/;
 
-export function registerUi(app, loaded, options) {
-  const base = options.path;
-  let queue = Promise.resolve();
-
+function serveStatic(app, base, csp) {
+  app.get('/', (_req, res) => res.redirect(`${base}/`));
   for (const [route, [file, type]] of Object.entries(STATIC)) {
     app.get(`${base}${route}`, (req, res) => {
       // Express ei erota osoitteita /ui ja /ui/; suhteelliset polut toimivat vain jälkimmäisessä.
       if (route === '/' && !req.originalUrl.split('?')[0].endsWith('/')) return res.redirect(`${base}/`);
       res.set({
         'Content-Type': type,
-        'Content-Security-Policy': "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+        'Content-Security-Policy': csp(),
         'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-store',
       });
-      res.send(fs.readFileSync(path.join(UI_DIR, file)));
+      return res.send(fs.readFileSync(path.join(UI_DIR, file)));
     });
   }
+}
+
+// OIDC-selainkirjautuminen hakee tunnistuspalvelun tiedot ja tokenin selaimesta,
+// joten tunnistuspalvelun osoite sallitaan connect-src-säännössä.
+function contentSecurityPolicy(loaded) {
+  const oidc = authConfig(loaded).mode === 'oidc' ? authConfig(loaded).oidc || {} : {};
+  const origins = [oidc.issuer, ...(oidc.ui_connect_src || [])].filter(Boolean).map((value) => {
+    try { return new URL(value).origin; } catch { return ''; }
+  }).filter(Boolean);
+  return `default-src 'self'; connect-src 'self' ${origins.join(' ')}; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`.replace(/\s+;/g, ';');
+}
+
+// Kirjautumissivulle annettavat julkiset OIDC-tiedot (ei salaisuuksia).
+function oidcPublic(loaded) {
+  const configuration = authConfig(loaded);
+  if (configuration.mode !== 'oidc') return undefined;
+  const oidc = configuration.oidc || {};
+  return { issuer: oidc.issuer, client_id: oidc.ui_client_id || null, scopes: oidc.ui_scopes || 'openid', resource: oidc.resource };
+}
+
+// Aloitustila: työtilaa ei ole vielä. Vain työtilan luonti, ja vain omalta koneelta.
+export function registerSetupUi(app, options) {
+  const base = options.path;
+  serveStatic(app, base, () => "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+  const parentInfo = () => {
+    const parent = detectParentProject();
+    if (!parent) return null;
+    const addable = !(parent.ignored && !parent.docsRepository);
+    return {
+      name: parent.name,
+      root: parent.root,
+      addable,
+      note: addable ? '' : `${parent.docsDirectory}/ on gitin ulkopuolella eikä sillä ole omaa git-repoa (git init vnetcon-docs-hakemistossa).`,
+    };
+  };
+  app.get(`${base}/api/session`, (_req, res) => res.json({ setup: { default_root: path.join(packageRoot(), 'mcp-tyotila'), parent: parentInfo() } }));
+  app.post(`${base}/api/setup/init`, async (req, res) => {
+    if (req.get('x-vnetcon-ui') !== '1' || !sameOrigin(req)) return res.status(403).json({ error: 'Pyyntö ei tullut hallintakäyttöliittymästä.' });
+    const flag = req.body?.emoprojekti ? '--emoprojekti' : '--ilman-emoprojektia';
+    const result = await new Promise((resolve) => {
+      const child = spawn(process.execPath, [CLI, 'init', flag], { cwd: packageRoot(), stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NO_COLOR: '1' } });
+      let output = '';
+      child.stdout.on('data', (chunk) => { output += chunk; });
+      child.stderr.on('data', (chunk) => { output += chunk; });
+      child.on('close', (code) => resolve({ ok: code === 0, output }));
+    });
+    res.json({ ...result, args: ['init', flag] });
+    if (result.ok) setTimeout(() => options.onInitialised().catch((error) => process.stderr.write(`${error.message}\n`)), 200);
+    return undefined;
+  });
+}
+
+export function registerUi(app, loaded, options) {
+  const base = options.path;
+  let queue = Promise.resolve();
+  serveStatic(app, base, () => contentSecurityPolicy(loaded));
 
   const api = (method, route, handler, { write = false } = {}) => {
     app[method](`${base}/api${route}`, async (req, res) => {
       try {
         const principal = await authenticateRequest(req, loaded, { loopback: options.loopback });
-        if (!principal) return res.status(401).json({ error: 'Kirjautuminen vaaditaan.', auth_mode: authMode(loaded) });
+        if (!principal) return res.status(401).json({ error: 'Kirjautuminen vaaditaan.', auth_mode: authMode(loaded), oidc: oidcPublic(loaded) });
         if (write) {
           if (req.get('x-vnetcon-ui') !== '1' || !sameOrigin(req)) return res.status(403).json({ error: 'Pyyntö ei tullut hallintakäyttöliittymästä.' });
           if (!principal.admin) return res.status(403).json({ error: 'Muutos vaatii admin-oikeuden.' });
@@ -62,8 +118,8 @@ export function registerUi(app, loaded, options) {
     });
   };
 
-  const cli = async (args) => {
-    const result = await runCli(loaded, args);
+  const cli = async (args, stdin) => {
+    const result = await runCli(loaded, args, stdin);
     Object.assign(loaded, loadConfig({ explicit: loaded.filename, profile: loaded.profile }));
     return result;
   };
@@ -104,63 +160,47 @@ export function registerUi(app, loaded, options) {
     template: readTemplate(),
   }));
 
-  api('post', '/projects', (req) => {
-    const body = req.body || {};
-    const args = ['add-project', '--id', text(body.id), '--refs', text(body.refs), '--docs-mode', text(body.docs_mode)];
-    if (body.path) args.push('--path', path.resolve(loaded.root, text(body.path)));
-    else args.push('--url', text(body.url));
-    if (body.name) args.push('--name', text(body.name));
-    if (body.docs_mode === 'separate') {
-      const docsRepo = text(body.docs_repo);
-      args.push('--docs-repo', /^[a-z][a-z0-9+.-]*:\/\//i.test(docsRepo) || docsRepo.includes('@') ? docsRepo : path.resolve(loaded.root, docsRepo));
-      if (body.docs_ref) args.push('--docs-ref', text(body.docs_ref));
+  api('get', '/process', (_req, principal) => computeProcess(loaded, principal));
+  api('get', '/commands', () => ({ commands: COMMANDS }));
+  api('get', '/jobs', (_req, principal) => ({ jobs: listJobs(loaded).filter((job) => !principal.projects || principal.projects.includes(job.project_id)) }));
+  api('get', '/jobs/:id', (req, principal) => {
+    const job = jobDetails(loaded, req.params.id);
+    allowProject(principal, job.project_id);
+    return job;
+  });
+  api('get', '/trash', () => ({ entries: listTrash(loaded) }));
+  api('get', '/guide', (req) => readGuide(String(req.query.name || '')));
+
+  // Kaikki muutokset: yksi rekisteröity CLI-komento kerrallaan, samat argumentit
+  // kuin päätteessä. Agenttiajot käynnistetään aina taustalle.
+  api('post', '/run', async (req) => {
+    const args = Array.isArray(req.body?.args) ? req.body.args.map(String) : [];
+    const command = matchCommand(args);
+    if (!command || !command.ui) throw httpError(400, `Komento ei ole sallittu käyttöliittymästä: ${args.slice(0, 3).join(' ')}`);
+    if (args.some((value) => value === '--config' || value === '--profile' || value.startsWith('--config=') || value.startsWith('--profile='))) {
+      throw httpError(400, 'Valitsimet --config ja --profile asettaa palvelin.');
     }
-    return cli(args);
+    if (command.path[0] === 'agent' && ['run', 'answer'].includes(command.path[1]) && !args.includes('--background')) args.push('--background');
+    const result = await cli(args, typeof req.body?.stdin === 'string' ? req.body.stdin : undefined);
+    return { ...result, args };
   }, { write: true });
+}
 
-  api('post', '/channels', (req) => cli(['channel', 'create', text(req.body?.id)]), { write: true });
-  api('post', '/channels/:id/refs', (req) => cli(['channel', 'set-ref', req.params.id, text(req.body?.project_id), text(req.body?.ref)]), { write: true });
+const GUIDES = ['README.md', 'tyokalut/mcp/README.md'];
 
-  api('post', '/bootstrap', (req) => {
-    const body = req.body || {};
-    return cli(body.project_id
-      ? ['bootstrap', '--project', text(body.project_id), ...(body.ref ? ['--ref', text(body.ref)] : [])]
-      : ['bootstrap', '--all']);
-  }, { write: true });
+function guideList() {
+  const root = packageRoot();
+  const docs = path.join(root, 'tyokalut', 'mcp', 'docs');
+  const metodi = path.join(root, 'metodi');
+  const list = (dir, prefix) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((name) => name.endsWith('.md')).sort().map((name) => `${prefix}${name}`) : []);
+  return [...GUIDES, ...list(docs, 'tyokalut/mcp/docs/'), ...list(metodi, 'metodi/')];
+}
 
-  api('post', '/approve', (req) => cli(['approve', '--project', text(req.body?.project_id), '--ref', text(req.body?.ref)]), { write: true });
-
-  api('post', '/publish', async (req) => {
-    const channel = text(req.body?.channel);
-    const published = await cli(['publish', '--channel', channel]);
-    if (!published.ok) return published;
-    const smoke = await cli(['smoke-test', '--channel', channel]);
-    return { ok: smoke.ok, output: `${published.output}${smoke.output}` };
-  }, { write: true });
-
-  api('put', '/guidance/:name', (req) => {
-    const name = req.params.name;
-    if (!SAFE_GUIDANCE.test(name)) throw httpError(400, 'Virheellinen tiedostonimi.');
-    const directory = guidanceRoot(loaded);
-    ensureDirectory(directory);
-    writeFileAtomic(path.join(directory, name), String(req.body?.content ?? ''));
-    return { ok: true, output: `Tallennettiin yhteiset/${name}\n` };
-  }, { write: true });
-
-  api('put', '/interfaces/:id', (req) => {
-    const id = req.params.id;
-    if (!SAFE_ID.test(id)) throw httpError(400, 'Virheellinen interface_id.');
-    const source = String(req.body?.yaml ?? '');
-    let parsed;
-    try { parsed = YAML.parse(source); } catch (error) { throw httpError(400, `Virheellinen YAML: ${error.message}`); }
-    if (parsed?.interface_id !== id) throw httpError(400, `interface_id pitää olla ${id}.`);
-    if (!['draft', 'active', 'deprecated'].includes(parsed.status)) throw httpError(400, 'status pitää olla draft, active tai deprecated.');
-    const existing = listInterfaces(loaded, '', { includeDrafts: true }).find((item) => item.interface_id === id);
-    const filename = path.join(interfacesRoot(loaded), existing?._source || `${id}.yaml`);
-    ensureDirectory(path.dirname(filename));
-    writeFileAtomic(filename, source.endsWith('\n') ? source : `${source}\n`);
-    return { ok: true, output: `Tallennettiin interfaces/${path.basename(filename)} (${parsed.status})\n` };
-  }, { write: true });
+function readGuide(name) {
+  const guides = guideList();
+  if (!name) return { guides };
+  if (!guides.includes(name)) throw httpError(404, `Ohjetta ei ole: ${name}`);
+  return { guides, name, content: fs.readFileSync(path.join(packageRoot(), ...name.split('/')), 'utf8') };
 }
 
 function overview(loaded, principal, options) {
@@ -249,13 +289,14 @@ function refStatus(loaded, project, ref) {
   };
 }
 
-function runCli(loaded, args) {
+function runCli(loaded, args, stdin) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLI, ...args, '--config', loaded.filename, '--profile', loaded.profile], {
       cwd: loaded.root,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [stdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
       env: { ...process.env, NO_COLOR: '1' },
     });
+    if (stdin !== undefined) child.stdin.end(stdin);
     let output = '';
     child.stdout.on('data', (chunk) => { output += chunk; });
     child.stderr.on('data', (chunk) => { output += chunk; });

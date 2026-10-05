@@ -69,3 +69,39 @@ pre { white-space: pre-wrap; word-break: break-word; background: var(--bg); bord
 pre.log { max-height: 260px; overflow: auto; }
 .doc { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-top: 12px; white-space: pre-wrap; }
 #tila.ok { color: var(--green); } #tila.err { color: var(--red); }
+
+/* Prosessi */
+.flow { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 16px; }
+.flow-step { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; }
+.flow-step span { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--line); font-size: 11px; font-weight: 700; }
+.flow-step.valmis { border-color: var(--green); } .flow-step.valmis span { background: var(--green); color: #fff; }
+.flow-step.kesken { border-color: var(--amber); } .flow-step.kesken span { background: var(--amber); color: #fff; }
+.flow-step.odottaa span { background: var(--teal-light); color: var(--teal); }
+.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.step { border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; padding: 8px 12px; background: var(--surface); }
+.step.valmis { border-left-color: var(--green); } .step.kesken { border-left-color: var(--amber); } .step.odottaa { border-left-color: var(--teal); }
+.step-head { display: flex; gap: 8px; align-items: center; }
+.step-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-top: 6px; }
+progress { width: 100%; max-width: 360px; height: 8px; accent-color: var(--teal); }
+
+/* Toiminnot ja komentovihjeet */
+.action { display: inline-flex; flex-direction: column; gap: 4px; max-width: 100%; }
+.action > button { align-self: flex-start; }
+details.cli { font-size: 12px; color: var(--muted); max-width: 100%; }
+details.cli summary { cursor: pointer; user-select: none; }
+details.cli pre { margin: 4px 0 8px; font-size: 12px; }
+.cli-label { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.confirm { border: 1px solid var(--red); border-radius: 8px; padding: 10px; margin-top: 6px; display: grid; gap: 8px; background: var(--surface); }
+.check { flex-direction: row !important; align-items: center; gap: 6px !important; font-weight: 500 !important; }
+.check input { width: auto; }
+button.danger { background: var(--red); border-color: var(--red); }
+button.danger-text { color: var(--red); border-color: var(--red); }
+ul.plain { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
+.inline-item { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.card .actions { margin-top: 8px; align-items: flex-start; }
+
+/* Ohjeet */
+.md h2 { font-size: 20px; } .md h3 { font-size: 16px; } .md h4, .md h5 { font-size: 14px; }
+.md blockquote { margin: 8px 0; padding: 6px 12px; border-left: 3px solid var(--teal); color: var(--muted); }
+.md table { margin: 8px 0; }
+.doc.md, #ohje { white-space: normal; }

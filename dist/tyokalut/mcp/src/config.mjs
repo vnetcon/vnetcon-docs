@@ -86,7 +86,7 @@ export function resolveConfigPath(explicit = '', cwd = process.cwd()) {
     if (fs.existsSync(launcherConfig)) return launcherConfig;
   }
   const found = findUp(cwd, CONFIG_NAME);
-  if (!found) throw new UserError(`${CONFIG_NAME} ei löydy. Aja ensin multiproject-mcp init <hakemisto>.`);
+  if (!found) throw new UserError(`${CONFIG_NAME} ei löydy. Luo MCP-työtila ensin vnetcon-docs-hakemistossa: vnetcon-ai mcp init`);
   return found;
 }
 

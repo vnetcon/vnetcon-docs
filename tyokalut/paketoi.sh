@@ -41,7 +41,10 @@ find "$TYO" -name '.DS_Store' -delete 2>/dev/null || true
 chmod +x "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/vnetcon-ai" \
          "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/vnetcon-ai.mjs" \
          "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/hae-token.sh" \
-         "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/hae-token.mjs" 2>/dev/null || true
+         "$TYO/vnetcon-docs/tyokalut/vnetcon-ai/hae-token.mjs" \
+         "$TYO/vnetcon-docs/tyokalut/mcp/kaynnista/MCP-kayttoliittyma.command" \
+         "$TYO/vnetcon-docs/tyokalut/mcp/kaynnista/mcp-kayttoliittyma.sh" \
+         "$TYO/vnetcon-docs/tyokalut/mcp/kaynnista/kaynnista.mjs" 2>/dev/null || true
 
 PAKETTI="$ULOS/vnetcon-docs-$VERSIO.zip"
 rm -f "$PAKETTI"

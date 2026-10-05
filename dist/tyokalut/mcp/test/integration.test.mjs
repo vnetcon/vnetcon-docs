@@ -267,8 +267,8 @@ test('integraatioluonnokset piilotetaan ja yhteinen ohjaus tarjotaan', async () 
   await client.close();
 });
 
-async function startUi(cwd, port) {
-  const child = spawn(process.execPath, [CLI, 'ui', '--listen', `127.0.0.1:${port}`], { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+async function startUi(cwd, port, env = {}) {
+  const child = spawn(process.execPath, [CLI, 'ui', '--listen', `127.0.0.1:${port}`], { cwd, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...env } });
   let stderr = '';
   child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
   const deadline = Date.now() + 10_000;
@@ -294,48 +294,93 @@ async function uiCall(base, route, { method = 'GET', body, authorization, ui = t
   return { status: response.status, data: await response.json() };
 }
 
-test('hallintakäyttöliittymä alustaa, julkaisee ja hallitsee ohjausta ilman komentoriviä', async () => {
+const uiRun = (base, args, extra = {}) => uiCall(base, '/run', { method: 'POST', body: { args, ...(extra.stdin !== undefined ? { stdin: extra.stdin } : {}) }, ...extra });
+
+async function waitFor(check, timeout = 10_000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const value = await check();
+    if (value) return value;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('Odotettu tila ei toteutunut.');
+}
+
+test('hallintakäyttöliittymä hoitaa koko prosessin CLI-komennoilla', async () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'multiproject-mcp-ui-'));
   const repo = createRepository(temp, 'kayttoliittyma', 'uisana');
   const workspace = path.join(temp, 'control');
+  // Valeagentti: ensimmäinen kierros kysyy, jatkoajo muokkaa dokumenttia.
+  const fakeAgent = path.join(temp, 'vale-agentti.mjs');
+  fs.writeFileSync(fakeAgent, `import fs from 'node:fs'; import path from 'node:path';
+const prompt = process.argv[2]; const exchange = prompt.match(/(\\S+)[\\\\/]kysymykset\\.md/)[1];
+if (prompt.includes('jatkoajo')) { fs.appendFileSync('moduulit/kayttoliittyma/yleiskuvaus.md', '\\nAgentin lisäys.\\n'); fs.writeFileSync(path.join(exchange, 'yhteenveto.md'), 'Valmis.\\n'); }
+else fs.writeFileSync(path.join(exchange, 'kysymykset.md'), '1. Jatketaanko? Ehdotus: kyllä.\\n');\n`);
   command(temp, ['init', workspace]);
   const port = await freePort();
-  const child = await startUi(workspace, port);
+  const child = await startUi(workspace, port, { VNETCON_AGENT_COMMAND: JSON.stringify([process.execPath, fakeAgent, '{prompt}']) });
   const base = `http://127.0.0.1:${port}`;
   try {
     const page = await fetch(`${base}/ui/`);
     assert.equal(page.status, 200);
     assert.match(page.headers.get('content-security-policy'), /default-src 'self'/);
-    assert.match(await page.text(), /vnetcon/);
     assert.equal((await uiCall(base, '/session')).data.principal.admin, true);
 
-    // Muutos vaatii hallintakäyttöliittymän otsakkeen.
-    assert.equal((await uiCall(base, '/channels', { method: 'POST', body: { id: 'local' }, ui: false })).status, 403);
+    // Vain rekisteröidyt UI-komennot, ja vain käyttöliittymän otsakkeella.
+    assert.equal((await uiCall(base, '/run', { method: 'POST', body: { args: ['channel', 'create', 'local'] }, ui: false })).status, 403);
+    assert.equal((await uiRun(base, ['serve'])).status, 400);
+    assert.equal((await uiRun(base, ['doctor', '--config', '/tmp/x.yaml'])).status, 400);
 
-    assert.equal((await uiCall(base, '/projects', { method: 'POST', body: { id: 'kayttoliittyma', path: repo, refs: 'main', docs_mode: 'repository' } })).data.ok, true);
-    assert.equal((await uiCall(base, '/channels', { method: 'POST', body: { id: 'local' } })).data.ok, true);
-    assert.equal((await uiCall(base, '/channels/local/refs', { method: 'POST', body: { project_id: 'kayttoliittyma', ref: 'main' } })).data.ok, true);
-    assert.equal((await uiCall(base, '/bootstrap', { method: 'POST', body: {} })).data.ok, true);
-    const published = await uiCall(base, '/publish', { method: 'POST', body: { channel: 'local' } });
-    assert.equal(published.data.ok, true, published.data.output);
+    const ok = async (args, extra) => {
+      const result = await uiRun(base, args, extra);
+      assert.equal(result.data.ok, true, `${args.join(' ')}: ${result.data.output || result.data.error}`);
+      return result.data;
+    };
+    await ok(['add-project', '--id', 'kayttoliittyma', '--path', repo, '--refs', 'main', '--docs-mode', 'repository']);
+    await ok(['project', 'set', '--id', 'kayttoliittyma', '--name', 'Käyttöliittymä']);
+    await ok(['channel', 'create', 'local']);
+    await ok(['channel', 'set-ref', 'local', 'kayttoliittyma', 'main']);
+    await ok(['bootstrap', '--all']);
+    await ok(['publish', '--channel', 'local']);
+    await ok(['smoke-test', '--channel', 'local']);
 
     const overview = (await uiCall(base, '/overview')).data;
-    assert.equal(overview.projects[0].refs[0].action, 'no-change');
-    assert.ok(overview.channels[0].published.bundle_id);
+    assert.equal(overview.projects[0].display_name, 'Käyttöliittymä');
+    const processView = (await uiCall(base, '/process')).data;
+    const steps = processView.projects[0].refs[0].steps;
+    assert.equal(steps.find((step) => step.id === 'julkaisu').status, 'valmis');
+    assert.ok(steps.every((step) => Array.isArray(step.cli)));
+    assert.ok((await uiCall(base, '/commands')).data.commands.some((item) => item.path.join(' ') === 'agent run'));
     const hits = (await uiCall(base, '/search?channel=local&project_id=kayttoliittyma&q=uisana')).data.results;
     assert.ok(hits.length > 0);
-    const documentView = (await uiCall(base, `/document?channel=local&project_id=kayttoliittyma&document_id=${hits[0].document_id}`)).data;
-    assert.match(documentView.content, /uisana/);
 
-    assert.equal((await uiCall(base, '/guidance/sanasto.md', { method: 'PUT', body: { content: '# Sanasto\n\nTilaus = myyntitilaus.\n' } })).data.ok, true);
+    // Yhteinen ohjaus ja integraatiot stdinin kautta, kuten --file päätteessä.
+    await ok(['guidance', 'set', 'sanasto.md', '--stdin'], { stdin: '# Sanasto\n\nTilaus = myyntitilaus.\n' });
     assert.ok((await uiCall(base, '/guidance')).data.documents.some((doc) => doc.content.includes('myyntitilaus')));
-    assert.equal((await uiCall(base, '/guidance/..%2Fohi.md', { method: 'PUT', body: { content: 'x' } })).status, 400);
+    await ok(['interface', 'set', 'tilaus-crm-v1', '--stdin'], { stdin: 'schema_version: 1\ninterface_id: tilaus-crm-v1\nstatus: draft\nprovider:\n  project_id: kayttoliittyma\n' });
+    await ok(['interface', 'set-status', 'tilaus-crm-v1', 'active']);
+    assert.equal((await uiCall(base, '/interfaces')).data.interfaces[0].status, 'active');
 
-    const yaml = 'schema_version: 1\ninterface_id: tilaus-crm-v1\nstatus: draft\nprovider:\n  project_id: kayttoliittyma\n';
-    assert.equal((await uiCall(base, '/interfaces/tilaus-crm-v1', { method: 'PUT', body: { yaml } })).data.ok, true);
-    assert.equal((await uiCall(base, '/interfaces/toinen-id', { method: 'PUT', body: { yaml } })).status, 400);
-    const listed = (await uiCall(base, '/interfaces')).data.interfaces;
-    assert.equal(listed[0].status, 'draft');
+    // Poisto roskakoriin ja palautus.
+    await ok(['remove-project', 'kayttoliittyma', '--confirm']);
+    const entry = (await uiCall(base, '/trash')).data.entries[0];
+    assert.equal(entry.kind, 'project');
+    await ok(['trash', 'restore', entry.entry]);
+    assert.equal((await uiCall(base, '/overview')).data.channels[0].project_refs.kayttoliittyma, 'main');
+
+    // Agenttiajo taustalla: kysymys, vastaus, jatkoajo ja commit.
+    await ok(['agent', 'run', '--project', 'kayttoliittyma', '--workflow', 'dokumentoi']);
+    const first = await waitFor(async () => (await uiCall(base, '/jobs')).data.jobs.find((job) => job.status === 'needs_answers'));
+    assert.match((await uiCall(base, `/jobs/${first.id}`)).data.questions, /Jatketaanko/);
+    await ok(['agent', 'answer', first.id, '--stdin'], { stdin: 'Kyllä.' });
+    await waitFor(async () => (await uiCall(base, '/jobs')).data.jobs.find((job) => job.status === 'completed'));
+    assert.match((await ok(['docs', 'diff', '--project', 'kayttoliittyma'])).output, /yleiskuvaus\.md/);
+    await ok(['docs', 'commit', '--project', 'kayttoliittyma', '--message', 'Agentin dokumentaatio']);
+    assert.equal(git(repo, ['log', '-1', '--format=%s']), 'Agentin dokumentaatio');
+
+    await ok(['publish', '--channel', 'local']);
+    await ok(['publications', 'prune', '--keep', '1', '--confirm']);
+    await ok(['smoke-test', '--channel', 'local']);
   } finally {
     await stopHttp(child);
   }
@@ -348,12 +393,38 @@ test('hallintakäyttöliittymä alustaa, julkaisee ja hallitsee ohjausta ilman k
   const secured = await startUi(workspace, port);
   try {
     assert.equal((await uiCall(base, '/session')).status, 401);
-    const readerSession = await uiCall(base, '/session', { authorization: `Bearer ${reader}` });
-    assert.equal(readerSession.data.principal.admin, false);
-    assert.equal((await uiCall(base, '/bootstrap', { method: 'POST', body: {}, authorization: `Bearer ${reader}` })).status, 403);
-    assert.equal((await uiCall(base, '/bootstrap', { method: 'POST', body: {}, authorization: `Bearer ${admin}` })).data.ok, true);
+    assert.equal((await uiCall(base, '/session', { authorization: `Bearer ${reader}` })).data.principal.admin, false);
+    assert.equal((await uiRun(base, ['bootstrap', '--all'], { authorization: `Bearer ${reader}` })).status, 403);
+    assert.equal((await uiRun(base, ['bootstrap', '--all'], { authorization: `Bearer ${admin}` })).data.ok, true);
   } finally {
     await stopHttp(secured);
+  }
+
+  // OIDC: kirjautumissivu saa julkiset tiedot, ja CSP sallii tunnistuspalvelun.
+  command(workspace, ['auth', 'configure-oidc', '--issuer', 'https://tunnistus.example', '--audience', 'vnetcon-mcp',
+    '--resource', `https://mcp.example/mcp`, '--ui-client-id', 'mcp-ui']);
+  const oidc = await startUi(workspace, port);
+  try {
+    const session = await uiCall(base, '/session');
+    assert.equal(session.status, 401);
+    assert.equal(session.data.oidc.client_id, 'mcp-ui');
+    assert.match((await fetch(`${base}/ui/`)).headers.get('content-security-policy'), /connect-src 'self' https:\/\/tunnistus\.example/);
+  } finally {
+    await stopHttp(oidc);
+  }
+});
+
+test('hallintakäyttöliittymä tarjoaa työtilan luonnin, kun työtilaa ei ole', async () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'multiproject-mcp-setup-'));
+  const port = await freePort();
+  const child = await startUi(temp, port);
+  try {
+    const session = await uiCall(`http://127.0.0.1:${port}`, '/session');
+    assert.match(session.data.setup.default_root, /mcp-tyotila$/);
+    const denied = await uiCall(`http://127.0.0.1:${port}`, '/setup/init', { method: 'POST', body: { emoprojekti: false }, ui: false });
+    assert.equal(denied.status, 403);
+  } finally {
+    await stopHttp(child);
   }
 });
 

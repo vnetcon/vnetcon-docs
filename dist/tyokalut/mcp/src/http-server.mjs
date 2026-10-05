@@ -20,7 +20,10 @@ import { createMcpServer } from './mcp-server.mjs';
 import { loadChannel } from './publisher.mjs';
 import { enqueueRefresh, refreshSettings, startRefreshController } from './refresh.mjs';
 import { safeChannelId } from './util.mjs';
-import { registerUi } from './ui-server.mjs';
+import { registerSetupUi, registerUi } from './ui-server.mjs';
+import { loadConfig } from './config.mjs';
+import { packageRoot } from './workspace.mjs';
+import path from 'node:path';
 
 const DEFAULT_IDLE_MS = 30 * 60 * 1000;
 const DEFAULT_MAX_SESSIONS = 250;
@@ -200,4 +203,27 @@ function resourceMetadataResponse(res, loaded) {
   const metadata = oidcResourceMetadata(loaded);
   if (!metadata) return res.status(404).json({ error: 'OIDC is not enabled' });
   return res.json(metadata);
+}
+
+// Aloitustila: MCP-työtilaa ei ole vielä. Palvelin tarjoaa vain työtilan luonnin
+// omalla koneella ja vaihtuu luonnin jälkeen täyteen tilaan samassa osoitteessa.
+export async function serveSetup({ host = '127.0.0.1', port = 8799 } = {}) {
+  if (!isLoopback(host)) throw new UserError('Työtilan voi luoda käyttöliittymästä vain omalla koneella (127.0.0.1). Aja muuten: vnetcon-ai mcp init');
+  const app = createMcpExpressApp({ host });
+  app.get('/healthz', (_req, res) => res.json({ status: 'setup' }));
+  let listener;
+  registerSetupUi(app, {
+    path: '/ui',
+    onInitialised: async () => {
+      await new Promise((resolve) => listener.close(resolve));
+      const loaded = loadConfig({ explicit: path.join(packageRoot(), 'mcp-tyotila', 'multiproject-mcp.yaml') });
+      await serveHttp(loaded, { host, port });
+    },
+  });
+  listener = await new Promise((resolve, reject) => {
+    const instance = app.listen(port, host, () => resolve(instance));
+    instance.on('error', reject);
+  });
+  process.stderr.write(`MCP-työtilaa ei ole vielä. Luo se selaimessa: http://${host}:${port}/ui/\n`);
+  return listener;
 }

@@ -31,9 +31,12 @@ voidaan ajaa paikallisena stdio-prosessina tai jaettuna Streamable HTTP
   debounce-jono ei käynnistä AI-ajoa tai julkaisua automaattisesti.
 
 Tiedostopohjainen tallennus, manuaalinen/poll/webhook-päivityskierto, stdio,
-Streamable HTTP, OIDC-resurssipalvelin ja hallintakäyttöliittymä (`/ui`) ovat
-valmiit. Pilvitallennus, natiivien Git-palvelupayloadien adapterit ja
-OIDC-selainkirjautuminen eivät vielä kuulu tähän versioon.
+Streamable HTTP, OIDC-resurssipalvelin, hallintakäyttöliittymä (`/ui`)
+OIDC-selainkirjautumisineen, agenttiajot, muokkaukset, poistot ja roskakori sekä
+julkaisujen säilytys ovat valmiit. Pilvitallennus ja natiivien
+Git-palvelupayloadien adapterit eivät vielä kuulu tähän versioon.
+OIDC-selainkirjautuminen on testattu palvelimen osalta, mutta ei vielä oikeaa
+tunnistuspalvelua vasten.
 
 ## Esivaatimukset
 
@@ -220,13 +223,17 @@ Yksityiskohtaiset ohjeet:
 
 ## Hallintakäyttöliittymä
 
-Hallintakäyttöliittymä on samassa HTTP-palvelimessa kuin MCP, osoitteessa `/ui`.
-Sen kautta voi tehdä käyttöönoton ja ylläpidon ilman komentoriviä: lisätä
-projekteja, luoda kanavia, päivittää ja julkaista, hyväksyä managed-dokumentaation,
-muokata yhteistä ohjausta, sanastoa ja integraatiotietueita, hakea julkaistusta
-dokumentaatiosta ja kopioida AI-clienttien yhteysasetukset.
+Kaiken voi tehdä joko hallintakäyttöliittymässä tai komentorivillä. Jokainen
+käyttöliittymän toiminto ajaa yhden `vnetcon-ai mcp` -komennon, ja sama komento
+näkyy toiminnon kohdassa **Komentorivillä** bashille ja PowerShellille.
+Käyttöliittymä on samassa HTTP-palvelimessa kuin MCP, osoitteessa `/ui`.
 
-Käynnistys `vnetcon-docs`-hakemistossa:
+### Käynnistys
+
+Tuplaklikkaa hakemistossa `tyokalut/mcp/kaynnista/`: `MCP-kayttoliittyma.command`
+(macOS), `MCP-kayttoliittyma.cmd` (Windows) tai `mcp-kayttoliittyma.sh` (Linux).
+Käynnistin asentaa tarvittaessa riippuvuudet, käynnistää palvelimen ja avaa selaimen.
+Päätteessä sama, `vnetcon-docs`-hakemistossa:
 
 bash (macOS, Linux, WSL, Git Bash):
 
@@ -240,34 +247,78 @@ PowerShell (Windows):
 tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp ui
 ```
 
-Ilman HTTP-asetuksia palvelin kuuntelee vain omaa konetta osoitteessa
-`http://127.0.0.1:8799/ui/` (MCP: `http://127.0.0.1:8799/mcp`). Toisen osoitteen saa
-valitsimella `--listen <host:port>`. `serve`-komennolla käynnistetty HTTP-palvelin
-tarjoaa käyttöliittymän samassa osoitteessa; sen voi poistaa asetuksella
-`runtime.http.ui.enabled: false`. Palvelin käynnistyy myös ennen ensimmäistä
-julkaisua, jotta käyttöönoton voi tehdä käyttöliittymästä.
+Ilman HTTP-asetuksia osoite on `http://127.0.0.1:8799/ui/` (MCP:
+`http://127.0.0.1:8799/mcp`); toisen osoitteen saa valitsimella `--listen <host:port>`.
+Jos MCP-työtilaa ei vielä ole, käyttöliittymä tarjoaa sen luonnin (emoprojektin
+kanssa tai ilman) ja vaihtuu sen jälkeen täyteen tilaan samassa osoitteessa.
+`serve`-komennolla käynnistetty HTTP-palvelin tarjoaa käyttöliittymän samassa
+osoitteessa; sen voi poistaa asetuksella `runtime.http.ui.enabled: false`.
 
-**Tunnistus on sama kuin MCP:llä.** Lukeminen vaatii kirjautumisen, ja muutokset
-vaativat **admin-oikeuden**:
+### Välilehdet
+
+| Välilehti | Mitä siellä tehdään | Komentorivillä |
+|---|---|---|
+| Prosessi | Missä kukin projekti on, mitä on jäljellä ja miten se tehdään | `process` |
+| Projektit | Lisäys, muokkaus, poisto; dokumentaation muutokset ja commit | `add-project`, `project set`, `remove-project`, `docs diff`, `docs commit` |
+| Kanavat ja julkaisu | Kanavat, haarat, oletuskanava, julkaisu | `channel …`, `publish`, `smoke-test` |
+| Agenttiajot | Käyttöönotto, dokumentointi, synkronointi, katselmointi ja integraatiot agentilla | `agent run`, `agent answer`, `agent cancel` |
+| Yhteinen ohjaus, Integraatiot | Yhteinen ohjaus ja sanasto, integraatiotietueet | `guidance …`, `interface …` |
+| Haku | Sama haku kuin AI-clienteilla | (MCP-työkalut `search`, `fetch`) |
+| Yhteys | MCP-osoite, clienttien asetukset, ChatGPT:n tunneli | `tunnel prepare openai` |
+| Asetukset | Tunnistus, tokenit ja käyttäjät, HTTP, automaattinen haku, julkaisujen säilytys | `auth …`, `server configure-http`, `refresh configure-…`, `publications prune` |
+| Roskakori | Poistettujen palautus | `trash list`, `trash restore`, `trash empty` |
+| Ohjeet | Prosessikuvaus, ohjeet ja kaikki komennot | `help` |
+
+### Muokkaus, poisto ja palautus
+
+Poisto näyttää ensin suunnitelman; `--confirm` toteuttaa sen. Poistettu projekti,
+kanava, integraatiotietue tai ohjaustiedosto siirtyy roskakoriin
+(`.multiproject/roskakori/`), josta `trash restore` palauttaa sen sellaisenaan,
+projektin kanavahaarat mukaan lukien. `--purge` poistaa pysyvästi eikä jätä
+palautettavaa; projektilta se poistaa myös työtilat ja julkaisut. Käyttöliittymä
+pyytää poistoon kirjoitetun vahvistuksen.
+
+### Agenttiajot
+
+`agent run` ajaa dokumentoivan agentin ilman vuorovaikutusta koneelle tai
+palvelimelle asennetulla agentilla ja sen tilillä (`vnetcon-ai`, asetukset
+`/agentit`). Menetelmän hyväksyntäportit säilyvät:
+
+1. Agentti noudattaa työnkulkua. Kun se tarvitsee päätöksen, se kirjaa kysymyksensä
+   ehdotuksineen ja lopettaa (tila *odottaa vastauksia*).
+2. Ihminen vastaa (`agent answer`), ja ajo jatkuu vastausten pohjalta.
+3. Agentti ei commitoi. Muutokset tarkistetaan (`docs diff`) ja commitoidaan
+   (`docs commit`); managed-dokumentaatio hyväksytään (`approve`).
+
+Ajo onnistuu, kun dokumentaatio on muokattavissa paikallisesti: repository-malli
+paikallisella repolla, separate-malli paikallisella dokumentaatiorepolla tai
+managed-malli. Etärepositorioon MCP ei kirjoita. Projektilla voi olla kerrallaan
+yksi ajo. Käyttöliittymä ajaa ajot taustalla ja näyttää lokin.
+
+### Tunnistus
+
+Sama kuin MCP:llä. Lukeminen vaatii kirjautumisen ja muutokset **admin-oikeuden**:
 
 | Tunnistustila | Admin-oikeus |
 |---|---|
 | `none` | Kun palvelin kuuntelee vain omaa konetta. Verkossa ilman tunnistusta vain luku. |
 | `bearer` | `auth token create --name <nimi> --admin` |
-| `basic` | `auth user add --username <nimi> --admin` |
+| `basic` | `auth user add --username <nimi> --password-stdin --admin` |
 | `oidc` | `auth oidc-rule add … --admin` (esim. ryhmäväitteen perusteella) |
 
-Projekti- ja kanavarajaukset (`--projects`, `--channels`) koskevat myös
-käyttöliittymää.
+OIDC-tilassa käyttöliittymä kirjautuu tunnistuspalveluun selaimessa
+(authorization code + PKCE), kun sille on rekisteröity julkinen client:
+`auth configure-oidc … --ui-client-id <id> [--ui-scopes "openid api://…/.default"]`.
+Tunnistuspalveluun rekisteröidään uudelleenohjausosoitteeksi käyttöliittymän
+osoite (esim. `https://mcp.example/ui/`), ja tokenin audience on sama kuin MCP:n.
+Ilman clientia kirjautumisessa liitetään voimassa oleva access token.
 
-**Rajaukset tässä versiossa:**
+### Julkaisujen säilytys
 
-- Dokumentaation tuottaminen ajaa agentin (`document`), joten se tehdään edelleen
-  päätteessä tai IDE:ssä. Käyttöliittymä näyttää komennon.
-- OIDC-tilassa selainkirjautumista tunnistuspalveluun ei vielä ole: kirjautumisessa
-  liitetään voimassa oleva access token.
-- Palvelin itse käynnistetään yhdellä komennolla (`vnetcon-ai mcp ui`) tai
-  palveluna.
+`publications prune --keep <n>` poistaa vanhat paketit ja julkaisut. Kanavien
+nykyiset julkaisut, `n` uusinta pakettia ja projektien haarakohtaiset viimeisimmät
+julkaisut säilytetään. Avoin MCP-yhteys lukee oman pakettinsa julkaisuja, joten
+`n` kannattaa pitää vähintään oletuksessa 3.
 
 ## Päivityskierros Git-muutoksen jälkeen
 
@@ -331,6 +382,13 @@ commitoida tai pushata lähderepositoryyn.
 | `tunnel prepare openai` | Tulostaa Secure MCP Tunnelin käynnistyskomennot |
 | `serve` | Käynnistää valitun MCP-palvelun |
 | `ui` | Käynnistää HTTP-palvelimen ja hallintakäyttöliittymän (`/ui`) |
+| `process` | Prosessin vaiheet: mitä on tehty, mitä jäljellä ja millä komennolla |
+| `project set` / `remove-project` / `trash …` | Projektin muokkaus, poisto roskakoriin tai pysyvästi (`--purge`) ja palautus |
+| `channel unset-ref/set-default/remove` | Kanavan muokkaus ja poisto |
+| `agent run/answer/cancel/list/show` | Dokumentoivat agenttiajot kysymyksineen ja vastauksineen |
+| `docs diff` / `docs commit` | Dokumentaation muutokset ja commit (repository- ja separate-malli) |
+| `guidance …` / `interface …` | Yhteinen ohjaus ja integraatiotietueet |
+| `publications prune` | Vanhojen julkaisujen poisto säilytyskäytännön mukaan |
 
 Kaikki komentomuodot näkee komennolla `./multiproject-mcp help`.
 

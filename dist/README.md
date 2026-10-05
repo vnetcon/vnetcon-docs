@@ -244,7 +244,10 @@ rinnalle. Työtilan konfiguraation voi commitoida; kloonit ja julkaisut jäävä
 gitin ulkopuolelle.
 
 Käyttöönoton ja ylläpidon voi tehdä myös selaimessa: `vnetcon-ai mcp ui` käynnistää
-hallintakäyttöliittymän osoitteeseen `http://127.0.0.1:8799/ui/`.
+hallintakäyttöliittymän osoitteeseen `http://127.0.0.1:8799/ui/`. Ilman päätettä:
+tuplaklikkaa `tyokalut/mcp/kaynnista/MCP-kayttoliittyma.command` (macOS),
+`MCP-kayttoliittyma.cmd` (Windows) tai `mcp-kayttoliittyma.sh` (Linux).
+Käyttöliittymä näyttää jokaisen toiminnon vastaavan komennon.
 
 Jatko-ohjeet: [`tyokalut/mcp/README.md`](tyokalut/mcp/README.md) ja
 ChatGPT-yhteys [`tyokalut/mcp/docs/chatgpt.md`](tyokalut/mcp/docs/chatgpt.md).
