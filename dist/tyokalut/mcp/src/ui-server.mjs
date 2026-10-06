@@ -11,6 +11,7 @@ import { fetchDocument, listInterfaces, readSharedGuidance, searchProject } from
 import { packageRoot, readWorkspaceState } from './workspace.mjs';
 import { COMMANDS, matchCommand } from './commands.mjs';
 import { computeProcess } from './process.mjs';
+import { tunnelCommands } from './tunnel.mjs';
 import { jobDetails, listJobs } from './agent.mjs';
 import { listTrash } from './manage.mjs';
 import { detectParentProject } from './parent.mjs';
@@ -160,7 +161,7 @@ export function registerUi(app, loaded, options) {
     template: readTemplate(),
   }));
 
-  api('get', '/process', (_req, principal) => computeProcess(loaded, principal));
+  api('get', '/process', (_req, principal) => computeProcess(loaded, principal, { host: options.host, port: options.port, path: options.mcpPath }));
   api('get', '/commands', () => ({ commands: COMMANDS }));
   api('get', '/jobs', (_req, principal) => ({ jobs: listJobs(loaded).filter((job) => !principal.projects || principal.projects.includes(job.project_id)) }));
   api('get', '/jobs/:id', (req, principal) => {
@@ -239,20 +240,7 @@ function overview(loaded, principal, options) {
       mcp_url: mcpUrl,
       ui_url: `http://${options.host}:${options.port}${options.path}/`,
       auth_mode: authMode(loaded),
-      tunnel: {
-        bash: [
-          'export CONTROL_PLANE_API_KEY="sk-..."',
-          `tunnel-client init --profile vnetcon-docs --tunnel-id <TUNNEL_ID> --mcp-server-url ${mcpUrl}`,
-          'tunnel-client doctor --profile vnetcon-docs --explain',
-          'tunnel-client run --profile vnetcon-docs',
-        ],
-        powershell: [
-          '$env:CONTROL_PLANE_API_KEY = "sk-..."',
-          `tunnel-client init --profile vnetcon-docs --tunnel-id <TUNNEL_ID> --mcp-server-url ${mcpUrl}`,
-          'tunnel-client doctor --profile vnetcon-docs --explain',
-          'tunnel-client run --profile vnetcon-docs',
-        ],
-      },
+      tunnel: tunnelCommands(loaded, { running: { host: options.host, port: options.port, path: options.mcpPath } }),
       clients: {
         'Claude Code': `claude mcp add --transport http vnetcon-docs ${mcpUrl}`,
         'VS Code (.vscode/mcp.json)': JSON.stringify({ servers: { 'vnetcon-docs': { type: 'http', url: mcpUrl } } }, null, 2),

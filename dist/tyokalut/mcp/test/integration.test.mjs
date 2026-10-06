@@ -32,7 +32,7 @@ async function freePort() {
 }
 
 async function startHttp(cwd, port) {
-  const child = spawn(process.execPath, [CLI, 'serve'], { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, [CLI, 'serve', '--transport', 'http'], { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
   let stderr = '';
   child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
   const deadline = Date.now() + 10_000;
@@ -468,6 +468,35 @@ test('Streamable HTTP, paikalliset autentikointitilat ja Git-refresh toimivat', 
   command(workspace, ['server', 'configure-http', '--listen', `0.0.0.0:${port}`, '--channel', 'local'], 1);
   command(workspace, ['server', 'configure-http', '--listen', `127.0.0.1:${port}`, '--channel', 'local']);
   command(workspace, ['doctor', '--http']);
+
+  // HTTP-osoitteen tallennus ei muuta oletussiirtotapaa; tunneli ja prosessi
+  // käyttävät tallennettua osoitetta ja tunnistetta.
+  assert.doesNotMatch(command(workspace, ['server', 'status']).stdout, /transport: http/);
+  assert.match(command(workspace, ['tunnel', 'prepare', 'openai']).stdout, new RegExp(`--tunnel-id <TUNNEL_ID> --mcp-server-url http://127\\.0\\.0\\.1:${port}/mcp`));
+  command(workspace, ['tunnel', 'prepare', 'openai', '--tunnel-id'], 1);
+  command(workspace, ['tunnel', 'configure', 'openai', '--tunnel-id', 'tunnel_liian_lyhyt'], 1);
+  command(workspace, ['tunnel', 'configure', 'openai', '--tunnel-id', 'tunnel_0123456789abcdef0123456789abcdef', '--client-profile', 'testi']);
+  assert.match(command(workspace, ['tunnel', 'prepare', 'openai']).stdout, /init --profile testi --profile-dir \S+ --tunnel-id tunnel_0123456789abcdef0123456789abcdef/);
+  let connectionSteps = JSON.parse(command(workspace, ['process', '--json']).stdout).connection;
+  const statusOf = (steps, id) => steps.find((item) => item.id === id).status;
+  assert.equal(statusOf(connectionSteps, 'http'), 'valmis');
+  assert.equal(statusOf(connectionSteps, 'tunneli'), 'valmis');
+  assert.match(command(workspace, ['tunnel', 'remove', 'openai']).stdout, /tunnel configure openai --tunnel-id tunnel_0123456789abcdef0123456789abcdef --client-profile testi/);
+  connectionSteps = JSON.parse(command(workspace, ['process', '--json']).stdout).connection;
+  assert.equal(statusOf(connectionSteps, 'tunneli'), 'odottaa');
+  // tunnel-client asennetaan työtilaan, ei PATHiin; komennot käyttävät sitä ja työtilan profiileja.
+  if (process.platform !== 'win32') {
+    const source = fs.mkdtempSync(path.join(os.tmpdir(), 'tunnel-client-lahde-'));
+    fs.writeFileSync(path.join(source, 'tunnel-client'), '#!/bin/sh\necho 0.0.0-test\n', { mode: 0o755 });
+    assert.match(command(workspace, ['tunnel', 'install', 'openai', '--from', source]).stdout, /Versio: 0\.0\.0-test/);
+    assert.equal(statusOf(JSON.parse(command(workspace, ['process', '--json']).stdout).connection, 'tunnel-client-asennus'), 'valmis');
+    const prepared = command(workspace, ['tunnel', 'prepare', 'openai']).stdout;
+    assert.match(prepared, /\.multiproject\/tunnel-client\/tunnel-client init .*--profile-dir \S*\.multiproject\/tunnel-client\/profiles/);
+    command(workspace, ['tunnel', 'uninstall', 'openai']);
+    assert.equal(fs.existsSync(path.join(workspace, '.multiproject', 'tunnel-client')), false);
+    fs.rmSync(source, { recursive: true, force: true });
+  }
+  command(workspace, ['config', 'validate']);
 
   let server = await startHttp(workspace, port);
   let connection = await connectHttp(`http://127.0.0.1:${port}/mcp`);

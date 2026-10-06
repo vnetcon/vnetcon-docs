@@ -171,18 +171,26 @@ gitin ulkopuolelle automaattisesti.
 ## Vaihe 4: HTTP-palvelin omalle koneelle
 
 Palvelin kuuntelee vain osoitteessa `127.0.0.1`, joten tunnistusta ei tarvita
-paikallisessa testissä. Portti 8793 on oletus, mutta se voi olla toisen
-MCP-palvelimen käytössä. Tässä käytetään porttia 8799.
+paikallisessa testissä. Oletusportti on 8799, sama kuin hallintakäyttöliittymällä.
+Jos portti on varattu (esimerkiksi toinen MCP-palvelin tai `tunnel-client`),
+valitse toinen.
 
-bash:
+**Hallintakäyttöliittymässä** (`mcp ui`): Prosessi-välilehden kohta *Yhteys
+AI-clienteihin* näyttää ChatGPT-ketjun vaiheet tiloineen. Tee ne ylhäältä alas:
+*Kanava julkaistu* → *HTTP-palvelimen osoite* (Tallenna osoite) → *Tunnistus* →
+*Tunneli OpenAI:ssa* → *tunnel-client käynnissä* → *Yhteys ChatGPT:ssä*.
+Käyttöliittymä on itse MCP-palvelin, joten erillistä `serve`-komentoa ei tarvita
+niin kauan kuin käyttöliittymä on auki.
+
+**Komentorivillä**, bash:
 
 ```bash
 cd ~/emoprojekti/vnetcon-docs
 lsof -nP -iTCP:8799 -sTCP:LISTEN      # ei tulostetta = portti vapaa
-./tyokalut/vnetcon-ai/vnetcon-ai mcp server configure-http --listen 127.0.0.1:8799 --channel local
+./tyokalut/vnetcon-ai/vnetcon-ai mcp server configure-http --listen 127.0.0.1:8799
 ./tyokalut/vnetcon-ai/vnetcon-ai mcp auth set-mode none
 ./tyokalut/vnetcon-ai/vnetcon-ai mcp doctor --http
-./tyokalut/vnetcon-ai/vnetcon-ai mcp serve
+./tyokalut/vnetcon-ai/vnetcon-ai mcp serve --transport http
 ```
 
 PowerShell:
@@ -190,11 +198,18 @@ PowerShell:
 ```powershell
 cd ~\emoprojekti\vnetcon-docs
 Get-NetTCPConnection -LocalPort 8799 -State Listen -ErrorAction SilentlyContinue   # ei tulostetta = portti vapaa
-tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp server configure-http --listen 127.0.0.1:8799 --channel local
+tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp server configure-http --listen 127.0.0.1:8799
 tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp auth set-mode none
 tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp doctor --http
-tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp serve
+tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp serve --transport http
 ```
+
+`configure-http` tallentaa vain osoitteen. Se ei muuta oletussiirtotapaa, joten
+paikalliset stdio-clientit (Claude Code, Codex, Cursor) toimivat ennallaan.
+`serve --transport http` voidaan korvata komennolla `ui`, joka tarjoaa samassa
+osoitteessa sekä MCP:n että hallintakäyttöliittymän. ChatGPT näkee oletuskanavan;
+oletuskanavaa vaihdetaan välilehdellä *Kanavat ja julkaisu* tai komennolla
+`channel set-default <kanava>`.
 
 Palvelin tulostaa `multiproject-mcp HTTP: http://127.0.0.1:8799/mcp channel=local auth=none`.
 `doctor --http` varoittaa, ettei palvelin tunnista käyttäjiä. Kun palvelin
@@ -212,41 +227,79 @@ vain lähtevän HTTPS-yhteyden OpenAI:hin, joten palvelinta ei avata internetiin
 
 1. **Luo tunneli** OpenAI Platformissa:
    `https://platform.openai.com/settings/organization/tunnels`.
-   Kirjaa tunnelin tunniste (`tunnel_…`).
+   Kirjaa tunnelin tunniste. Muoto on `tunnel_` ja 32 pientä kirjainta tai numeroa.
 2. **Luo ajonaikainen avain**:
    `https://platform.openai.com/settings/organization/api-keys`.
    Valitse *Restricted* ja anna Tunnels-oikeudeksi *Read + Use*.
-3. **Asenna `tunnel-client`** omalle alustallesi:
-   `https://github.com/openai/tunnel-client/releases/latest`.
-4. **Tulosta komennot** `vnetcon-docs`-hakemistossa ja aja ne uudessa ikkunassa.
+3. **Tallenna tunnelin tunniste.** Käyttöliittymässä Prosessi-välilehden vaihe
+   *Tunneli OpenAI:ssa* tai Yhteys-välilehti; komentorivillä alla oleva
+   `tunnel configure`.
+4. **Asenna `tunnel-client` MCP-työtilaan.** Käyttöliittymässä vaihe
+   *tunnel-client asennettu* → *Lataa ja asenna*; komentorivillä
+   `tunnel install openai`. Ohjelma ladataan OpenAI:n julkaisusta
+   (`https://github.com/openai/tunnel-client/releases`) ja sen SHA-256-summa
+   tarkistetaan. Jos koneella on jo `tunnel-client`, sen voi kopioida:
+   `tunnel install openai --from <zip|hakemisto|tiedosto>`.
+5. **Aja `tunnel-client`-komennot** `vnetcon-docs`-hakemistossa omassa
+   terminaali-ikkunassa. Käyttöliittymä näyttää ne vaiheessa *tunnel-client
+   käynnissä* (Terminaalissa); komentorivillä ne tulostaa `tunnel prepare`.
 
-bash:
+`tunnel-client` ei mene PATHiin eikä kotihakemistoon. Ohjelma ja sen profiilit
+ovat MCP-työtilassa:
+
+```text
+vnetcon-docs/mcp-tyotila/.multiproject/tunnel-client/
+  tunnel-client          (Windows: tunnel-client.exe)
+  cloudflared
+  profiles/<profiili>.yaml
+```
+
+Hakemisto on gitin ulkopuolella, ja paketin päivitys (`asenna --paivita`)
+säilyttää sen. Kaiken saa pois poistamalla hakemiston tai komennolla
+`tunnel uninstall openai`. Profiilissa ei ole avainta, vain viittaus
+ympäristömuuttujaan `CONTROL_PLANE_API_KEY`.
+
+bash, `vnetcon-docs`-hakemistossa:
 
 ```bash
 cd ~/emoprojekti/vnetcon-docs
-./tyokalut/vnetcon-ai/vnetcon-ai mcp tunnel prepare openai --tunnel-id tunnel_XXXXXXXX
+./tyokalut/vnetcon-ai/vnetcon-ai mcp tunnel configure openai --tunnel-id tunnel_<32 merkkiä>
+./tyokalut/vnetcon-ai/vnetcon-ai mcp tunnel install openai
+./tyokalut/vnetcon-ai/vnetcon-ai mcp tunnel prepare openai
 export CONTROL_PLANE_API_KEY="sk-..."
-tunnel-client init --profile vnetcon-docs --tunnel-id tunnel_XXXXXXXX --mcp-server-url http://127.0.0.1:8799/mcp
-tunnel-client doctor --profile vnetcon-docs --explain
-tunnel-client run --profile vnetcon-docs
+./mcp-tyotila/.multiproject/tunnel-client/tunnel-client init --profile vnetcon-docs-emoprojekti --profile-dir ./mcp-tyotila/.multiproject/tunnel-client/profiles --tunnel-id tunnel_<32 merkkiä> --mcp-server-url http://127.0.0.1:8799/mcp --health-listen-addr 127.0.0.1:0 --force
+./mcp-tyotila/.multiproject/tunnel-client/tunnel-client doctor --profile vnetcon-docs-emoprojekti --profile-dir ./mcp-tyotila/.multiproject/tunnel-client/profiles --explain
+./mcp-tyotila/.multiproject/tunnel-client/tunnel-client run --profile vnetcon-docs-emoprojekti --profile-dir ./mcp-tyotila/.multiproject/tunnel-client/profiles
 ```
 
-PowerShell:
+PowerShell, `vnetcon-docs`-hakemistossa:
 
 ```powershell
 cd ~\emoprojekti\vnetcon-docs
-tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp tunnel prepare openai --tunnel-id tunnel_XXXXXXXX
+tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp tunnel configure openai --tunnel-id tunnel_<32 merkkiä>
+tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp tunnel install openai
+tyokalut\vnetcon-ai\vnetcon-ai.cmd mcp tunnel prepare openai
 $env:CONTROL_PLANE_API_KEY = "sk-..."
-tunnel-client init --profile vnetcon-docs --tunnel-id tunnel_XXXXXXXX --mcp-server-url http://127.0.0.1:8799/mcp
-tunnel-client doctor --profile vnetcon-docs --explain
-tunnel-client run --profile vnetcon-docs
+.\mcp-tyotila\.multiproject\tunnel-client\tunnel-client.exe init --profile vnetcon-docs-emoprojekti --profile-dir .\mcp-tyotila\.multiproject\tunnel-client\profiles --tunnel-id tunnel_<32 merkkiä> --mcp-server-url http://127.0.0.1:8799/mcp --health-listen-addr 127.0.0.1:0 --force
+.\mcp-tyotila\.multiproject\tunnel-client\tunnel-client.exe doctor --profile vnetcon-docs-emoprojekti --profile-dir .\mcp-tyotila\.multiproject\tunnel-client\profiles --explain
+.\mcp-tyotila\.multiproject\tunnel-client\tunnel-client.exe run --profile vnetcon-docs-emoprojekti --profile-dir .\mcp-tyotila\.multiproject\tunnel-client\profiles
 ```
 
-5. **Lisää yhteys ChatGPT:hen:** avaa `https://chatgpt.com/#settings/Connectors`,
+`--health-listen-addr 127.0.0.1:0` valitsee `tunnel-client`in
+terveystarkistukselle vapaan portin, joten se ei törmää muihin koneella
+pyöriviin `tunnel-client`-ajoihin. `--force` korvaa aiemman profiilin, joten
+`init` voidaan ajaa uudelleen esimerkiksi portin vaihduttua.
+
+6. **Lisää yhteys ChatGPT:hen:** avaa `https://chatgpt.com/#settings/Connectors`,
    valitse *Connection: Tunnel* ja valitse tai liitä tunnelin tunniste. Pidä
-   `tunnel-client run` käynnissä koko ajan. Workspacen ylläpitäjän pitää olla
-   sallinut omat MCP-yhteydet, ja yhteyden lisääminen voi vaatia Developer
-   modea tai ylläpitäjän hyväksynnän.
+   `tunnel-client run` ja MCP-palvelin (`ui` tai `serve --transport http`)
+   käynnissä koko ajan. Workspacen ylläpitäjän pitää olla sallinut omat
+   MCP-yhteydet, ja yhteyden lisääminen voi vaatia Developer modea tai
+   ylläpitäjän hyväksynnän.
+
+Profiilin nimen voi vaihtaa valitsimella `--client-profile <nimi>`.
+`tunnel remove openai` poistaa tallennetun tunnisteen ja tulostaa
+palautuskomennon.
 
 `--mcp-server-url` tulee `tunnel prepare` -komennosta. OpenAI:n oma ohje näyttää
 esimerkkinä stdio-palvelimen `--sample`- ja `--mcp-command`-valitsimilla. Jos
@@ -297,10 +350,13 @@ keskustelu, jotta uusi julkaisu näkyy.
 
 | Oire | Syy ja korjaus |
 |---|---|
+| `tunnel-client: command not found` | `tunnel-client` ei ole PATHissa vaan MCP-työtilassa. Asenna se `mcp tunnel install openai` -komennolla ja aja komennot `tunnel prepare openai` -tulosteen poluilla `vnetcon-docs`-hakemistossa |
+| `invalid tunnel ID` | Tunnisteen muoto on `tunnel_` ja 32 pientä kirjainta tai numeroa. Kopioi se OpenAI Platformin Tunnels-sivulta |
 | Työkalulistassa on vieraita työkaluja tai `Unknown tool: search` | Portissa vastaa toinen MCP-palvelin. Valitse vapaa portti `mcp server configure-http --listen 127.0.0.1:<portti>` -komennolla |
 | `MCP:n riippuvuudet puuttuvat` | Aja `vnetcon-docs`-hakemistossa `npm ci --prefix tyokalut/mcp` |
 | `init` ei kysy emoprojektia | `vnetcon-docs` ei ole Git-projektin juuressa tai paketti on purettu ilman asennusversiota. Lisää projekti `mcp add-project`-komennolla |
 | `vnetcon-docs/ ei ole vielä commitoituna` tai `repository-mallin dokumentaatiota ei ole` | Commitoi `vnetcon-docs/` emoprojektiin ennen `bootstrap`-komentoa |
 | `Työtilaa ei ole: <projekti>@main` | Aja `mcp bootstrap --all` ennen `document`- tai `publish`-komentoa |
 | `multiproject-mcp.yaml ei löydy` | Aja `mcp init` ensin, tai anna työtila valitsimella `--config <polku>/multiproject-mcp.yaml` |
-| ChatGPT ei näe yhteyttä | Tarkista `tunnel-client doctor --profile vnetcon-docs --explain`, workspacen MCP-oikeudet ja että sekä `mcp serve` että `tunnel-client run` ovat käynnissä |
+| ChatGPT ei näe yhteyttä | Aja `doctor`-komento `tunnel prepare openai` -tulosteesta, workspacen MCP-oikeudet ja että sekä MCP-palvelin (`mcp ui` tai `mcp serve --transport http`) että `tunnel-client run` ovat käynnissä |
+| `HTTP-palvelinta ei ole konfiguroitu` (vanhempi versio) | Tallenna osoite: `mcp server configure-http --listen 127.0.0.1:8799`. Uudemmissa versioissa `tunnel prepare` käyttää ilman asetusta `ui`:n oletusosoitetta |

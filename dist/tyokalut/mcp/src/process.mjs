@@ -6,6 +6,7 @@ import { revisionKey } from './git.mjs';
 import { loadChannel } from './publisher.mjs';
 import { listInterfaces, readSharedGuidance } from './search.mjs';
 import { readWorkspaceState } from './workspace.mjs';
+import { DEFAULT_HTTP, isLoopbackHost, mcpEndpoint, storedTunnel, tunnelCommands } from './tunnel.mjs';
 import { run } from './util.mjs';
 
 // Prosessin tila: mitä on tehty, mitä on jäljellä ja miten kukin vaihe tehdään
@@ -44,7 +45,9 @@ export function docsLocation(project, loaded, ref) {
   return { mode: documentation.mode, root: state?.docs_root || null, gitDir: null, pathspec: null, writable: false, remote: true };
 }
 
-export function computeProcess(loaded, access = {}) {
+// `running` on käynnissä olevan HTTP-palvelimen osoite ({ host, port, path }),
+// kun prosessi lasketaan käyttöliittymälle.
+export function computeProcess(loaded, access = {}, running = null) {
   const projects = loaded.config.projects.filter((project) => !access.projects || access.projects.includes(project.project_id));
   const channelId = loaded.config.service.default_channel;
   const channel = loaded.config.channels.find((item) => item.channel_id === channelId);
@@ -69,16 +72,13 @@ export function computeProcess(loaded, access = {}) {
       channel ? `${channelId}: ${Object.entries(channel.project_refs || {}).map(([p, r]) => `${p}@${r}`).join(', ') || 'ei projekteja'}` : `Oletuskanavaa ${channelId} ei ole.`,
       { tab: 'projektit', label: 'Kanavat' }, [['channel', 'create', channelId], ['channel', 'set-ref', channelId, '<projekti>', '<haara>']]),
     publishStep(loaded, channelId, channel, bundle),
-    step('yhteys', 'Yhteys AI-clienteihin', INFO,
-      'Lisää MCP-osoite clienttiin; ChatGPT tarvitsee Secure MCP Tunnelin.',
-      { tab: 'yhteys', label: 'Yhteysasetukset' }, [['tunnel', 'prepare', 'openai', '--tunnel-id', '<TUNNEL_ID>']]),
     step('yhteinen-ohjaus', 'Yhteinen ohjaus ja integraatiot',
       drafts.length ? PARTIAL : INFO,
       `${guidance.length} ohjaustiedostoa${drafts.length ? `, ${drafts.length} integraatioluonnosta odottaa hyväksyntää` : ''}`,
       { tab: drafts.length ? 'integraatiot' : 'ohjaus', label: drafts.length ? 'Integraatiot' : 'Yhteinen ohjaus' },
       [['guidance', 'list'], ['interface', 'list']]),
   ];
-  return { workspace, projects: projectProcesses, default_channel: channelId };
+  return { workspace, connection: connectionSteps(loaded, bundle, channelId, running), projects: projectProcesses, default_channel: channelId };
 }
 
 function projectSteps(loaded, project, ref, bundle) {
@@ -166,6 +166,78 @@ function projectSteps(loaded, project, ref, bundle) {
     location.writable ? { action: 'agent', workflow: 'synkronoi', label: 'Synkronoi' } : null,
     [agent('synkronoi')], '/synkronoi-dokumentaatio'));
   return steps;
+}
+
+// Yhteys AI-clienteihin. Paikalliset clientit tarvitsevat vain osoitteen;
+// ChatGPT:n ketjusta osa tehdään OpenAI:n palveluissa ja terminaalissa, joten
+// niiden tila on "tieto" ja vaihe kertoo, missä se tehdään.
+function connectionSteps(loaded, bundle, channelId, running) {
+  const http = loaded.config.runtime?.http || null;
+  const endpoint = mcpEndpoint(loaded, running);
+  const listen = `${endpoint.host}:${endpoint.port}`;
+  const saveHttp = ['server', 'configure-http', '--listen', running ? listen : `${DEFAULT_HTTP.host}:${DEFAULT_HTTP.port}`];
+  const published = bundle ? `Kanava ${channelId} on julkaistu.` : `Kanavaa ${channelId} ei ole julkaistu; julkaise ensin, muuten clientit eivät näe dokumentaatiota.`;
+
+  let httpStatus;
+  let httpDetail;
+  if (http && (!running || (http.host === running.host && Number(http.port) === Number(running.port)))) {
+    httpStatus = DONE;
+    httpDetail = `${endpoint.url}${running ? ' — tämä käyttöliittymä palvelee samaa osoitetta.' : ''}`;
+  } else if (http) {
+    httpStatus = PARTIAL;
+    httpDetail = `Asetuksissa ${http.host}:${http.port}, mutta käyttöliittymä kuuntelee ${listen}. Tallenna nykyinen osoite tai käynnistä ui uudelleen.`;
+  } else {
+    httpStatus = TODO;
+    httpDetail = running
+      ? `Käyttöliittymä palvelee MCP:tä osoitteessa ${endpoint.url}, mutta osoitetta ei ole tallennettu. Tallenna se, niin sama osoite toimii myös serve- ja tunnel-komennoilla.`
+      : `Osoitetta ei ole tallennettu. Oletus on ${DEFAULT_HTTP.host}:${DEFAULT_HTTP.port} (sama kuin ui).`;
+  }
+
+  const mode = loaded.config.runtime?.http?.authentication?.mode || 'none';
+  const loopback = isLoopbackHost(endpoint.host);
+  let authStatus = DONE;
+  let authDetail = `${mode}: MCP kuuntelee vain omaa konetta, ja tunnel-client ottaa yhteyden täältä. ChatGPT:n käyttäjät rajataan workspacen oikeuksilla.`;
+  if (mode === 'none' && !loopback) {
+    authStatus = TODO;
+    authDetail = 'Palvelin kuuntelee verkkoa ilman tunnistusta. Valitse tunnistus ennen käyttöä.';
+  } else if (mode === 'oidc') {
+    authDetail = 'oidc: ChatGPT kirjautuu tunnistuspalvelun kautta (OAuth).';
+  } else if (mode !== 'none') {
+    authStatus = INFO;
+    authDetail = `${mode}: token tai salasana asetetaan clienttiin. ChatGPT:n yhteydelle sopivat oidc (OAuth) tai none omalla koneella.`;
+  }
+
+  const tunnel = storedTunnel(loaded);
+  const commands = tunnelCommands(loaded, { running });
+  return [
+    step('yhteys-paikalliset', 'Paikalliset clientit (Claude, Codex, Cursor, VS Code)', INFO,
+      `${published} Lisää clienttiin osoite ${endpoint.url} tai stdio-käynnistys. Valmiit asetukset: Yhteys.`,
+      { tab: 'yhteys', label: 'Yhteys' }, [], null, { group: 'paikalliset' }),
+    step('yhteys-julkaisu', `Kanava ${channelId} julkaistu`, bundle ? DONE : TODO,
+      bundle ? `Julkaistu ${bundle.created_at}. ChatGPT näkee tämän julkaisun.` : 'ChatGPT näkee vain julkaistun sisällön. Julkaise kanava ensin.',
+      { action: 'publish', label: 'Julkaise' }, [['publish', '--channel', channelId]], null, { group: 'chatgpt' }),
+    step('http', 'HTTP-palvelimen osoite', httpStatus, httpDetail,
+      { action: 'save-http', label: 'Tallenna osoite' }, [saveHttp], null, { group: 'chatgpt' }),
+    step('tunnistus', 'Tunnistus', authStatus, authDetail,
+      { tab: 'asetukset', label: 'Asetukset' }, [['auth', 'status']], null, { group: 'chatgpt' }),
+    step('tunneli', 'Tunneli OpenAI:ssa', tunnel ? DONE : TODO,
+      tunnel
+        ? `${tunnel.tunnel_id} (tunnel-client-profiili ${tunnel.profile})`
+        : 'Luo tunneli: platform.openai.com/settings/organization/tunnels. Luo ajonaikainen avain (Restricted, Tunnels: Read + Use): platform.openai.com/settings/organization/api-keys. Tallenna tunnelin tunniste tähän.',
+      { action: 'form', label: tunnel ? 'Vaihda tunniste' : 'Tallenna tunniste', fields: [{ name: 'tunnel-id', placeholder: 'tunnel_ + 32 merkkiä', value: tunnel?.tunnel_id || '' }], args: ['tunnel', 'configure', 'openai', '--tunnel-id', '{tunnel-id}'] },
+      [['tunnel', 'configure', 'openai', '--tunnel-id', tunnel?.tunnel_id || '<TUNNEL_ID>']], null, { group: 'chatgpt' }),
+    step('tunnel-client-asennus', 'tunnel-client asennettu', commands.installed ? DONE : TODO,
+      commands.installed
+        ? `${commands.directory}. Poisto: tunnel uninstall openai tai poista hakemisto.`
+        : `Asennetaan MCP-työtilaan (${commands.directory}), ei PATHiin eikä kotihakemistoon; poisto poistamalla hakemisto. Lataus OpenAI:n julkaisusta tarkistussummalla, tai --from <zip|hakemisto> paikallisesta kopiosta.`,
+      { action: 'install-tunnel-client', label: 'Lataa ja asenna' }, [['tunnel', 'install', 'openai'], ['tunnel', 'install', 'openai', '--from', '<zip|hakemisto>']], null, { group: 'chatgpt' }),
+    step('tunnel-client', 'tunnel-client käynnissä', INFO,
+      `Aja vnetcon-docs-hakemistossa omassa terminaali-ikkunassa. Pidä run käynnissä${running ? ' ja tämä käyttöliittymä auki' : ' ja MCP-palvelin (ui tai serve --transport http) käynnissä'}. ${tunnel ? '' : 'Korvaa <TUNNEL_ID> tai tallenna tunniste ensin.'}`.trim(),
+      null, [['tunnel', 'prepare', 'openai']], null, { group: 'chatgpt', terminal: { bash: commands.bash, powershell: commands.powershell } }),
+    step('chatgpt', 'Yhteys ChatGPT:ssä', INFO,
+      'chatgpt.com → Settings → Connectors → Connection: Tunnel, valitse tunneli. Vaatii Business-, Enterprise- tai Edu-workspacen, jossa ylläpitäjä on sallinut omat MCP-yhteydet. Kokeile: "Mitä projekteja dokumentaatiossa on?"',
+      null, [], null, { group: 'chatgpt' }),
+  ];
 }
 
 function publishStep(loaded, channelId, channel, bundle) {

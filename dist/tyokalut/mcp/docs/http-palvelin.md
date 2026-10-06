@@ -17,7 +17,7 @@ koneella kuunteleva palvelin:
   --channel local
 ./multiproject-mcp auth set-mode none
 ./multiproject-mcp doctor --http
-./multiproject-mcp serve
+./multiproject-mcp serve --transport http
 ```
 
 Päätepisteet:
@@ -30,8 +30,13 @@ Päätepisteet:
 | `http://127.0.0.1:8793/readyz` | Oletuskanavan julkaisun valmiustarkistus |
 | `POST http://127.0.0.1:8793/hooks/git` | Suojattu refresh-heräte webhook-tilassa |
 
-`server status` näyttää efektiivisen palvelinkonfiguraation. Palvelimen voi
-ohittaa kertaluonteisesti valitsimilla `serve --transport http --channel local`.
+`server configure-http` tallentaa vain osoitteen; ilman `--listen`-valitsinta
+oletus on `127.0.0.1:8799`, sama kuin `ui`-komennolla. Se ei muuta
+oletussiirtotapaa, joten stdio-clientit toimivat ennallaan. Käynnistä HTTP
+komennolla `serve --transport http` tai `ui` (hallintakäyttöliittymä ja MCP
+samassa osoitteessa). Jos haluat pelkän `serve`-komennon käynnistävän HTTP:n,
+aja kerran `server set-transport http`. `server status` näyttää efektiivisen
+palvelinkonfiguraation.
 Jos refresh-tilaksi on valittu `poll` tai `webhook`, sama prosessi käynnistää
 myös debounce-jonon workerin. Se ei käynnistä AI:ta eikä julkaise kanavaa.
 
@@ -53,7 +58,7 @@ tai IP-osoitetta, esimerkiksi `https://docs-mcp.intra.example/mcp`.
   --channels production \
   --projects laskutus,asiakkuudet
 ./multiproject-mcp doctor --http
-./multiproject-mcp serve
+./multiproject-mcp serve --transport http
 ```
 
 `--allow-network` vaaditaan konfiguroitaessa ei-loopback-osoitetta. Se sallii
@@ -97,15 +102,28 @@ muuttumattomaan bundleen. Jos `publish` siirtää kanavan uuteen bundleen:
 
 Yksityistä palvelinta ei tarvitse avata internetiin ChatGPT:tä varten. Kun
 OpenAI Secure MCP Tunnel on organisaatiossa käytettävissä, tulosta tämän
-instanssin pohjakomennot:
+tunnelin tunniste kerran ja tulosta komennot:
 
 ```bash
-./multiproject-mcp tunnel prepare openai --profile vnetcon-docs
+./multiproject-mcp tunnel configure openai --tunnel-id tunnel_<32 merkkiä>
+./multiproject-mcp tunnel install openai
+./multiproject-mcp tunnel prepare openai
 ```
 
-Komento ei asenna tunneliohjelmaa eikä luo pilviresursseja. Se näyttää
-`tunnel-client init`, `doctor` ja `run` -komennot nykyisen paikallisen
-HTTP-osoitteen perusteella. Tunnelin ja ChatGPT-connectorin käyttöönotto vaatii
+`tunnel install` asentaa `tunnel-client`in MCP-työtilaan
+(`.multiproject/tunnel-client/`, gitin ulkopuolella): ohjelma ladataan OpenAI:n
+julkaisusta ja sen SHA-256-summa tarkistetaan, tai se kopioidaan valitsimella
+`--from <zip|hakemisto|tiedosto>`. Profiilit tallentuvat samaan hakemistoon
+(`--profile-dir`), joten mitään ei asenneta PATHiin tai kotihakemistoon.
+`tunnel uninstall openai` tai hakemiston poisto poistaa kaiken.
+
+`tunnel configure` tallentaa tunnisteen ja `tunnel-client`in profiilin
+(oletus `vnetcon-docs-<emoprojekti>`, vaihdettavissa valitsimella
+`--client-profile`) koneen profiiliin. `tunnel remove openai` poistaa ne ja
+tulostaa palautuskomennon. `tunnel prepare` ei luo pilviresursseja. Se näyttää `tunnel-client init`, `doctor` ja `run` -komennot
+tallennetun HTTP-osoitteen (tai `ui`:n oletuksen) perusteella. Samat vaiheet
+tiloineen näkyvät hallintakäyttöliittymän Prosessi-välilehdellä kohdassa
+*Yhteys AI-clienteihin*. Tunnelin ja ChatGPT-connectorin käyttöönotto vaatii
 OpenAI-puolen oikeudet. Katso myös [AI-clienttien yhteensopivuus](asiakkaat.md).
 
 ## Avoin verkkopalvelu

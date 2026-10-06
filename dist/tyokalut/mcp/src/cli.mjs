@@ -44,6 +44,7 @@ import { helpText } from './commands.mjs';
 import { channelManageCommand, guidanceCommand, interfaceCommand, projectSetCommand, publicationsCommand, removeProjectCommand, trashCommand } from './manage.mjs';
 import { commandLines, computeProcess } from './process.mjs';
 import { agentCommand, docsCommand } from './agent.mjs';
+import { DEFAULT_HTTP, defaultTunnelProfile, installTunnelClient, mcpEndpoint, storedTunnel, tunnelClientPaths, tunnelCommands, uninstallTunnelClient, validateTunnelId, validateTunnelProfile } from './tunnel.mjs';
 import { detectParentProject, runOptional } from './parent.mjs';
 import {
   approveWorkspace,
@@ -676,12 +677,15 @@ function serverCommand(argv, loaded) {
   const { positional, flags } = parseArgs(argv);
   const action = positional[0];
   if (action === 'configure-http') {
-    const listen = parseListen(String(flags.listen || '127.0.0.1:8793'));
+    if (flags.listen === true) throw new UserError(`Anna osoite: --listen <host:port>, esim. ${DEFAULT_HTTP.host}:${DEFAULT_HTTP.port}`);
+    // Oletus on sama kuin käyttöliittymällä, jotta ui, serve ja tunneli puhuvat samasta osoitteesta.
+    const listen = parseListen(String(flags.listen || `${DEFAULT_HTTP.host}:${DEFAULT_HTTP.port}`));
     if (!isLoopback(listen.host) && !flags['allow-network']) {
       throw new UserError('Ei-loopback-kuuntelu vaatii tietoisen --allow-network-valitsimen.');
     }
+    // Vain osoite: oletussiirtotapa (set-transport) ei muutu, joten paikalliset
+    // stdio-clientit toimivat ennallaan.
     loaded.profileConfig.runtime = loaded.profileConfig.runtime || {};
-    loaded.profileConfig.runtime.transport = 'http';
     const previous = loaded.profileConfig.runtime.http || {};
     loaded.profileConfig.runtime.http = {
       ...previous,
@@ -700,6 +704,9 @@ function serverCommand(argv, loaded) {
     }
     saveProfile(loaded);
     out(`HTTP konfiguroitu: http://${listen.host}:${listen.port}${loaded.profileConfig.runtime.http.path}`);
+    if (loaded.profileConfig.runtime.transport !== 'http') {
+      out('Käynnistä: ui (hallintakäyttöliittymä ja MCP) tai serve --transport http. Oletussiirtotapa ei muuttunut (server set-transport http).');
+    }
     if (!isLoopback(listen.host) && authConfig(loadConfig({ explicit: loaded.filename, profile: loaded.profile })).mode === 'none') {
       out('VAROITUS: ota bearer/basic käyttöön ennen serve-komentoa tai salli autentikoimaton verkko erikseen.');
     }
@@ -854,22 +861,62 @@ async function authCommand(argv, loaded) {
   throw new UserError('Käyttö: auth set-mode|configure-oidc|oidc-rule|status|token create|token revoke|token list|user add|user remove|user list ...');
 }
 
-function tunnelCommand(argv, loaded) {
+async function tunnelCommand(argv, loaded) {
   const { positional, flags } = parseArgs(argv);
-  if (positional[0] !== 'prepare' || positional[1] !== 'openai') {
-    throw new UserError('Käyttö: tunnel prepare openai [--profile <nimi>] [--tunnel-id <id>]');
+  const [action, provider] = positional;
+  const usage = 'Käyttö: tunnel install|uninstall|configure|remove|prepare openai [--tunnel-id <id>] [--client-profile <nimi>] [--from <polku>] [--version <v>]';
+  if (provider !== 'openai') throw new UserError(usage);
+  if (action === 'install') {
+    if (flags.from === true || flags.version === true) throw new UserError(usage);
+    for (const line of await installTunnelClient(loaded, { from: flags.from, version: flags.version })) out(line);
+    out('Seuraavaksi: tunnel prepare openai');
+    return;
   }
-  const http = loaded.config.runtime?.http;
-  if (!http) throw new UserError('HTTP-palvelinta ei ole konfiguroitu.');
-  const profile = flags.profile || 'vnetcon-docs';
-  const tunnelId = flags['tunnel-id'] || '<TUNNEL_ID>';
-  const host = isLoopback(http.host) ? http.host : '127.0.0.1';
-  const url = `http://${host}:${http.port}${http.path || '/mcp'}`;
-  out(`Paikallinen MCP URL: ${url}`);
-  out('Aseta CONTROL_PLANE_API_KEY ympäristömuuttujaan ja suorita:');
-  out(`tunnel-client init --profile ${profile} --tunnel-id ${tunnelId} --mcp-server-url ${url}`);
-  out(`tunnel-client doctor --profile ${profile} --explain`);
-  out(`tunnel-client run --profile ${profile}`);
+  if (action === 'uninstall') {
+    const { dir } = tunnelClientPaths(loaded);
+    out(uninstallTunnelClient(loaded) ? `tunnel-client ja sen profiilit poistettiin: ${dir}` : 'tunnel-clientia ei ole asennettu työtilaan.');
+    return;
+  }
+  if (action === 'configure') {
+    const tunnelId = validateTunnelId(flags['tunnel-id']);
+    const previous = storedTunnel(loaded);
+    const profile = flags['client-profile'] !== undefined ? validateTunnelProfile(flags['client-profile']) : (previous?.profile || defaultTunnelProfile(loaded));
+    loaded.profileConfig.runtime = loaded.profileConfig.runtime || {};
+    loaded.profileConfig.runtime.tunnel = { ...(loaded.profileConfig.runtime.tunnel || {}), openai: { tunnel_id: tunnelId, profile } };
+    saveProfile(loaded);
+    out(`Tunneli tallennettiin: ${tunnelId} (tunnel-client-profiili ${profile})`);
+    out('Komennot terminaaliin: tunnel prepare openai');
+    return;
+  }
+  if (action === 'remove') {
+    const previous = storedTunnel(loaded);
+    if (!previous) {
+      out('Tunnelia ei ole tallennettu.');
+      return;
+    }
+    delete loaded.profileConfig.runtime.tunnel.openai;
+    if (!Object.keys(loaded.profileConfig.runtime.tunnel).length) delete loaded.profileConfig.runtime.tunnel;
+    saveProfile(loaded);
+    out(`Tunnelin tiedot poistettiin: ${previous.tunnel_id} (profiili ${previous.profile}).`);
+    out(`Palautus: tunnel configure openai --tunnel-id ${previous.tunnel_id} --client-profile ${previous.profile}`);
+    return;
+  }
+  if (action !== 'prepare') throw new UserError(usage);
+  const tunnelId = flags['tunnel-id'] !== undefined ? validateTunnelId(flags['tunnel-id']) : null;
+  const profile = flags['client-profile'] !== undefined ? validateTunnelProfile(flags['client-profile']) : null;
+  const commands = tunnelCommands(loaded, { tunnelId, profile });
+  const endpoint = mcpEndpoint(loaded);
+  out(`Paikallinen MCP URL: ${commands.mcp_url}`);
+  if (!endpoint.configured) out(`HTTP-palvelinta ei ole tallennettu asetuksiin; käytetään käyttöliittymän oletusta (ui). Tallenna: server configure-http --listen ${DEFAULT_HTTP.host}:${DEFAULT_HTTP.port}`);
+  if (!tunnelId && !commands.tunnel_id) out('Tunnelin tunnistetta ei ole tallennettu: tunnel configure openai --tunnel-id <id>');
+  if (!commands.installed) out(`tunnel-clientia ei ole asennettu työtilaan (${commands.directory}): tunnel install openai`);
+  out('MCP-palvelimen pitää olla käynnissä (ui tai serve --transport http). Aja komennot vnetcon-docs-hakemistossa.');
+  out('');
+  out('bash (macOS, Linux, WSL, Git Bash):');
+  for (const line of commands.bash) out(`  ${line}`);
+  out('');
+  out('PowerShell (Windows):');
+  for (const line of commands.powershell) out(`  ${line}`);
 }
 
 async function serveCommand(argv, loaded) {
@@ -889,7 +936,7 @@ async function serveCommand(argv, loaded) {
 async function uiCommand(argv, loaded) {
   const { flags } = parseArgs(argv);
   const http = loaded.config.runtime?.http || {};
-  const listen = flags.listen ? parseListen(String(flags.listen)) : { host: http.host || '127.0.0.1', port: http.port || 8799 };
+  const listen = flags.listen ? parseListen(String(flags.listen)) : { host: http.host || DEFAULT_HTTP.host, port: http.port || DEFAULT_HTTP.port };
   return serveHttp(loaded, { host: listen.host, port: listen.port, channel: flags.channel });
 }
 
@@ -909,6 +956,12 @@ function processCommand(argv, loaded) {
   };
   out(`Työtila ${loaded.root}`);
   for (const item of result.workspace) print(item, '  ');
+  out('');
+  out('Yhteys AI-clienteihin');
+  for (const item of result.connection) {
+    print(item, '  ');
+    if (item.terminal && item.status !== 'valmis') for (const line of item.terminal.bash) out(`      ${line}`);
+  }
   for (const project of result.projects) {
     for (const ref of project.refs) {
       out('');

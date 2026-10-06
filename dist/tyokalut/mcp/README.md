@@ -206,7 +206,7 @@ HTTP-palvelimen turvallinen paikallinen aloitus:
 ./multiproject-mcp server configure-http --listen 127.0.0.1:8793 --channel local
 ./multiproject-mcp auth set-mode none
 ./multiproject-mcp doctor --http
-./multiproject-mcp serve
+./multiproject-mcp serve --transport http
 ```
 
 MCP-osoite on tällöin `http://127.0.0.1:8793/mcp`. Lähiverkkoon tai
@@ -258,13 +258,13 @@ osoitteessa; sen voi poistaa asetuksella `runtime.http.ui.enabled: false`.
 
 | Välilehti | Mitä siellä tehdään | Komentorivillä |
 |---|---|---|
-| Prosessi | Missä kukin projekti on, mitä on jäljellä ja miten se tehdään | `process` |
+| Prosessi | Missä kukin projekti on, mitä on jäljellä ja miten se tehdään; yhteys AI-clienteihin (ChatGPT-ketju vaiheittain) | `process` |
 | Projektit | Lisäys, muokkaus, poisto; dokumentaation muutokset ja commit | `add-project`, `project set`, `remove-project`, `docs diff`, `docs commit` |
 | Kanavat ja julkaisu | Kanavat, haarat, oletuskanava, julkaisu | `channel …`, `publish`, `smoke-test` |
 | Agenttiajot | Käyttöönotto, dokumentointi, synkronointi, katselmointi ja integraatiot agentilla | `agent run`, `agent answer`, `agent cancel` |
 | Yhteinen ohjaus, Integraatiot | Yhteinen ohjaus ja sanasto, integraatiotietueet | `guidance …`, `interface …` |
 | Haku | Sama haku kuin AI-clienteilla | (MCP-työkalut `search`, `fetch`) |
-| Yhteys | MCP-osoite, clienttien asetukset, ChatGPT:n tunneli | `tunnel prepare openai` |
+| Yhteys | MCP-osoite, clienttien asetukset, ChatGPT:n tunnelin tunniste ja komennot | `tunnel configure openai`, `tunnel prepare openai` |
 | Asetukset | Tunnistus, tokenit ja käyttäjät, HTTP, automaattinen haku, julkaisujen säilytys | `auth …`, `server configure-http`, `refresh configure-…`, `publications prune` |
 | Roskakori | Poistettujen palautus | `trash list`, `trash restore`, `trash empty` |
 | Ohjeet | Prosessikuvaus, ohjeet ja kaikki komennot | `help` |
@@ -373,12 +373,14 @@ commitoida tai pushata lähderepositoryyn.
 | `bootstrap` / `refresh` | Luo tai päivittää refikohtaiset työtilat |
 | `document` / `review` / `approve` | Hallitsee managed-dokumentaatiota |
 | `publish` / `smoke-test` | Julkaisee ja tarkistaa snapshot-bundlen |
-| `server configure-http` | Muodostaa HTTP-konfiguraation |
+| `server configure-http` | Tallentaa HTTP-osoitteen (ei muuta oletussiirtotapaa) |
 | `server set-transport` | Valitsee oletukseksi stdio- tai HTTP-siirtotavan |
 | `auth set-mode` / `auth configure-oidc` | Valitsee ja konfiguroi tunnistustavan |
 | `auth token ...` / `auth user ...` | Hallitsee tunnuksia ja rajauksia |
 | `refresh configure-poll/configure-webhook` | Konfiguroi automaattisen muutosten havaitsemisen |
 | `refresh detect/queue/run/watch` | Hallitsee debounce-jonoa ja refresh-controlleria |
+| `tunnel install/uninstall openai` | Asentaa tunnel-clientin MCP-työtilaan (ei PATHiin) tai poistaa sen |
+| `tunnel configure/remove openai` | Tallentaa tai poistaa tunnelin tunnisteen ja tunnel-client-profiilin |
 | `tunnel prepare openai` | Tulostaa Secure MCP Tunnelin käynnistyskomennot |
 | `serve` | Käynnistää valitun MCP-palvelun |
 | `ui` | Käynnistää HTTP-palvelimen ja hallintakäyttöliittymän (`/ui`) |

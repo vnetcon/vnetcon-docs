@@ -202,7 +202,7 @@ Safe local HTTP setup:
 ./multiproject-mcp server configure-http --listen 127.0.0.1:8793 --channel local
 ./multiproject-mcp auth set-mode none
 ./multiproject-mcp doctor --http
-./multiproject-mcp serve
+./multiproject-mcp serve --transport http
 ```
 
 The MCP endpoint is then `http://127.0.0.1:8793/mcp`. Use authentication and
@@ -254,13 +254,13 @@ started with `serve` serves the UI at the same path; disable it with
 
 | Tab | What it does | Command line |
 |---|---|---|
-| Prosessi (process) | Where each project is, what remains and how to do it | `process` |
+| Prosessi (process) | Where each project is, what remains and how to do it; connecting AI clients (the ChatGPT chain step by step) | `process` |
 | Projektit (projects) | Add, edit, remove; documentation changes and commit | `add-project`, `project set`, `remove-project`, `docs diff`, `docs commit` |
 | Kanavat ja julkaisu (channels) | Channels, refs, default channel, publishing | `channel …`, `publish`, `smoke-test` |
 | Agenttiajot (agent runs) | Setup, documentation, sync, review corrections and integrations with an agent | `agent run`, `agent answer`, `agent cancel` |
 | Yhteinen ohjaus, Integraatiot | Shared guidance and glossary, interface records | `guidance …`, `interface …` |
 | Haku (search) | The same search as AI clients | (MCP tools `search`, `fetch`) |
-| Yhteys (connection) | MCP address, client settings, ChatGPT tunnel | `tunnel prepare openai` |
+| Yhteys (connection) | MCP address, client settings, ChatGPT tunnel id and commands | `tunnel configure openai`, `tunnel prepare openai` |
 | Asetukset (settings) | Authentication, tokens and users, HTTP, automatic refresh, retention | `auth …`, `server configure-http`, `refresh configure-…`, `publications prune` |
 | Roskakori (trash) | Restoring removed items | `trash list`, `trash restore`, `trash empty` |
 | Ohjeet (guides) | Process description, guides and all commands | `help` |
@@ -368,12 +368,14 @@ pushed to the source repository.
 | `bootstrap` / `refresh` | Create or update ref-specific workspaces |
 | `document` / `review` / `approve` | Manage publication-side documentation |
 | `publish` / `smoke-test` | Publish and verify an immutable bundle |
-| `server configure-http` | Create the HTTP configuration |
+| `server configure-http` | Store the HTTP address (does not change the default transport) |
 | `server set-transport` | Select stdio or HTTP as the default transport |
 | `auth set-mode` / `auth configure-oidc` | Select and configure authentication |
 | `auth token ...` / `auth user ...` | Manage credentials and access scopes |
 | `refresh configure-poll/configure-webhook` | Configure automatic change detection |
 | `refresh detect/queue/run/watch` | Manage the debounced queue and controller |
+| `tunnel install/uninstall openai` | Install tunnel-client inside the MCP workspace (not on PATH) or remove it |
+| `tunnel configure/remove openai` | Store or remove the tunnel id and tunnel-client profile |
 | `tunnel prepare openai` | Print Secure MCP Tunnel setup commands |
 | `serve` | Start the selected MCP transport |
 | `ui` | Start the HTTP server and the management UI (`/ui`) |

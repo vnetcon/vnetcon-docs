@@ -28,6 +28,11 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
+// replaceChildren kirjoittaa null-arvon tekstinä "null"; puuttuvat osat jätetään pois.
+function fill(node, ...children) {
+  node.replaceChildren(...children.flat().filter((child) => child !== null && child !== undefined && child !== false));
+}
+
 // --- Palvelinkutsut ---------------------------------------------------------
 
 function authHeader() {
@@ -82,6 +87,15 @@ function cliBlock(argsList, slash) {
     slash ? el('p', { class: 'hint' }, `Agentissa (claude tai codex vnetcon-docs-hakemistossa): ${slash}`) : null,
     list.length ? [el('div', { class: 'cli-label' }, 'bash (macOS, Linux, WSL, Git Bash) ', copyButton(bash)), el('pre', { class: 'mono' }, bash),
       el('div', { class: 'cli-label' }, 'PowerShell (Windows) ', copyButton(powershell)), el('pre', { class: 'mono' }, powershell)] : null);
+}
+
+// Komennot, jotka ajetaan muualla kuin vnetcon-ai:lla (esim. tunnel-client).
+function terminalBlock(terminal, { open = true } = {}) {
+  const bash = terminal.bash.join('\n');
+  const powershell = terminal.powershell.join('\n');
+  return el('details', { class: 'cli', open }, el('summary', {}, 'Terminaalissa'),
+    el('div', { class: 'cli-label' }, 'bash (macOS, Linux, WSL, Git Bash) ', copyButton(bash)), el('pre', { class: 'mono' }, bash),
+    el('div', { class: 'cli-label' }, 'PowerShell (Windows) ', copyButton(powershell)), el('pre', { class: 'mono' }, powershell));
 }
 
 function copyButton(textValue) {
@@ -267,7 +281,7 @@ function showSetup(setup) {
         if (result.ok) setTimeout(() => location.reload(), 1500);
       } catch (error) { setStatus(error.message, false); }
     } }, label), cliBlock(['init', emoprojekti ? '--emoprojekti' : '--ilman-emoprojektia']));
-  $('#aloitus-toiminnot').replaceChildren(
+  fill($('#aloitus-toiminnot'),
     setup.parent?.addable ? make('Luo työtila ja lisää emoprojekti', true) : null,
     make(setup.parent?.addable ? 'Luo työtila ilman emoprojektia' : 'Luo työtila', false));
 }
@@ -290,11 +304,23 @@ function openTab(name) {
 
 const STATUS = { valmis: ['ok', 'valmis'], kesken: ['warn', 'kesken'], odottaa: ['info', 'odottaa'], 'ei-koske': ['', 'ei koske'], tieto: ['', 'tieto'] };
 const FLOW = [['Työtila', ['tyotila']], ['Projektit', ['projektit']], ['Käyttöönotto', ['kayttoonotto']], ['Dokumentointi', ['dokumentointi']],
-  ['Commit', ['commit']], ['Päivitys', ['paivitys']], ['Julkaisu', ['julkaisu']], ['Yhteys', ['yhteys']], ['Ylläpito', ['synkronointi', 'yhteinen-ohjaus']]];
+  ['Commit', ['commit']], ['Päivitys', ['paivitys']], ['Julkaisu', ['julkaisu']], ['Yhteys', ['yhteys-julkaisu', 'http', 'tunnistus', 'tunneli', 'tunnel-client-asennus', 'tunnel-client', 'chatgpt']], ['Ylläpito', ['synkronointi', 'yhteinen-ohjaus']]];
+
+// Vaiheen pieni lomake: kentät täyttävät komennon {nimi}-paikat.
+function formAction(ui) {
+  const inputs = Object.fromEntries(ui.fields.map((item) => [item.name, el('input', { placeholder: item.placeholder || '', value: item.value || '' })]));
+  const resolve = () => ui.args.map((part) => part.replace(/^\{(.+)\}$/, (_match, name) => {
+    const value = inputs[name].value.trim();
+    if (!value) throw new Error(`Täytä kenttä ${name}.`);
+    return value;
+  }));
+  return el('div', { class: 'form inline' }, ...ui.fields.map((item) => el('label', {}, item.label || item.name, inputs[item.name])), action(ui.label, resolve, { cli: false }));
+}
 
 function stepAction(item, project, ref) {
   const ui = item.ui;
   if (!ui) return null;
+  if (ui.action === 'form') return formAction(ui);
   if (ui.tab) return el('button', { type: 'button', class: 'small ghost', onclick: () => openTab(ui.tab) }, ui.label);
   // Vaiheen komennot näytetään vaiheen omassa Komentorivillä-kohdassa.
   if (ui.action === 'agent') return action(ui.label, ['agent', 'run', '--project', project, '--ref', ref, '--workflow', ui.workflow], { cli: false, after: () => openTab('ajot') });
@@ -309,12 +335,13 @@ function stepRow(item, project, ref) {
     el('div', { class: 'step-head' }, el('span', { class: `chip ${chipClass}` }, chipText), el('strong', {}, item.title)),
     el('div', { class: 'hint' }, String(item.detail).replace(/\d{4}-\d\d-\d\dT[\d:.]+Z/g, (iso) => when(iso))),
     item.total ? el('progress', { max: String(item.total), value: String(item.done) }) : null,
-    item.status !== 'valmis' && item.status !== 'ei-koske' ? el('div', { class: 'step-actions' }, stepAction(item, project, ref), cliBlock(item.cli || [], item.slash)) : null);
+    item.status !== 'valmis' && item.status !== 'ei-koske' ? el('div', { class: 'step-actions' }, stepAction(item, project, ref), cliBlock(item.cli || [], item.slash)) : null,
+    item.terminal && item.status !== 'valmis' ? terminalBlock(item.terminal) : null);
 }
 
 function renderProcess() {
   const p = S.process;
-  const all = [...p.workspace, ...p.projects.flatMap((project) => project.refs.flatMap((ref) => ref.steps))];
+  const all = [...p.workspace, ...(p.connection || []), ...p.projects.flatMap((project) => project.refs.flatMap((ref) => ref.steps))];
   const phase = (ids) => {
     const steps = all.filter((item) => ids.includes(item.id) && item.status !== 'ei-koske');
     if (!steps.length || steps.every((item) => item.status === 'tieto')) return 'tieto';
@@ -323,6 +350,11 @@ function renderProcess() {
   };
   $('#prosessikaavio').replaceChildren(...FLOW.map(([name, ids], index) => el('div', { class: `flow-step ${phase(ids)}` }, el('span', {}, `${index + 1}`), name)));
   $('#prosessi-tyotila').replaceChildren(el('h3', {}, 'Työtila'), el('ol', { class: 'steps' }, p.workspace.map((item) => stepRow(item))));
+  const connection = p.connection || [];
+  $('#prosessi-yhteys').replaceChildren(el('h3', {}, 'Yhteys AI-clienteihin'),
+    el('ol', { class: 'steps' }, connection.filter((item) => item.group === 'paikalliset').map((item) => stepRow(item))),
+    el('h4', {}, 'ChatGPT (OpenAI Secure MCP Tunnel) — tee ylhäältä alas'),
+    el('ol', { class: 'steps' }, connection.filter((item) => item.group === 'chatgpt').map((item) => stepRow(item))));
   $('#prosessi-projektit').replaceChildren(...p.projects.flatMap((project) => project.refs.map((ref) => el('div', { class: 'card' },
     el('h3', {}, `${project.display_name} `, el('code', {}, `${project.project_id}@${ref.ref}`), el('small', {}, ` ${MODE_TEXT[project.mode] || project.mode}`)),
     el('ol', { class: 'steps' }, ref.steps.map((item) => stepRow(item, project.project_id, ref.ref)))))));
@@ -618,8 +650,19 @@ function renderConnection() {
   $('#yhteystiedot').replaceChildren(...rows.flatMap(([key, value]) => [el('dt', {}, key), el('dd', {}, el('code', {}, value || '—'))]));
   $('#clientit').replaceChildren(...Object.entries(c.clients).map(([name, snippet]) => el('div', {},
     el('div', { class: 'toolbar' }, el('strong', {}, name), copyButton(snippet)), el('pre', { class: 'mono' }, snippet))));
-  $('#tunneli-bash').textContent = c.tunnel.bash.join('\n');
-  $('#tunneli-powershell').textContent = c.tunnel.powershell.join('\n');
+  const tunnelId = el('input', { placeholder: 'tunnel_ + 32 merkkiä', value: c.tunnel.tunnel_id || '' });
+  const profile = el('input', { value: c.tunnel.profile });
+  const live = (holder, ...inputs) => { inputs.forEach((node) => node.addEventListener('input', () => holder.refresh())); return holder; };
+  fill($('#tunneli'), [
+    el('div', { class: 'form inline' }, el('label', {}, 'Tunnelin tunniste', tunnelId), el('label', {}, 'tunnel-client-profiili', profile),
+      live(action('Tallenna', () => ['tunnel', 'configure', 'openai', '--tunnel-id', tunnelId.value.trim() || '<TUNNEL_ID>', '--client-profile', profile.value.trim() || '<nimi>']), tunnelId, profile),
+      c.tunnel.tunnel_id ? action('Poista tunnelin tiedot', ['tunnel', 'remove', 'openai'], { ghost: true }) : null),
+    c.tunnel.tunnel_id ? null : el('p', { class: 'hint' }, 'Komennoissa on paikkamerkki <TUNNEL_ID>, kunnes tallennat tunnisteen.'),
+    el('p', { class: 'hint' }, c.tunnel.installed
+      ? `tunnel-client on asennettu MCP-työtilaan: ${c.tunnel.directory}. Aja komennot vnetcon-docs-hakemistossa.`
+      : `tunnel-clientia ei ole asennettu. Se asennetaan MCP-työtilaan (${c.tunnel.directory}), ei PATHiin; poisto poistamalla hakemisto.`),
+    c.tunnel.installed ? action('Poista tunnel-client', ['tunnel', 'uninstall', 'openai'], { ghost: true }) : action('Lataa ja asenna tunnel-client', ['tunnel', 'install', 'openai']),
+    terminalBlock(c.tunnel)]);
 }
 
 // --- Asetukset --------------------------------------------------------------
@@ -681,7 +724,7 @@ async function loadTrash() {
   let entries = [];
   try { entries = (await api('/trash')).entries; } catch (error) { setStatus(error.message, false); return; }
   const kinds = { project: 'projekti', channel: 'kanava', interface: 'integraatio', guidance: 'ohjaus' };
-  $('#roskakori-sisalto').replaceChildren(
+  fill($('#roskakori-sisalto'),
     entries.length ? el('div', { class: 'table-wrap' }, el('table', {},
       el('thead', {}, el('tr', {}, ...['Kohde', 'Laji', 'Poistettu', ''].map((h) => el('th', {}, h)))),
       el('tbody', {}, entries.map((item) => el('tr', {},
@@ -711,7 +754,7 @@ function showProcessGuide() {
     ['Commit', 'Ihminen tarkistaa muutokset ja commitoi. MCP julkaisee vain commitoidun.', 'Projektit → Muutokset ja commit', 'docs diff, docs commit'],
     ['Päivitys', 'Uusin commit haetaan MCP-työtilaan.', 'Prosessi / Projektit', 'bootstrap'],
     ['Julkaisu', 'Kanavan sisältö viedään AI-clienteille.', 'Kanavat ja julkaisu', 'publish, smoke-test'],
-    ['Yhteys', 'MCP-osoite lisätään clienttiin; ChatGPT tunnelin kautta.', 'Yhteys', 'tunnel prepare openai'],
+    ['Yhteys', 'Paikalliset clientit saavat MCP-osoitteen. ChatGPT: osoite tallennetaan, tunnistus tarkistetaan, tunneli luodaan OpenAI:ssa, tunnel-client käynnistetään terminaalissa ja yhteys lisätään ChatGPT:ssä.', 'Prosessi → Yhteys AI-clienteihin, Yhteys', 'server configure-http, tunnel configure openai, tunnel prepare openai'],
     ['Ylläpito', 'Synkronointi koodimuutoksiin, katselmoinnin korjaukset ja integraatiot.', 'Agenttiajot, Yhteinen ohjaus, Integraatiot', 'agent run --workflow synkronoi | katselmoi'],
   ];
   $('#ohje').replaceChildren(el('h2', {}, 'Prosessi'),

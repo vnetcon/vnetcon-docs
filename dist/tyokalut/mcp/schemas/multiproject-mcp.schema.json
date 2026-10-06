@@ -83,6 +83,21 @@
             }
           },
           "additionalProperties": true
+        },
+        "tunnel": {
+          "type": "object",
+          "properties": {
+            "openai": {
+              "type": "object",
+              "required": ["tunnel_id"],
+              "properties": {
+                "tunnel_id": { "type": "string", "pattern": "^tunnel_[a-z0-9]{32}$" },
+                "profile": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,64}$" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": true
         }
       },
       "additionalProperties": true

@@ -53,6 +53,7 @@
     <p class="hint">Vaiheet päätellään työtilasta ja dokumentaatiosta. Jokaisen vaiheen voi tehdä tästä käyttöliittymästä tai komentorivillä; avaa <em>Komentorivillä</em> nähdäksesi saman komennon.</p>
     <div id="prosessikaavio" class="flow"></div>
     <div id="prosessi-tyotila"></div>
+    <div id="prosessi-yhteys"></div>
     <div id="prosessi-projektit"></div>
   </section>
 
@@ -174,11 +175,8 @@
     <h3>Paikalliset clientit</h3>
     <div id="clientit"></div>
     <h3>ChatGPT (OpenAI Secure MCP Tunnel)</h3>
-    <p class="hint">ChatGPT ei tavoita tätä osoitetta suoraan. Luo tunneli OpenAI Platformissa (Settings → Organization → Tunnels), luo ajonaikainen avain Tunnels-oikeudella <em>Read + Use</em>, asenna <code>tunnel-client</code> ja aja nämä komennot. Lisää lopuksi yhteys ChatGPT:ssä: Settings → Connectors → Connection: Tunnel.</p>
-    <h4>bash (macOS, Linux, WSL, Git Bash)</h4>
-    <pre id="tunneli-bash" class="mono"></pre>
-    <h4>PowerShell (Windows)</h4>
-    <pre id="tunneli-powershell" class="mono"></pre>
+    <p class="hint">ChatGPT ei tavoita tätä osoitetta suoraan. Luo tunneli OpenAI Platformissa (Settings → Organization → Tunnels) ja ajonaikainen avain Tunnels-oikeudella <em>Read + Use</em>, tallenna tunnelin tunniste tähän, asenna <code>tunnel-client</code> MCP-työtilaan ja aja komennot terminaalissa <code>vnetcon-docs</code>-hakemistossa. Lisää lopuksi yhteys ChatGPT:ssä: Settings → Connectors → Connection: Tunnel. Vaiheet ja niiden tila näkyvät myös Prosessi-välilehdellä.</p>
+    <div id="tunneli"></div>
   </section>
 
   <section id="asetukset" class="tab" hidden>

@@ -63,7 +63,7 @@ export const COMMANDS = [
   { path: ['trash', 'empty'], group: 'Roskakori', usage: 'trash empty [--confirm]', description: 'Tyhjentää roskakorin pysyvästi.', ui: true, destructive: true },
 
   // Palvelin ja tunnistus
-  { path: ['server', 'configure-http'], group: 'Palvelin ja tunnistus', usage: 'server configure-http --listen <host:port> [--channel <kanava>] [--allowed-hosts <nimi,...>]', description: 'Määrittää HTTP-palvelimen.', ui: true },
+  { path: ['server', 'configure-http'], group: 'Palvelin ja tunnistus', usage: 'server configure-http [--listen <host:port>] [--channel <kanava>] [--allowed-hosts <nimi,...>]', description: 'Tallentaa HTTP-palvelimen osoitteen (oletus 127.0.0.1:8799). Ei muuta oletussiirtotapaa.', ui: true },
   { path: ['server', 'set-transport'], group: 'Palvelin ja tunnistus', usage: 'server set-transport <stdio|http>', description: 'Valitsee oletussiirtotavan.', ui: true },
   { path: ['server', 'status'], group: 'Palvelin ja tunnistus', usage: 'server status', description: 'Näyttää palvelinasetukset.' },
   { path: ['auth', 'set-mode'], group: 'Palvelin ja tunnistus', usage: 'auth set-mode <none|bearer|basic|oidc>', description: 'Valitsee tunnistustavan.', ui: true },
@@ -78,7 +78,11 @@ export const COMMANDS = [
   { path: ['auth', 'user', 'remove'], group: 'Palvelin ja tunnistus', usage: 'auth user remove <nimi>', description: 'Poistaa käyttäjän.', ui: true, destructive: true },
   { path: ['refresh', 'configure-poll'], group: 'Palvelin ja tunnistus', usage: 'refresh configure-poll --interval <s> --debounce <s>', description: 'Ottaa käyttöön ajastetun muutosten haun.', ui: true },
   { path: ['refresh', 'configure-webhook'], group: 'Palvelin ja tunnistus', usage: 'refresh configure-webhook --debounce <s>', description: 'Ottaa käyttöön webhookin.', ui: true },
-  { path: ['tunnel', 'prepare', 'openai'], group: 'Palvelin ja tunnistus', usage: 'tunnel prepare openai [--tunnel-id <id>]', description: 'Tulostaa OpenAI Secure MCP Tunnelin komennot.', ui: true },
+  { path: ['tunnel', 'install', 'openai'], group: 'Palvelin ja tunnistus', usage: 'tunnel install openai [--version <v>] [--from <zip|hakemisto|tiedosto>]', description: 'Asentaa tunnel-clientin MCP-työtilaan (.multiproject/tunnel-client): lataa OpenAI:n julkaisusta tarkistussummalla tai kopioi paikallisesta lähteestä.', ui: true },
+  { path: ['tunnel', 'uninstall', 'openai'], group: 'Palvelin ja tunnistus', usage: 'tunnel uninstall openai', description: 'Poistaa työtilaan asennetun tunnel-clientin ja sen profiilit.', ui: true, destructive: true },
+  { path: ['tunnel', 'configure', 'openai'], group: 'Palvelin ja tunnistus', usage: 'tunnel configure openai --tunnel-id <id> [--client-profile <nimi>]', description: 'Tallentaa OpenAI-tunnelin tunnisteen ja tunnel-clientin profiilin.', ui: true },
+  { path: ['tunnel', 'remove', 'openai'], group: 'Palvelin ja tunnistus', usage: 'tunnel remove openai', description: 'Poistaa tallennetun tunnelin tiedot (tulostaa palautuskomennon).', ui: true, destructive: true },
+  { path: ['tunnel', 'prepare', 'openai'], group: 'Palvelin ja tunnistus', usage: 'tunnel prepare openai [--tunnel-id <id>] [--client-profile <nimi>]', description: 'Tulostaa tunnel-clientin komennot tallennetuilla tiedoilla.', ui: true },
   { path: ['serve'], group: 'Palvelin ja tunnistus', usage: 'serve [--transport <stdio|http>] [--channel <kanava>]', description: 'Käynnistää MCP-palvelun.' },
   { path: ['ui'], group: 'Palvelin ja tunnistus', usage: 'ui [--listen <host:port>]', description: 'Käynnistää HTTP-palvelimen ja hallintakäyttöliittymän (/ui).' },
 ];
