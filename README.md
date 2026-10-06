@@ -372,12 +372,12 @@ käytössä.
 > projektin oman sisällön pohjilla — `tila/projekti.yaml`, `tila/rekisteri.yaml`
 > (mitä on dokumentoitu), `tila/rakenne.yaml`, `tila/edistyminen.md`,
 > `tila/synkronoitu.yaml`, `johdanto.md`, `metodi/kartoitus.md`,
-> `metodi/sanasto.md` ja `.claude/settings.json`. Pohjatiedostot eivät voi
+> `metodi/sanasto.md`, `metodi/ohjaus.md` ja `.claude/settings.json`. Pohjatiedostot eivät voi
 > puuttua zipistä, koska ensiasennus tarvitsee ne.
 >
 > **Verkottomassa ympäristössä päivitys tehdään käsin:** pura zip väliaikaiseen
 > hakemistoon ja kopioi sieltä vain nämä olemassa olevan asennuksen päälle:
-> `metodi/` (paitsi `kartoitus.md` ja `sanasto.md`), `tyokalut/`,
+> `metodi/` (paitsi `kartoitus.md`, `sanasto.md` ja `ohjaus.md`), `tyokalut/`,
 > `.claude/skills/`, `.claude/workflows/`, `tila/metodi.yaml`, `CLAUDE.md`,
 > `AGENTS.md`, `README.md`, `vnetcon.config.example.yaml`, `.gitignore`.
 > Sama lista kuin `asenna.sh --paivita`:lla. Jos `vnetcon-docs/` on asiakkaan
@@ -429,8 +429,8 @@ käsitteellisesti eivätkä vain kielellisesti.
 `.claude/skills|workflows`, `CLAUDE.md`, `AGENTS.md`, `README.md`,
 `vnetcon.config.example.yaml`, `.gitignore`) ja säilyttää aina projektin oman
 sisällön: `vnetcon.config.yaml`, `tila/`, `johdanto.md`, dokumenttikansiot,
-`metodi/kartoitus.md`, `metodi/sanasto.md`, `.claude/settings.json` sekä
-projektin itse lisäämät skillit. Poistettuja paketin tiedostoja ei siivota —
+`metodi/kartoitus.md`, `metodi/sanasto.md`, `metodi/ohjaus.md`,
+`.claude/settings.json`, MCP-työtilan `mcp-tyotila/` sekä projektin itse lisäämät skillit. Poistettuja paketin tiedostoja ei siivota —
 ne jäävät kohteeseen, joten tarkista `git status` päivityksen jälkeen.
 
 Jos menettely muuttuu niin, että jo kirjoitetut dokumentit pitää päivittää,

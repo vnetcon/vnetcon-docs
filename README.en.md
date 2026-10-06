@@ -380,12 +380,12 @@ version is in use.
 > content with templates — `tila/projekti.yaml`, `tila/rekisteri.yaml` (what has
 > been documented), `tila/rakenne.yaml`, `tila/edistyminen.md`,
 > `tila/synkronoitu.yaml`, `johdanto.md`, `metodi/kartoitus.md`,
-> `metodi/sanasto.md` and `.claude/settings.json`. The templates cannot be left
+> `metodi/sanasto.md`, `metodi/ohjaus.md` and `.claude/settings.json`. The templates cannot be left
 > out of the zip, because a first installation needs them.
 >
 > **In an air-gapped environment, update by hand:** unpack the zip into a
 > temporary directory and copy only these over the existing installation:
-> `metodi/` (except `kartoitus.md` and `sanasto.md`), `tyokalut/`,
+> `metodi/` (except `kartoitus.md`, `sanasto.md` and `ohjaus.md`), `tyokalut/`,
 > `.claude/skills/`, `.claude/workflows/`, `tila/metodi.yaml`, `CLAUDE.md`,
 > `AGENTS.md`, `README.md`, `vnetcon.config.example.yaml`, `.gitignore` — the
 > same list `asenna.sh --paivita` uses. If `vnetcon-docs/` is under the
@@ -437,8 +437,8 @@ incrementally.
 `.claude/skills|workflows`, `CLAUDE.md`, `AGENTS.md`, `README.md`,
 `vnetcon.config.example.yaml`, `.gitignore`) and always preserves the project's
 own content: `vnetcon.config.yaml`, `tila/`, `johdanto.md`, the document
-directories, `metodi/kartoitus.md`, `metodi/sanasto.md`,
-`.claude/settings.json` and any skills the project added itself. Files removed
+directories, `metodi/kartoitus.md`, `metodi/sanasto.md`, `metodi/ohjaus.md`,
+`.claude/settings.json`, the MCP workspace `mcp-tyotila/` and any skills the project added itself. Files removed
 from the package are not cleaned up — they stay in the target, so check
 `git status` after updating.
 
