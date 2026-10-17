@@ -20,7 +20,7 @@ jobs:
         # Vähimmäisversio, jonka READMEt ja MCP:n package.json lupaavat.
         include:
           - os: ubuntu-latest
-            node: '18'
+            node: '22'
     name: testaa (${{ matrix.os }}, Node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     steps:

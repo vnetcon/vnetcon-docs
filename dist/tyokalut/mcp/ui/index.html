@@ -117,7 +117,11 @@
       <div class="wide choices">
         <label class="check"><input type="checkbox" name="guidance" checked> Yhteinen ohjaus ja sanasto</label>
         <label class="check"><input type="checkbox" name="interfaces" checked> Rajapintatietueet (vain active, kaikki osapuolet mukana)</label>
-        <label class="check"><input type="checkbox" name="sources"> Lähdeaineisto (projekteihin linkitetyt lähteet, merkittynä: ei tarkistettu koodia vasten)</label>
+      </div>
+      <div class="wide">
+        <div class="form-label">Lähdeaineistot</div>
+        <div id="vienti-lahteet" class="choices"></div>
+        <p class="hint">Projekteihin linkitetyt lähteet merkitään: ei tarkistettu koodia vasten. Ilman projektia vienti on pelkkää hyväksyttyä lähdeaineistoa.</p>
       </div>
       <p id="vienti-profiili" class="hint wide"></p>
       <div id="vienti-toiminnot" class="wide"></div>
@@ -129,7 +133,7 @@
 
   <section id="lahteet" class="tab" hidden>
     <h2>Lähdeaineistot</h2>
-    <p class="hint">Organisaation dokumentit (Word, PowerPoint, Excel, Markdown, teksti), joita ylläpidetään muualla kuin projektin Gitissä. Ne näkyvät AI-clienteille omana tietolajinaan: <strong>ei tarkistettu koodia vasten</strong>. Mikään tiedosto ei päädy julkaisuun ilman hyväksyntää. PDF-tuki tulee myöhemmin.</p>
+    <p class="hint">Organisaation dokumentit (Word, PowerPoint, Excel, PDF, Markdown, teksti), joita ylläpidetään muualla kuin projektin Gitissä. Mikään tiedosto ei päädy julkaisuun ilman hyväksyntää. Projekteihin linkitetty lähde näkyy AI-clienteille omana tietolajinaan: <strong>ei tarkistettu koodia vasten</strong>. Lähdeaineistoja voi käyttää myös ilman koodia: kanava, jossa on pelkkiä lähteitä, on valmis tietopohja.</p>
     <div id="lahdelista"></div>
     <div id="lahde-tiedostot"></div>
     <div id="lahde-esikatselu"></div>

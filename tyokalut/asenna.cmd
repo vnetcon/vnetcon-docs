@@ -8,7 +8,7 @@ rem Toteutus on asenna.mjs (Node). Ei vaadi bashia eika WSL:aa.
 setlocal
 where node >nul 2>nul
 if errorlevel 1 (
-  echo asenna: node puuttuu - tarvitaan Node 18+. Asenna: https://nodejs.org 1>&2
+  echo asenna: node puuttuu - tarvitaan Node 22.13+. Asenna: https://nodejs.org 1>&2
   exit /b 1
 )
 node "%~dp0asenna.mjs" %*

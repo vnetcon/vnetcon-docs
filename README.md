@@ -15,7 +15,7 @@ paketin osista.
 komentoa ovat paikallisia Node-skriptejä: **ei tekoälyä, ei verkkoyhteyttä, ei
 tilejä, ei käyttöoikeuksia kenellekään.** Koodisi ei liiku mihinkään.
 
-Esivaatimukset: `git` ja **Node 18+**. **Bashia, Git Bashia tai WSL:ää ei
+Esivaatimukset: `git` ja **Node 22.13+**. **Bashia, Git Bashia tai WSL:ää ei
 tarvita** — kaikki työkalut ovat Node-ohjelmia, ja Windowsilla riittää
 PowerShell. Tämä koskee myös itse menettelyä: kartoituskomennot on kirjoitettu
 auki molemmille kuorille, ks. [PowerShell-tuki](#powershell-tuki).
@@ -98,6 +98,21 @@ ja lähdecommit säilyvät erillisinä: projektien sisältöä ei yhdistetä sam
 hakukorpukseksi, ja projektien väliset yhteydet kuvataan vain erillisillä
 rajapintatietueilla.
 
+**Hyväksytty tietopohja siihen AI-clienttiin, jota organisaatio jo käyttää.**
+MCP ei korvaa ChatGPT:tä, Claudea tai Copilotia, vaan tuo niihin aineiston,
+jonka ihminen on hyväksynyt. Yleiset AI-clientit eivät ole tehty koodipohjan
+käsittelyyn: SharePoint-Copilot indeksoi Office-dokumentteja, ChatGPT-projekti
+ottaa muutamia kymmeniä tiedostoja, ja koodiin erikoistuneet työkalut lukevat
+raakaa koodia kehittäjille. Tukihenkilö, tuoteomistaja tai asiakkaan
+pääkäyttäjä tarvitsee kuvauksen siitä, miten järjestelmä toimii: tarkistettuna
+koodia vasten, sidottuna versioon, projekteittain rajattuna ja ilman pääsyä
+repoon. Samaan tietopohjaan tuodaan organisaation omat dokumentit (Word,
+PowerPoint, Excel, PDF) merkittyinä erikseen.
+
+Tietopohjan voi aloittaa myös **ilman koodia**, pelkistä hyväksytyistä
+dokumenteista, ja lisätä järjestelmien dokumentaation myöhemmin. Ks.
+[Lähdeaineistot ilman koodia](dist/tyokalut/mcp/docs/ilman-koodia.md).
+
 MCP kulkee jokaisen asennuksen ja paketin mukana, ja sitä käytetään
 `vnetcon-ai mcp` -komennolla. Riippuvuudet asennetaan vasta käyttöönotossa.
 Komennot ajetaan `vnetcon-docs`-hakemistossa.
@@ -136,7 +151,8 @@ ja julkaisunsa.
 - [Local setup and command reference in English](dist/tyokalut/mcp/README.en.md)
 - [Arkkitehtuuri- ja toteutusspeksi](dist/tyokalut/mcp/docs/arkkitehtuuri.md)
 - [Vienti: dokumentaatio tiedostoina, kun MCP-yhteyttä ei voi käyttää](dist/tyokalut/mcp/docs/vienti.md)
-- [Lähdeaineistot: Word-, PowerPoint- ja Excel-dokumentit omana lähteenään](dist/tyokalut/mcp/docs/lahdeaineistot.md)
+- [Lähdeaineistot: Word-, PowerPoint-, Excel- ja PDF-dokumentit omana lähteenään](dist/tyokalut/mcp/docs/lahdeaineistot.md)
+- [Lähdeaineistot ilman koodia: tietopohja pelkistä dokumenteista](dist/tyokalut/mcp/docs/ilman-koodia.md)
 
 Nykyinen versio käyttää paikallista tiedostotallennusta ja tukee sekä stdio- että
 Streamable HTTP -siirtotapaa. HTTP-palvelussa ovat valittavissa avoin
@@ -148,9 +164,9 @@ komentoriviä. AWS-tallennus kuuluu myöhempään vaiheeseen. ChatGPT-yhteyden
 valmisteluun on Secure MCP Tunnel -komento-ohje. Kun MCP-yhteyttä ei voi käyttää,
 julkaistusta kanavasta voi muodostaa vientipaketin: tiedostot ja valmiin
 ohjetekstin esimerkiksi ChatGPT-projektiin (`vnetcon-ai mcp export`). Organisaation
-Word-, PowerPoint- ja Excel-dokumentit voi tuoda MCP:hen omana lähteenään
-(`vnetcon-ai mcp source`): ne hyväksytään ennen julkaisua ja merkitään aina
-tietolajiksi, jota ei ole tarkistettu koodia vasten.
+Word-, PowerPoint-, Excel- ja PDF-dokumentit voi tuoda MCP:hen omana lähteenään
+(`vnetcon-ai mcp source`): ne hyväksytään ennen julkaisua ja merkitään omaksi
+tietolajikseen. Tietopohjan voi koota myös pelkistä dokumenteista ilman koodia.
 
 ## Käyttömalli
 
@@ -205,7 +221,7 @@ ja Clauden syötekenttään:
 ```
 
 **Esivaatimukset kohdekoneella:** `claude` ja/tai `codex` kirjautuneena, Node.js
-18+ ja mieluiten git. Agentit ja kaikki paketin työkalut toimivat Windowsilla
+22.13+ ja mieluiten git. Agentit ja kaikki paketin työkalut toimivat Windowsilla
 natiivisti PowerShellissa — **bashia, Git Bashia tai WSL:ää ei tarvita.**
 Täydellinen lista ja perustelut:
 [`dist/README.md` → Esivaatimukset](dist/README.md#esivaatimukset). Tarkistus
@@ -220,7 +236,7 @@ Kun sekä lähdekoodi että paketti tulevat zipeinä — eristetty ympäristö, 
 työasema tai asiakas, jolla ei ole pääsyä tähän repoon. Kumpikin sarja on
 kokonainen: kopioi oman alustasi lohko alusta loppuun.
 
-**Esivaatimukset:** `git`, Node 18+ ja `claude` ja/tai `codex` kirjautuneena.
+**Esivaatimukset:** `git`, Node 22.13+ ja `claude` ja/tai `codex` kirjautuneena.
 Linuxilla varmista myös `unzip` (puuttuu minimaalisista asennuksista:
 `apt install unzip` / `dnf install unzip`). Windowsilla riittää **Git for
 Windows** gitin takia — bashia ei tarvita.

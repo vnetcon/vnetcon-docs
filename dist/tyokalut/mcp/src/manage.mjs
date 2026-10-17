@@ -452,6 +452,7 @@ function printExport(manifest, heading) {
   if (manifest.label) out(`Vastaanottaja: ${manifest.label}`);
   if (manifest.classification) out(`Tietoluokka: ${manifest.classification}`);
   for (const project of manifest.projects) out(`Projekti: ${project.project_id}@${project.ref} ${project.source_commit_sha.slice(0, 12)} (${project.document_count} ${project.document_count === 1 ? 'dokumentti' : 'dokumenttia'})`);
+  for (const source of manifest.sources || []) out(`Lähdeaineisto: ${source.source_id} (${source.document_count} ${source.document_count === 1 ? 'dokumentti' : 'dokumenttia'})`);
   const uploads = manifest.files.filter((file) => file.path.startsWith('tiedostot/'));
   out(`Ladattavat tiedostot (${uploads.length}${manifest.target.max_files ? `, raja ${manifest.target.max_files}` : ''}):`);
   for (const file of uploads) out(`  ${file.path}  ${formatSize(file.bytes)}${file.documents ? `  ${file.documents.length} ${file.documents.length === 1 ? 'dokumentti' : 'dokumenttia'}` : ''}`);
@@ -496,7 +497,7 @@ export function exportCommand(argv, loaded) {
     if (flags.json) return out(JSON.stringify({ exports: records }, null, 2));
     if (!records.length) return out('Vientejä ei ole.');
     for (const item of records) {
-      out(`${item.export_id}  ${STATUS_TEXT[item.status] || item.status}  ${item.target}  ${item.projects.map((project) => `${project.project_id}@${project.ref}`).join(',')}${item.label ? `  ${item.label}` : ''}  ${item.created_at}`);
+      out(`${item.export_id}  ${STATUS_TEXT[item.status] || item.status}  ${item.target}  ${[...item.projects.map((project) => `${project.project_id}@${project.ref}`), ...item.sources.map((source) => `lähde:${source.source_id}`)].join(',')}${item.label ? `  ${item.label}` : ''}  ${item.created_at}`);
     }
     return undefined;
   }

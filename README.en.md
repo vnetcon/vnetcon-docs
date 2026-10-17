@@ -21,7 +21,7 @@ project-specific implementations are shaped from the parts of this package.
 commands are plain local Node scripts: **no AI, no network, no accounts, no access
 granted to anyone.** Your code does not go anywhere.
 
-Prerequisites: `git` and **Node 18+**. **No bash, Git Bash or WSL is required** —
+Prerequisites: `git` and **Node 22.13+**. **No bash, Git Bash or WSL is required** —
 every tool is a Node program, and PowerShell is enough on Windows. The same
 holds for the method itself: the survey commands are spelled out for both
 shells, see [PowerShell support](#powershell-support).
@@ -107,6 +107,21 @@ and source commit remains separate: project contents are not merged into one
 search corpus, and cross-project relationships exist only as explicit interface
 records.
 
+**An approved knowledge base for the AI client the organisation already uses.**
+The MCP does not replace ChatGPT, Claude or Copilot; it brings them material that
+a person has approved. General AI clients are not built for codebases:
+SharePoint Copilot indexes Office documents, a ChatGPT project takes a few dozen
+files, and code-focused tools read raw code for developers. A support agent,
+product owner or customer administrator needs a description of how the system
+works: verified against the code, bound to a version, scoped per project, and
+available without access to the repository. The organisation's own documents
+(Word, PowerPoint, Excel, PDF) go into the same knowledge base, labelled
+separately.
+
+The knowledge base can also start **without code**, from approved documents
+only, with system documentation added later. See
+[Source materials without code](dist/tyokalut/mcp/docs/without-code.md).
+
 The MCP ships with every installation and package at `tyokalut/mcp/` and is
 used through the `vnetcon-ai mcp` command. Its dependencies are installed only
 when you start using it. Run the commands in the `vnetcon-docs` directory.
@@ -146,7 +161,8 @@ have separate checkouts, documentation workspaces, and releases.
 - [Suomenkielinen käyttöohje](dist/tyokalut/mcp/README.md)
 - [Architecture and implementation specification (Finnish)](dist/tyokalut/mcp/docs/arkkitehtuuri.md)
 - [Export: documentation as files when MCP cannot be used](dist/tyokalut/mcp/docs/export.md)
-- [Source materials: Word, PowerPoint and Excel documents as a source of their own](dist/tyokalut/mcp/docs/sources.md)
+- [Source materials: Word, PowerPoint, Excel and PDF documents as a source of their own](dist/tyokalut/mcp/docs/sources.md)
+- [Source materials without code: a knowledge base from documents only](dist/tyokalut/mcp/docs/without-code.md)
 
 The current version uses local filesystem storage and supports both stdio and
 Streamable HTTP. HTTP offers an open local mode, bearer tokens, username and
@@ -157,9 +173,10 @@ maintenance without the command line. AWS storage belongs to a later phase. A he
 prints the Secure MCP Tunnel commands needed for a private ChatGPT connection.
 When MCP cannot be used, an export package can be created from a published
 channel: files and ready-made instructions for, e.g., a ChatGPT project
-(`vnetcon-ai mcp export`). Organisation Word, PowerPoint and Excel documents can
-be brought into MCP as a source of their own (`vnetcon-ai mcp source`): they are
-approved before publication and always labelled as not verified against the code.
+(`vnetcon-ai mcp export`). Organisation Word, PowerPoint, Excel and PDF documents
+can be brought into MCP as a source of their own (`vnetcon-ai mcp source`): they
+are approved before publication and labelled as a kind of their own. A knowledge
+base can also be built from documents only, without code.
 
 ## How it is used
 
@@ -215,7 +232,7 @@ and in Claude's input field:
 ```
 
 **Prerequisites on the target machine:** `claude` and/or `codex` signed in,
-Node.js 18+ and preferably git. The agents and every tool in the package run
+Node.js 22.13+ and preferably git. The agents and every tool in the package run
 natively on Windows in PowerShell — **no bash, Git Bash or WSL needed.** Full
 list with reasons:
 [`dist/README.md` → Esivaatimukset](dist/README.md#esivaatimukset). To check a
@@ -228,7 +245,7 @@ air-gapped environment, a fresh workstation, or a customer with no access to
 this repository. Each sequence is complete: copy your own platform's block from
 top to bottom.
 
-**Prerequisites:** `git`, Node 18+, and `claude` and/or `codex` signed in. On
+**Prerequisites:** `git`, Node 22.13+, and `claude` and/or `codex` signed in. On
 Linux, make sure `unzip` is present (minimal installs omit it:
 `apt install unzip` / `dnf install unzip`). On Windows, install **Git for
 Windows** for `git` — bash is not needed.

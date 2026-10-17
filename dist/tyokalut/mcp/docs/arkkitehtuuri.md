@@ -1142,10 +1142,12 @@ identiteettinä, tallennusavaimena tai auditointitietona.
 
 ### 10.1 Lähdeaineiston snapshot (1.17)
 
-Koodin ulkopuoliset dokumentit (Word, PowerPoint, Excel, Markdown, teksti) ovat
+Koodin ulkopuoliset dokumentit (Word, PowerPoint, Excel, PDF, Markdown, teksti) ovat
 omia lähteitään projektien rinnalla. Lähdeaineiston snapshotin identiteetti on
 `(source_id, digest)`, jossa digest lasketaan hyväksyttyjen tiedostojen
-`(polku, sisältötiiviste)`-pareista ja lähteen metatiedoista. Julkaisupaketti
+`(polku, sisältötiiviste, hyväksyntäaika)`-kolmikoista, lähteen metatiedoista
+ja merkinnästä (1.18: merkintä ja hyväksyntäpäivä kuuluvat julkaistuun
+otsakkeeseen, ja julkaisu on muuttumaton). Julkaisupaketti
 viittaa kanavan lähteisiin kentässä `sources`, ja `bundle_id` lasketaan myös
 niistä. Ilman lähteitä tunniste on sama kuin ennen.
 
@@ -1161,6 +1163,11 @@ työkaluillaan (`list_sources`, `search_sources`, `fetch_source_document`), ja
 jokainen tulos on merkitty `verified_against_code: false`. Käyttöoikeus: rajattu
 principal näkee lähteen, jos kaikki sen `linked_projects` ovat sallittuja tai
 lähde on erikseen sallittu (`sources`). Ks. [Lähdeaineistot](lahdeaineistot.md).
+
+PDF:n hakuosa on yksi sivu (`## Sivu n`), ja osassa on kenttä `page` (1.18).
+Kanava voi sisältää pelkkiä lähteitä ilman projekteja. Silloin palvelimen ohje
+on lähdeaineiston sanamuodolla, ja merkintä "ei tarkistettu koodia vasten"
+koskee vain projekteihin linkitettyjä lähteitä. Ks. [Ilman koodia](ilman-koodia.md).
 
 ## 11. Hakutekniikka
 

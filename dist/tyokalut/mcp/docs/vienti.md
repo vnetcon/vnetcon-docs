@@ -77,7 +77,7 @@ vnetcon-vienti-<vienti>.zip
     <projekti>-40-datamallit.md
     50-ohjaus-ja-sanasto.md               vain jos ei mahdu ohjetekstiin
     60-rajapinnat.md                      hyväksytyt rajapintatietueet
-    70-lahdeaineisto-<lähde>.md           vain --include-sources: lähdeaineisto
+    70-lahdeaineisto-<lähde>.md           vain valittuna: lähdeaineisto (iso lähde osina -1, -2, …)
 ```
 
 - **Lähde on aina julkaistu kanava.** Työtilan julkaisemattomat muutokset eivät
@@ -93,10 +93,17 @@ vnetcon-vienti-<vienti>.zip
 - **Rajapintatietueista** mukaan tulevat vain `active`-tietueet, joiden kaikki
   osapuolet ovat viennissä.
 - **Lähdeaineisto** ([Lähdeaineistot](lahdeaineistot.md)) tulee mukaan vain
-  valinnalla `--include-sources` (käyttöliittymässä *Lähdeaineisto*): kanavan
-  lähteet, jotka on linkitetty vietäviin projekteihin, tai `--source <id,…>`.
-  Tiedostot on merkitty "ei tarkistettu koodia vasten", ja ohjetekstissä on
-  sääntö niiden käytöstä. Alkuperäisiä tiedostoja ei viedä.
+  valittuna: `--include-sources` (kanavan lähteet, jotka on linkitetty
+  vietäviin projekteihin) tai `--source <id,…>` (käyttöliittymässä
+  lähdekohtaiset valinnat). Projekteihin linkitetyt lähteet on merkitty "ei
+  tarkistettu koodia vasten", ja ohjetekstissä on sääntö niiden käytöstä.
+  Alkuperäisiä tiedostoja ei viedä.
+- **Pelkkä lähdeaineisto:** `--source <id,…>` ilman `--project`-valintaa
+  (käyttöliittymässä *Ei projektia*). Ohjeteksti ja `LUE-MINUT.md` puhuvat
+  hyväksytystä lähdeaineistosta eivätkä koodista, ja `manifest.json`:ssa on
+  `projects: []`. Ks. [Ilman koodia](ilman-koodia.md).
+- **Iso lähde** jaetaan osiin (`70-lahdeaineisto-<lähde>-1.md`, `-2.md` …), jos
+  se ylittää profiilin tiedostokokorajan. Dokumenttia ei pilkota.
 
 ## Kohdeprofiilit
 
@@ -165,8 +172,8 @@ rivillä *Viennit asiakkaille*.
 ## Käyttöoikeudet ja tallennus
 
 - Viennin muodostus, luku ja lataus vaativat admin-oikeuden.
-- Projektirajattu ylläpitäjä (`--projects`) näkee ja voi viedä vain sallittuja
-  projekteja.
+- Rajattu ylläpitäjä (`--projects`, `--sources`) näkee ja voi viedä vain
+  vientejä, joiden kaikki projektit ja lähteet ovat sille sallittuja.
 - Viennit tallentuvat julkaisujen rinnalle hakemistoon
   `<storage.root>/exports/<vienti>/` (`record.json`, `paketti.zip`, `sisalto/`).
   Ne ovat itsenäisiä: `publications prune` ei riko niitä.
@@ -180,7 +187,7 @@ rivillä *Viennit asiakkaille*.
 | Komento | Käyttöliittymässä |
 |---|---|
 | `export profiles [--json]` | Kohde-valikko |
-| `export plan --channel <k> --project <id>[,…] [--multi-project] --target <profiili> [--label …] [--classification …] [--lang fi\|en] [--no-guidance] [--no-interfaces] [--include-sources] [--source <lähde,…>] [--json]` | Esikatsele |
+| `export plan --channel <k> (--project <id>[,…] [--multi-project] \| --source <lähde,…>) --target <profiili> [--label …] [--classification …] [--lang fi\|en] [--no-guidance] [--no-interfaces] [--include-sources] [--json]` | Esikatsele |
 | `export create …` (samat valinnat) | Muodosta vienti |
 | `export list [--json]` | Vientitaulukko |
 | `export show <vienti> [--instructions] [--json]` | Tiedostot, Kopioi ohjeteksti |

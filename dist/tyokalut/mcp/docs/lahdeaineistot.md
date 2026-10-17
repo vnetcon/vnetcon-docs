@@ -1,11 +1,11 @@
 # Lähdeaineistot: koodin ulkopuoliset dokumentit
 
 > 🇬🇧 [In English](sources.md) · [Takaisin MCP:n pääohjeeseen](../README.md) ·
-> [Vienti](vienti.md)
+> [Vienti](vienti.md) · [Ilman koodia](ilman-koodia.md)
 
 Organisaation tieto ei ole pelkästään koodissa. Määrittelyt, sopimusliitteet,
 arkkitehtuuri- ja koulutusesitykset sekä prosessikuvaukset ovat Word-,
-PowerPoint- ja Excel-tiedostoissa. Niitä ylläpidetään muualla kuin projektin
+PowerPoint-, Excel- ja PDF-tiedostoissa. Niitä ylläpidetään muualla kuin projektin
 Gitissä, esimerkiksi verkkolevyllä, OneDrivessa tai SharePointissa.
 
 **Lähdeaineisto** tuo nämä dokumentit MCP:hen ja vientiin omana lähteenään:
@@ -13,7 +13,8 @@ Gitissä, esimerkiksi verkkolevyllä, OneDrivessa tai SharePointissa.
 - **Eri tietolaji.** Koodidokumentaatio on tarkistettu koodia vasten ja sidottu
   committiin. Lähdeaineisto on ihmisen väite siitä, miten asioiden pitäisi olla
   tai miten ne joskus olivat. Se merkitään aina: `kind: lahdeaineisto`,
-  `verified_against_code: false`.
+  `verified_against_code: false`. Ihmiselle näkyvä merkintä riippuu siitä,
+  onko lähde linkitetty projekteihin ([Merkinnät](#merkinnät)).
 - **Eri lähde.** Lähdeaineistolla ei ole repositorya eikä committia. Versio on
   tiedostokohtainen sisältötiiviste, ja tiedostot pysyvät siellä, missä niitä
   ylläpidetään. Niitä ei kopioida projektin Gitiin.
@@ -27,12 +28,35 @@ Gitissä, esimerkiksi verkkolevyllä, OneDrivessa tai SharePointissa.
 | Word (.docx) | Otsikot (myös suomenkielisen Wordin tyylit), kappaleet, listat, taulukot ja alaviitteet. Muutosjäljityksen poistot ohitetaan |
 | PowerPoint (.pptx) | Diat järjestyksessä: otsikko, tekstit, taulukot ja puhujan muistiinpanot |
 | Excel (.xlsx) | Välilehdet, alueet ja arvot (`xlsx-kartta.mjs`) |
+| PDF (.pdf) | Teksti sivu kerrallaan (`## Sivu n`), riveinä ja kappaleina. Ks. [PDF](#pdf) |
 | Markdown (.md), teksti (.txt) | Sellaisenaan |
 
 Kuvat, kaaviot, makrot ja upotetut objektit ohitetaan, ja niiden määrä näkyy
-muunnoksen otsakkeessa. Ei tueta: PDF (tulossa), skannatut asiakirjat sekä vanhat
-.doc-, .ppt-, .xls- ja .xlsb-muodot. Ne näkyvät tiedostoluettelossa tilassa
-*ei tuettu*, ja syy kerrotaan.
+muunnoksen otsakkeessa. Ei tueta: skannatut asiakirjat sekä vanhat .doc-, .ppt-,
+.xls- ja .xlsb-muodot. Ne näkyvät tiedostoluettelossa tilassa *ei tuettu*, ja
+syy kerrotaan.
+
+### PDF
+
+PDF luetaan pdf.js-kirjastolla (`pdfjs-dist`), joka ladataan vasta, kun PDF
+muunnetaan. PDF:n skriptejä ja lomakkeita ei suoriteta, eikä fontteja ladata.
+
+- **Sivunumerot säilyvät.** Jokainen sivu on oma hakuosansa, ja
+  `search_sources`-tuloksessa on kenttä `page`.
+- **Rakenne ei säily.** PDF:ssä ei ole luotettavaa otsikko- tai
+  taulukkorakennetta, joten teksti kootaan riveiksi ja kappaleiksi. Taulukon
+  rivit jäävät riveiksi. Tämä kerrotaan muunnoksen otsakkeessa, samoin PDF:n
+  otsikko, tekijä ja luontipäivä, jos ne ovat saatavilla.
+- **Skannattu PDF** (yli puolet sivuista on kuvia ilman tekstiä) saa tilan
+  *ei tuettu*: tekstintunnistusta (OCR) ei tueta. Osittain skannatusta PDF:stä
+  otetaan teksti, ja tekstittömät sivut luetellaan otsakkeessa.
+- **Salasanasuojattu tai vioittunut PDF** saa tilan *virhe*.
+- **Rajat:** enintään 2000 sivua ja 60 sekuntia per tiedosto.
+- **Laatu vaihtelee tuottajan mukaan**, esimerkiksi monipalstaisessa taitossa ja
+  ylä- ja alatunnisteissa. Esikatsele ennen hyväksyntää.
+
+Epäonnistunutta muunnosta ei yritetä uudelleen joka skannauksella. Se yritetään
+uudelleen, kun tiedosto muuttuu.
 
 Rajat: lähdetiedosto enintään 50 Mt ja muunnos enintään 5 Mt. Rajoja voi muuttaa
 konfiguraatiossa (`sources_defaults.max_file_bytes`, `max_converted_bytes`).
@@ -109,13 +133,29 @@ aikavälillä. **Skannaus ei koskaan hyväksy eikä julkaise mitään.**
 | Työkalu | Mitä tekee |
 |---|---|
 | `list_sources` | Kanavan lähteet, joihin käyttäjällä on oikeus (valinnaisesti yhteen projektiin linkitetyt) |
-| `search_sources` | Haku yhdestä lähteestä. Tuloksissa `kind: lahdeaineisto` ja `verified_against_code: false` |
+| `search_sources` | Haku yhdestä lähteestä. Tuloksissa `kind: lahdeaineisto` ja `verified_against_code: false`, PDF:ssä myös `page` |
 | `fetch_source_document` | Yksi lähdedokumentti otsakkeineen |
 
 Projektihaku (`search`) ei palauta lähdeaineistoa, eikä lähdehaku palauta
-koodidokumentaatiota. Palvelimen ohje kehottaa AI-clientiä kertomaan, kun vastaus
-perustuu lähdeaineistoon, ja painottamaan ristiriidassa toteutuksen osalta
-koodidokumentaatiota.
+koodidokumentaatiota. Palvelimen ohje muodostetaan kanavan sisällön mukaan:
+
+- **Projektit ja lähteet:** ohje kehottaa AI-clientiä kertomaan, kun vastaus
+  perustuu lähdeaineistoon, ja painottamaan ristiriidassa toteutuksen osalta
+  koodidokumentaatiota.
+- **Vain lähteet:** ohje kertoo, että tietopohja on hyväksyttyä lähdeaineistoa,
+  ja kehottaa aloittamaan `list_sources`-työkalusta ja mainitsemaan lähteen,
+  tiedoston ja sivun. Ks. [Ilman koodia](ilman-koodia.md).
+
+## Merkinnät
+
+| Lähde | Dokumentin otsake |
+|---|---|
+| Linkitetty projekteihin | **Lähdeaineisto, ei tarkistettu koodia vasten** |
+| Ei linkitetty projekteihin | **Hyväksytty lähdeaineisto** |
+
+Otsakkeessa ovat myös lähde, tiedosto, muokkauspäivä, hyväksyntäpäivä, omistaja,
+tietoluokka ja tiiviste. Koneluettava kenttä `verified_against_code: false` on
+aina mukana.
 
 ## Käyttöoikeudet
 
@@ -148,8 +188,10 @@ Ks. [`metodi/konventiot.md`](../../../metodi/konventiot.md) kohta 4.
 
 `export create … --include-sources` lisää vientiin kanavan lähteet, jotka on
 linkitetty vietäviin projekteihin (tai `--source <id,…>`). Ne ovat omina
-tiedostoinaan `70-lahdeaineisto-<lähde>.md`, merkinnällä "ei tarkistettu koodia
-vasten", ja ohjetekstissä on sääntö niiden käytöstä. Alkuperäisiä tiedostoja ei
+tiedostoinaan `70-lahdeaineisto-<lähde>.md`, merkittyinä kuten
+[Merkinnät](#merkinnät)-kohdassa, ja ohjetekstissä on sääntö niiden käytöstä.
+`--source` ilman `--project`-valintaa vie pelkän lähdeaineiston. Iso lähde
+jaetaan osiin profiilin tiedostokokorajan mukaan. Alkuperäisiä tiedostoja ei
 viedä. Ks. [Vienti](vienti.md).
 
 ## Tallennus

@@ -86,7 +86,7 @@ function printSummary(summary) {
   if (summary.pending) out(`Odottaa hyväksyntää: ${summary.pending}. Esikatsele: source preview ${summary.source_id} --file <tiedosto>; hyväksy: source approve ${summary.source_id} --all-changed`);
 }
 
-export function sourceCommand(argv, loaded) {
+export async function sourceCommand(argv, loaded) {
   const { positional, flags } = parseArgs(argv);
   const action = positional[0];
 
@@ -121,7 +121,7 @@ export function sourceCommand(argv, loaded) {
   }
 
   if (action === 'scan' && flags.all) {
-    for (const source of loaded.config.sources || []) printSummary(scanSource(loaded, source));
+    for (const source of loaded.config.sources || []) printSummary(await scanSource(loaded, source));
     return undefined;
   }
 
@@ -162,14 +162,14 @@ export function sourceCommand(argv, loaded) {
     return printSummary(summary);
   }
 
-  if (action === 'scan') return printSummary(scanSource(loaded, source));
+  if (action === 'scan') return printSummary(await scanSource(loaded, source));
 
   if (action === 'upload') {
     const filename = path.resolve(requireFlag(flags, 'file'));
     if (!fs.existsSync(filename)) throw new UserError(`Tiedostoa ei ole: ${filename}`);
     const name = uploadFile(loaded, source, filename, flags.name && flags.name !== true ? String(flags.name) : path.basename(filename));
     out(`Lisättiin ${name} lähteeseen ${sourceId}.`);
-    return printSummary(scanSource(loaded, source));
+    return printSummary(await scanSource(loaded, source));
   }
 
   if (action === 'preview') {
@@ -210,7 +210,7 @@ export function sourceCommand(argv, loaded) {
     }
     removeUploadedFile(loaded, source, file);
     out(`Poistettiin ${file}.`);
-    return printSummary(scanSource(loaded, source));
+    return printSummary(await scanSource(loaded, source));
   }
 
   if (action === 'remove') {

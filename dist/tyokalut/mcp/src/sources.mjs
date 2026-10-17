@@ -106,7 +106,7 @@ function deriveStatus(entry) {
 }
 
 // Päivittää inventaarion lähteen nykytilasta. Ei hyväksy eikä julkaise mitään.
-export function scanSource(loaded, source) {
+export async function scanSource(loaded, source) {
   const root = sourceFilesRoot(loaded, source);
   if (!fs.existsSync(root)) {
     if (source.type === 'upload') ensureDirectory(root);
@@ -138,15 +138,24 @@ export function scanSource(loaded, source) {
     } else {
       entry.sha256 = unchanged ? previous.sha256 : fileSha(filename);
       const cached = convertedFilename(loaded, source.source_id, entry.sha256, relative);
-      if (!fs.existsSync(cached)) {
+      if (fs.existsSync(cached)) {
+        delete entry.failed_sha256;
+      } else if (previous.failed_sha256 === entry.sha256 && previous.error) {
+        // Sama sisältö epäonnistui jo: ei muunneta uudelleen joka skannauksella.
+        entry.error = previous.error;
+        if (previous.unsupported) entry.unsupported = true;
+      } else {
         try {
-          const converted = convertFile(filename);
+          const converted = await convertFile(filename);
           if (Buffer.byteLength(converted.markdown) > limits.max_converted_bytes) {
             throw new UserError(`Muunnos on yli ${Math.round(limits.max_converted_bytes / 1024 / 1024)} Mt.`);
           }
           writeJson(cached, { schema_version: 1, sha256: entry.sha256, converted_at: nowIso(), ...converted });
+          delete entry.failed_sha256;
         } catch (error) {
           entry.error = error.message;
+          if (error.unsupported) entry.unsupported = true;
+          entry.failed_sha256 = entry.sha256;
         }
       }
     }
@@ -267,18 +276,32 @@ function skippedText(skipped = {}) {
   return parts.join(', ');
 }
 
-export function documentHeader(source, entry, sha, skipped) {
-  const skippedLine = skippedText(skipped);
+// Lähde, joka on linkitetty projekteihin, kuvaa järjestelmiä, joiden
+// dokumentaatio on tarkistettu koodia vasten: silloin merkintä erottaa tietolajit.
+// Ilman linkitystä koodia ei ole, ja merkintä kertoo hyväksynnän.
+export function linkedToCode(source) {
+  return Boolean(source.linked_projects?.length);
+}
+
+export function sourceLabel(source) {
+  return linkedToCode(source) ? 'Lähdeaineisto, ei tarkistettu koodia vasten' : 'Hyväksytty lähdeaineisto';
+}
+
+export function documentHeader(source, entry, sha, converted = {}) {
+  const skippedLine = skippedText(converted.skipped);
+  // Hyväksyntä näytetään vain hyväksytystä versiosta, ei esikatselussa.
+  const approved = entry.approved_sha256 === sha && entry.approved_at ? ` · Hyväksytty ${formatDate(entry.approved_at)}` : '';
   return [
-    `> **Lähdeaineisto, ei tarkistettu koodia vasten** · Lähde: ${source.display_name || source.source_id} (\`${source.source_id}\`)`,
-    `> Tiedosto: \`${entry.path}\` · Muokattu ${formatDate(entry.mtime)}${source.owner ? ` · Omistaja: ${source.owner}` : ''}`
+    `> **${sourceLabel(source)}** · Lähde: ${source.display_name || source.source_id} (\`${source.source_id}\`)`,
+    `> Tiedosto: \`${entry.path}\` · Muokattu ${formatDate(entry.mtime)}${approved}${source.owner ? ` · Omistaja: ${source.owner}` : ''}`
       + `${source.classification ? ` · Tietoluokka: ${source.classification}` : ''} · Tiiviste: \`${sha.slice(0, 12)}\``,
     ...(skippedLine ? [`> Ohitettu: ${skippedLine}`] : []),
+    ...(converted.notes || []).map((note) => `> ${note}`),
   ].join('\n');
 }
 
 export function renderSourceDocument(source, entry, sha, converted) {
-  return `# ${path.posix.basename(entry.path)}\n\n${documentHeader(source, entry, sha, converted.skipped)}\n\n${converted.markdown.trim()}\n`;
+  return `# ${path.posix.basename(entry.path)}\n\n${documentHeader(source, entry, sha, converted)}\n\n${converted.markdown.trim()}\n`;
 }
 
 export function previewFile(loaded, source, file) {
@@ -332,8 +355,10 @@ export function approvedDocuments(loaded, source) {
 
 export function sourceDigest(source, documents) {
   return sha256([
-    source.source_id, source.display_name || '', source.owner || '', source.classification || '',
-    ...documents.map((document) => `${document.entry.path}\0${document.sha256}`),
+    // Otsakkeen sisältö (merkintä ja hyväksyntäpäivä) kuuluu digestiin, koska
+    // julkaisu on muuttumaton.
+    source.source_id, source.display_name || '', source.owner || '', source.classification || '', sourceLabel(source),
+    ...documents.map((document) => `${document.entry.path}\0${document.sha256}\0${document.entry.approved_at || ''}`),
   ].join('\0'));
 }
 
@@ -351,7 +376,9 @@ export function publishSource(loaded, source) {
     const content = renderSourceDocument(source, entry, sha, converted);
     writeFileAtomic(destination, content);
     const documentId = sha256(`${source.source_id}\0${digest}\0${entry.path}`).slice(0, 32);
+    const isPdf = /\.pdf$/i.test(entry.path);
     splitMarkdownSections(content).forEach(({ heading, content: section }, index) => chunks.push({
+      ...(isPdf && /^Sivu \d+$/.test(heading) ? { page: Number(heading.slice(5)) } : {}),
       document_id: documentId,
       section_id: sha256(`${entry.path}\0${heading}\0${index}`).slice(0, 24),
       kind: SOURCE_KIND,

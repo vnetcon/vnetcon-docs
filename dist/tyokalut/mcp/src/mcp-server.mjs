@@ -24,17 +24,31 @@ function result(value) {
   };
 }
 
+const PROJECT_INSTRUCTIONS = 'Valitse projekti list_projects-työkalulla ja kohdista jokainen search- ja fetch-kutsu täsmälleen yhteen project_id-arvoon. '
+  + 'Lue get_shared_guidance ennen kuin tulkitset käsitteitä, jotka esiintyvät useassa projektissa: se on ihmisen ylläpitämää ohjausta ja menee oman päättelyn edelle.';
+const SOURCE_WITH_CODE_INSTRUCTIONS = 'Lähdeaineisto (list_sources, search_sources, fetch_source_document) on ihmisen kirjoittamaa, eikä sitä ole tarkistettu koodia vasten. '
+  + 'Kerro, kun vastaus perustuu siihen. Jos se on ristiriidassa koodidokumentaation kanssa, kerro molemmat ja painota toteutuksen osalta koodidokumentaatiota.';
+const SOURCE_ONLY_INSTRUCTIONS = 'Tietopohja on organisaation hyväksyttyä lähdeaineistoa. Aloita list_sources-työkalusta ja kohdista jokainen search_sources- ja fetch_source_document-kutsu yhteen source_id-arvoon. '
+  + 'Mainitse vastauksessa lähde, tiedosto ja PDF:stä sivu. Jos tietoa ei löydy, sano se äläkä täydennä omalla tiedollasi. '
+  + 'Lue get_shared_guidance, jos sitä on: se on ihmisen ylläpitämää ohjausta ja menee oman päättelyn edelle.';
+
+// Ohje kanavan sisällön mukaan: pelkät projektit, projektit ja lähteet, tai
+// pelkät lähteet (käyttö ilman koodia).
+export function serverInstructions(bundle) {
+  const hasProjects = Boolean(bundle.projects?.length);
+  const hasSources = Boolean(bundle.sources?.length);
+  if (!hasProjects && hasSources) return SOURCE_ONLY_INSTRUCTIONS;
+  return hasSources ? `${PROJECT_INSTRUCTIONS} ${SOURCE_WITH_CODE_INSTRUCTIONS}` : PROJECT_INSTRUCTIONS;
+}
+
 export function createMcpServer(loaded, channelId, access = {}) {
   // One MCP connection always sees one immutable publication bundle. A later
   // publish only affects newly opened connections and cannot mix releases in
   // the middle of an existing conversation.
   const bundle = loadChannel(channelId, loaded);
   const server = new McpServer(
-    { name: 'vnetcon-multiproject-docs', version: '0.5.0' },
-    { instructions: 'Valitse projekti list_projects-työkalulla ja kohdista jokainen search- ja fetch-kutsu täsmälleen yhteen project_id-arvoon. '
-      + 'Lue get_shared_guidance ennen kuin tulkitset käsitteitä, jotka esiintyvät useassa projektissa: se on ihmisen ylläpitämää ohjausta ja menee oman päättelyn edelle. '
-      + 'Lähdeaineisto (list_sources, search_sources, fetch_source_document) on ihmisen kirjoittamaa, eikä sitä ole tarkistettu koodia vasten. '
-      + 'Kerro, kun vastaus perustuu siihen. Jos se on ristiriidassa koodidokumentaation kanssa, kerro molemmat ja painota toteutuksen osalta koodidokumentaatiota.' },
+    { name: 'vnetcon-multiproject-docs', version: '0.6.0' },
+    { instructions: serverInstructions(bundle) },
   );
 
   server.registerTool('list_projects', {
@@ -110,7 +124,7 @@ export function createMcpServer(loaded, channelId, access = {}) {
 
   server.registerTool('list_sources', {
     title: 'List source materials',
-    description: 'Listaa kanavan lähdeaineistot: organisaation dokumentit (Word, PowerPoint, Excel), joita ei ole tarkistettu koodia vasten. Valinnainen project_id rajaa projektiin linkitettyihin.',
+    description: 'Listaa kanavan lähdeaineistot: organisaation hyväksytyt dokumentit (Word, PowerPoint, Excel, PDF). Niitä ei ole tarkistettu koodia vasten. Valinnainen project_id rajaa projektiin linkitettyihin.',
     inputSchema: { project_id: z.string().optional() },
     annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
   }, async ({ project_id }) => {
@@ -123,7 +137,7 @@ export function createMcpServer(loaded, channelId, access = {}) {
 
   server.registerTool('search_sources', {
     title: 'Search source materials',
-    description: 'Hakee yhdestä lähdeaineistosta. Tulokset ovat lähdeaineistoa (kind: lahdeaineisto), eivät koodidokumentaatiota, eikä niitä ole tarkistettu koodia vasten.',
+    description: 'Hakee yhdestä lähdeaineistosta. Tulokset ovat lähdeaineistoa (kind: lahdeaineisto), eivät koodidokumentaatiota, eikä niitä ole tarkistettu koodia vasten. PDF:n tuloksissa on sivunumero (page).',
     inputSchema: {
       source_id: z.string().min(1),
       query: z.string().min(1),

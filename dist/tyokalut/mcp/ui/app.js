@@ -264,6 +264,8 @@ async function completeOidc() {
   sessionStorage.removeItem('vnetcon-oidc');
 }
 
+const START_TAB_KEY = 'vnetcon-start-tab';
+
 function showSetup(setup) {
   $('#aloitus').hidden = false;
   $$('.tab').forEach((tab) => { tab.hidden = true; });
@@ -271,19 +273,22 @@ function showSetup(setup) {
   $('#aloitus-ohje').textContent = setup.parent
     ? `Työtila luodaan hakemistoon ${setup.default_root}. Emoprojekti ${setup.parent.name} (${setup.parent.root})${setup.parent.addable ? ' voidaan lisätä ensimmäiseksi projektiksi.' : ` ei ole lisättävissä: ${setup.parent.note}`}`
     : `Työtila luodaan hakemistoon ${setup.default_root}. Projektit lisätään sen jälkeen.`;
-  const make = (label, emoprojekti) => el('div', { class: 'action' },
-    el('button', { type: 'button', onclick: async () => {
+  const make = (label, emoprojekti, startTab = '') => el('div', { class: 'action' },
+    el('button', { type: 'button', class: startTab ? 'ghost' : '', onclick: async () => {
       setStatus('Luodaan työtilaa…');
       try {
         const result = await api('/setup/init', { method: 'POST', body: { emoprojekti } });
         $('#loki').textContent = result.output;
         setStatus(result.ok ? 'Työtila luotu, ladataan…' : 'Epäonnistui', result.ok);
+        if (result.ok && startTab) try { sessionStorage.setItem(START_TAB_KEY, startTab); } catch { /* ei tallennusta */ }
         if (result.ok) setTimeout(() => location.reload(), 1500);
       } catch (error) { setStatus(error.message, false); }
     } }, label), cliBlock(['init', emoprojekti ? '--emoprojekti' : '--ilman-emoprojektia']));
   fill($('#aloitus-toiminnot'),
     setup.parent?.addable ? make('Luo työtila ja lisää emoprojekti', true) : null,
-    make(setup.parent?.addable ? 'Luo työtila ilman emoprojektia' : 'Luo työtila', false));
+    make(setup.parent?.addable ? 'Luo työtila ilman emoprojektia' : 'Luo työtila', false),
+    el('p', { class: 'hint' }, 'Ei koodia? Tietopohjan voi koota pelkistä organisaation dokumenteista (Word, PowerPoint, Excel, PDF). Järjestelmien dokumentaation voi lisätä myöhemmin.'),
+    make('Aloita lähdeaineistoista', false, 'lahteet'));
 }
 
 // --- Välilehdet -------------------------------------------------------------
@@ -358,7 +363,11 @@ function renderProcess() {
   $('#prosessi-projektit').replaceChildren(...p.projects.flatMap((project) => project.refs.map((ref) => el('div', { class: 'card' },
     el('h3', {}, `${project.display_name} `, el('code', {}, `${project.project_id}@${ref.ref}`), el('small', {}, ` ${MODE_TEXT[project.mode] || project.mode}`)),
     el('ol', { class: 'steps' }, ref.steps.map((item) => stepRow(item, project.project_id, ref.ref)))))));
-  if (!p.projects.length) $('#prosessi-projektit').append(el('p', { class: 'hint' }, 'Ei projekteja. Lisää ensimmäinen välilehdellä Projektit.'));
+  if (!p.projects.length) {
+    $('#prosessi-projektit').append(el('p', { class: 'hint' }, p.codeless
+      ? 'Ei projekteja: tietopohja on pelkkää lähdeaineistoa (välilehti Lähdeaineistot). Järjestelmien dokumentaation voi lisätä myöhemmin välilehdellä Projektit.'
+      : 'Ei projekteja. Lisää ensimmäinen välilehdellä Projektit, tai aloita lähdeaineistoista välilehdellä Lähdeaineistot.'));
+  }
 }
 
 // --- Projektit --------------------------------------------------------------
@@ -527,28 +536,44 @@ const EXPORT_STATUS = { 'ajan-tasalla': ['ok', 'ajan tasalla'], vanhentunut: ['w
 function exportArgs(action) {
   const form = $('#vienti-lomake');
   const value = (name) => field(form, name).value.trim();
-  const projects = $$('#vienti-projektit input:checked').map((input) => input.value);
-  if (!projects.length) throw new Error('Valitse projekti.');
-  const args = ['export', action, '--channel', value('channel') || '<kanava>', '--project', projects.join(','), '--target', value('target') || 'chatgpt-projekti'];
+  const projects = $$('#vienti-projektit input:checked').map((input) => input.value).filter(Boolean);
+  const sources = $$('#vienti-lahteet input:checked').map((input) => input.value);
+  if (!projects.length && !sources.length) throw new Error('Valitse projekti tai lähdeaineisto.');
+  const args = ['export', action, '--channel', value('channel') || '<kanava>'];
+  if (projects.length) args.push('--project', projects.join(','));
+  args.push('--target', value('target') || 'chatgpt-projekti');
   if (projects.length > 1) args.push('--multi-project');
   if (value('label')) args.push('--label', value('label'));
   if (value('classification')) args.push('--classification', value('classification'));
   if (value('lang') !== 'fi') args.push('--lang', value('lang'));
   if (!field(form, 'guidance').checked) args.push('--no-guidance');
   if (!field(form, 'interfaces').checked) args.push('--no-interfaces');
-  if (field(form, 'sources').checked) args.push('--include-sources');
+  if (sources.length) args.push('--source', sources.join(','));
   return args;
 }
 
 function renderExportForm() {
   const form = $('#vienti-lomake');
   const multi = field(form, 'multi').checked;
+  const rendered = $$('#vienti-projektit input').length > 0;
   const selected = new Set($$('#vienti-projektit input:checked').map((input) => input.value));
-  if (!selected.size && S.overview.projects[0]) selected.add(S.overview.projects[0].project_id);
-  const first = [...selected][0];
-  fill($('#vienti-projektit'), S.overview.projects.map((project) => el('label', { class: 'check' },
-    el('input', { type: multi ? 'checkbox' : 'radio', name: 'export_project', value: project.project_id, checked: multi ? selected.has(project.project_id) : project.project_id === first }),
-    ` ${project.display_name} `, el('code', {}, project.project_id))));
+  if (!rendered && S.overview.projects[0]) selected.add(S.overview.projects[0].project_id);
+  const first = selected.size ? [...selected][0] : '';
+  // Projekti on valinnainen: vienti voi olla pelkkää lähdeaineistoa.
+  fill($('#vienti-projektit'), [
+    ...S.overview.projects.map((project) => el('label', { class: 'check' },
+      el('input', { type: multi ? 'checkbox' : 'radio', name: 'export_project', value: project.project_id, checked: multi ? selected.has(project.project_id) : project.project_id === first }),
+      ` ${project.display_name} `, el('code', {}, project.project_id))),
+    ...(multi ? [] : [el('label', { class: 'check' },
+      el('input', { type: 'radio', name: 'export_project', value: '', checked: !first }), ' Ei projektia (vain lähdeaineisto)')]),
+  ]);
+  const channel = S.overview.channels.find((item) => item.channel_id === field(form, 'channel').value) || S.overview.channels.find((item) => item.channel_id === S.overview.default_channel);
+  const checkedSources = new Set($$('#vienti-lahteet input:checked').map((input) => input.value));
+  const channelSources = (channel?.sources || []).filter((sourceId) => (S.overview.sources || []).includes(sourceId));
+  fill($('#vienti-lahteet'), channelSources.length
+    ? channelSources.map((sourceId) => el('label', { class: 'check' },
+      el('input', { type: 'checkbox', name: 'export_source', value: sourceId, checked: checkedSources.has(sourceId) }), ' ', el('code', {}, sourceId)))
+    : [el('p', { class: 'hint' }, 'Kanavassa ei ole lähdeaineistoja.')]);
   $('#vienti-moni-varoitus').hidden = !multi;
   const target = field(form, 'target');
   if (!target.options.length && S.exportProfiles.length) {
@@ -571,7 +596,7 @@ function renderExportForm() {
   } });
   fill($('#vienti-toiminnot'), el('div', { class: 'actions' }, plan, create));
   form.oninput = (event) => {
-    if (event.target.name === 'multi' || event.target.name === 'target') { renderExportForm(); return; }
+    if (['multi', 'target', 'channel'].includes(event.target.name)) { renderExportForm(); return; }
     refreshActions();
   };
   form.onchange = form.oninput;
@@ -662,7 +687,7 @@ async function loadSources() {
 }
 
 function uploadZone(source) {
-  const input = el('input', { type: 'file', multiple: true, accept: '.docx,.pptx,.xlsx,.md,.txt' });
+  const input = el('input', { type: 'file', multiple: true, accept: '.docx,.pptx,.xlsx,.pdf,.md,.txt' });
   const zone = el('div', { class: 'dropzone admin' }, 'Pudota tiedostot tähän tai ', input);
   const send = async (files) => {
     for (const file of files) {
@@ -1136,7 +1161,9 @@ async function start() {
   $('#kirjaudu').hidden = true;
   $('#tabs').hidden = false;
   await refresh().catch((error) => setStatus(error.message, false));
-  openTab($('#tabs button.active')?.dataset.tab || 'prosessi');
+  let startTab = '';
+  try { startTab = sessionStorage.getItem(START_TAB_KEY) || ''; sessionStorage.removeItem(START_TAB_KEY); } catch { /* ei tallennusta */ }
+  openTab(startTab || $('#tabs button.active')?.dataset.tab || 'prosessi');
 }
 
 start();

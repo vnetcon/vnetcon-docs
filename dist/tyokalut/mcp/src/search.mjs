@@ -137,6 +137,7 @@ export function searchSource(loaded, channelId, sourceId, query, limit = 8, sele
     modified: chunk.modified,
     owner: release.owner,
     heading: chunk.heading,
+    ...(chunk.page ? { page: chunk.page } : {}),
     excerpt: chunk.content.slice(0, 1600),
   }));
 }

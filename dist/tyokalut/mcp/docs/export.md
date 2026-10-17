@@ -81,7 +81,7 @@ vnetcon-vienti-<export>.zip
     <project>-40-datamallit.md
     50-ohjaus-ja-sanasto.md              only if it does not fit the instructions
     60-rajapinnat.md                     approved interface records
-    70-lahdeaineisto-<source>.md         only with --include-sources: source material
+    70-lahdeaineisto-<source>.md         only when selected: source material (large source as parts -1, -2, …)
 ```
 
 - **The source is always a published channel.** Unpublished workspace changes are
@@ -95,11 +95,19 @@ vnetcon-vienti-<export>.zip
 - **Shared guidance and glossary** are added to the instructions when they fit
   the profile's character limit. Otherwise they become `50-ohjaus-ja-sanasto.md`.
 - **Interface records:** only `active` records whose parties are all in the export.
-- **Source material** ([Source materials](sources.md)) is included only with
-  `--include-sources` (in the UI *Lähdeaineisto*): the channel's sources linked
-  to the exported projects, or `--source <id,…>`. The files are labelled "not
-  verified against the code", and the instructions include a rule for using
-  them. Original files are never exported.
+- **Source material** ([Source materials](sources.md)) is included only when
+  selected: `--include-sources` (the channel's sources linked to the exported
+  projects) or `--source <id,…>` (per-source choices in the UI). Sources linked
+  to projects are labelled "not verified against the code", and the
+  instructions include a rule for using them. Original files are never
+  exported.
+- **Source material only:** `--source <id,…>` without `--project` (in the UI
+  *Ei projektia*, no project). The instructions and `LUE-MINUT.md` talk about
+  approved source material, not code, and `manifest.json` has `projects: []`.
+  See [Without code](without-code.md).
+- **A large source** is split into parts (`70-lahdeaineisto-<source>-1.md`,
+  `-2.md` …) when it exceeds the profile's file size limit. A document is never
+  split.
 
 ## Target profiles
 
@@ -167,7 +175,8 @@ the line *Viennit asiakkaille*.
 ## Access control and storage
 
 - Creating, reading and downloading exports requires admin rights.
-- A project-restricted administrator (`--projects`) only sees and exports allowed projects.
+- A restricted administrator (`--projects`, `--sources`) only sees and exports
+  exports whose projects and sources are all allowed to them.
 - Exports are stored next to the releases in `<storage.root>/exports/<export>/`
   (`record.json`, `paketti.zip`, `sisalto/`). They are self-contained:
   `publications prune` does not break them.
@@ -181,7 +190,7 @@ the line *Viennit asiakkaille*.
 | Command | In the UI |
 |---|---|
 | `export profiles [--json]` | Target menu |
-| `export plan --channel <c> --project <id>[,…] [--multi-project] --target <profile> [--label …] [--classification …] [--lang fi\|en] [--no-guidance] [--no-interfaces] [--include-sources] [--source <source,…>] [--json]` | Esikatsele |
+| `export plan --channel <c> (--project <id>[,…] [--multi-project] \| --source <source,…>) --target <profile> [--label …] [--classification …] [--lang fi\|en] [--no-guidance] [--no-interfaces] [--include-sources] [--json]` | Esikatsele |
 | `export create …` (same options) | Muodosta vienti |
 | `export list [--json]` | Export table |
 | `export show <export> [--instructions] [--json]` | Tiedostot, Kopioi ohjeteksti |

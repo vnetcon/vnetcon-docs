@@ -2,17 +2,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { kuvaaTyokirja } from '../../xlsx-kartta.mjs';
 import { UserError } from './errors.mjs';
+import { convertPdf } from './pdf.mjs';
 import { readZip } from './zip.mjs';
 
-// Lähdeaineistojen muunnos Markdowniksi ilman riippuvuuksia. Office-tiedostot
+// Lähdeaineistojen muunnos Markdowniksi. PDF muunnetaan pdf.js:llä (pdf.mjs),
+// muut ilman riippuvuuksia. Office-tiedostot
 // ovat zip-paketteja XML:ää. XML luetaan säännöllisillä lausekkeilla eikä
 // DTD:tä tai entiteettejä laajenneta, joten ulkoiset entiteetit eivät ole
 // mahdollisia. Kuvat, kaaviot, makrot ja upotetut objektit ohitetaan ja
 // lasketaan, jotta puute näkyy muunnoksen otsakkeessa.
 
-export const SUPPORTED = ['.docx', '.pptx', '.xlsx', '.md', '.txt'];
+export const SUPPORTED = ['.docx', '.pptx', '.xlsx', '.pdf', '.md', '.txt'];
 const UNSUPPORTED = {
-  '.pdf': 'PDF-tuki tulee myöhemmin (versio 1.18).',
   '.doc': 'Vanha binäärimuoto. Tallenna tiedosto .docx-muodossa.',
   '.ppt': 'Vanha binäärimuoto. Tallenna tiedosto .pptx-muodossa.',
   '.xls': 'Vanha binäärimuoto. Tallenna tiedosto .xlsx-muodossa.',
@@ -26,14 +27,15 @@ export function supportStatus(filename) {
   return { supported: false, extension, reason: UNSUPPORTED[extension] || `Muotoa ${extension || '(ei päätettä)'} ei tueta.` };
 }
 
-// Palauttaa { markdown, skipped: { images, objects, other } }.
-export function convertFile(filename) {
+// Palauttaa { markdown, skipped: { images, objects, other }, notes? }.
+export async function convertFile(filename) {
   const { supported, extension, reason } = supportStatus(filename);
   if (!supported) throw new UserError(reason);
   if (extension === '.md' || extension === '.txt') {
     const text = fs.readFileSync(filename, 'utf8').replace(/^﻿/, '').replace(/\r\n?/g, '\n');
     return { markdown: text, skipped: emptySkipped() };
   }
+  if (extension === '.pdf') return convertPdf(filename);
   const entries = zipEntries(filename);
   if (extension === '.docx') return convertDocx(entries);
   if (extension === '.pptx') return convertPptx(entries);

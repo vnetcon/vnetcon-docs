@@ -37,7 +37,7 @@ identity provider.
 ## Prerequisites
 
 - Git
-- Node.js 18 or newer
+- Node.js 22.13 or newer
 - npm for initial installation
 - an AI agent only when generating `managed` documentation
 
@@ -217,7 +217,8 @@ Focused guides:
 - [AI client compatibility](docs/clients.md)
 - [ChatGPT connection step by step (Finnish)](docs/chatgpt.md)
 - [Export: documentation as files when MCP cannot be used](docs/export.md)
-- [Source materials: Word, PowerPoint and Excel documents as a source of their own](docs/sources.md)
+- [Source materials: Word, PowerPoint, Excel and PDF documents as a source of their own](docs/sources.md)
+- [Source materials without code: a knowledge base from documents only](docs/without-code.md)
 
 ## Management UI
 

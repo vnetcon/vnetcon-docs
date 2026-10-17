@@ -15,7 +15,7 @@ if (!fs.existsSync(path.join(MCP, 'node_modules', '@modelcontextprotocol', 'sdk'
   console.log('Asennetaan MCP:n riippuvuudet (kerran)…');
   const npm = spawnSync(WIN ? 'npm.cmd' : 'npm', ['ci', '--prefix', MCP], { stdio: 'inherit', shell: WIN });
   if (npm.status !== 0) {
-    console.error('Riippuvuuksien asennus epäonnistui. Tarvitaan Node.js 18+ ja npm.');
+    console.error('Riippuvuuksien asennus epäonnistui. Tarvitaan Node.js 22.13+ ja npm.');
     process.exit(1);
   }
 }

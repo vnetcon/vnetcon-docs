@@ -84,7 +84,7 @@ async function connectStdio(workspace) {
 
 const call = async (client, name, args) => (await client.callTool({ name, arguments: args })).structuredContent;
 
-test('muunnokset: Word, PowerPoint, Excel ja tukemattomat muodot', () => {
+test('muunnokset: Word, PowerPoint, Excel ja tukemattomat muodot', async () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'sources-convert-'));
   const docx = path.join(temp, 'm.docx');
   writeDocx(docx, {
@@ -92,7 +92,7 @@ test('muunnokset: Word, PowerPoint, Excel ja tukemattomat muodot', () => {
     table: [['Kenttä', 'Pakollinen'], ['Nimi', 'Kyllä | aina']],
     extraBody: '<w:p><w:r><w:t>Jää</w:t></w:r><w:del><w:r><w:delText>poistettu</w:delText></w:r></w:del><w:r><w:drawing/></w:r></w:p>',
   });
-  const word = convertFile(docx);
+  const word = await convertFile(docx);
   assert.match(word.markdown, /^## Määrittely$/m, 'suomenkielinen tyylitunniste Otsikko1 → heading 1');
   assert.match(word.markdown, /Asiakas & tilaus\./);
   assert.match(word.markdown, /^- Kohta\n {2}- Alakohta$/m);
@@ -102,19 +102,19 @@ test('muunnokset: Word, PowerPoint, Excel ja tukemattomat muodot', () => {
 
   const pptx = path.join(temp, 'e.pptx');
   writePptx(pptx, [{ title: 'Johdanto', bullets: ['Tavoite'], notes: 'Muistiinpano' }, { title: 'Loppu', bullets: ['Kiitos'], picture: true }]);
-  const slides = convertFile(pptx);
+  const slides = await convertFile(pptx);
   assert.ok(slides.markdown.indexOf('## Dia 1: Johdanto') < slides.markdown.indexOf('## Dia 2: Loppu'), 'järjestys presentation.xml:stä');
   assert.match(slides.markdown, /\*\*Puhujan muistiinpanot:\*\*\n\nMuistiinpano/);
   assert.equal(slides.skipped.images, 1);
 
   const xlsx = path.join(temp, 'h.xlsx');
   writeXlsx(xlsx, [['Tuote', 'Hinta'], ['Pilotti', 800]]);
-  assert.match(convertFile(xlsx).markdown, /A2="Pilotti" {2}B2=800/);
+  assert.match((await convertFile(xlsx)).markdown, /A2="Pilotti" {2}B2=800/);
 
   assert.equal(supportStatus('a.doc').supported, false);
-  assert.match(supportStatus('a.pdf').reason, /1\.18/);
+  assert.equal(supportStatus('a.pdf').supported, true);
   write(path.join(temp, 'rikki.docx'), 'ei zip');
-  assert.throws(() => convertFile(path.join(temp, 'rikki.docx')), /kelvollinen Office/);
+  await assert.rejects(() => convertFile(path.join(temp, 'rikki.docx')), /kelvollinen Office/);
 });
 
 test('inventaario, hyväksyntä, julkaisu ja erillinen haku', async () => {

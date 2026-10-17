@@ -36,7 +36,7 @@ syötekenttään** sen jälkeen kun agentti on käynnistetty.
 | **bash** | **ei tarvita** | Koko paketti on Nodea: `vnetcon-ai.mjs`, `asenna.mjs`, `kalibroi`, `moduulit`, `linkit` ja HTML-generointi. Windowsilla aja `tyokalut\vnetcon-ai\vnetcon-ai.cmd` (tai `.ps1`, tai suoraan `node tyokalut\vnetcon-ai\vnetcon-ai.mjs`); macOS/Linuxilla `./tyokalut/vnetcon-ai/vnetcon-ai` toimii kuten ennenkin. Mukana olevat `.sh`-tiedostot ovat ohuita käynnistimiä, eivät toteutusta. Myös menettelyn kartoituskomennot on kirjoitettu molemmille kuorille: jokaisessa pinoprofiilissa ([`metodi/pinot/`](metodi/pinot/)) on joka osiossa oma lohkonsa bashille ja PowerShellille, joten agentti ei ehdota Windowsilla putkia jotka kaatuisivat siellä. Lohko valitaan kuoren mukaan: Git Bash ja WSL2 käyttävät bash-lohkoja. |
 | **`claude` ja/tai `codex`** | aina | `/`-komennot ajetaan agentin sisällä. Yksi agentti riittää alkuun; oletustyönjako on dokumentointi Claudella, toteutus Codexilla. |
 | **Kirjautuminen agenttiin** | aina | Oletuksena oma tili (`claude`, `codex login`) — mitään ei tarvitse konfiguroida. Muut tarjoajat: ks. [Kenen AI-tiliä vasten ajetaan](#kenen-ai-tiliä-vasten-ajetaan). |
-| **Node.js 18+** (suositus 20 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
+| **Node.js 22.13+** (suositus 24 LTS) | aina käytännössä | `kalibroi`, `moduulit`, `linkit` ja HTML-generointi ajetaan Nodella. Claude Code vaatii sen joka tapauksessa. |
 | **git** | vahvasti suositeltu | Dokumentoinnin skooppi on `git ls-files`, ja `/synkronoi-dokumentaatio` perustuu commit-diffiin. Ilman gitiä aseta `projekti.versionhallinta: none` — silloin päivitykset tehdään käsin. **Jos projekti purettiin zipistä eikä ole vielä repo**, aja `git init`, `git add -A` ja `git commit` ennen käyttöönottoa. |
 | **`npm install`** html-generaattorissa | vain `/generoi-html` | Kertaluontoinen, vaatii verkon. Ilman sitä HTML syntyy, mutta haku ja Mermaid-kaaviot eivät toimi. |
 | **`~/.vnetcon/credentials.env`** | vain pilvitarjoajilla | Tunnisteet, kun agentti osoitetaan omaan pilvitiliin, suoraan API-avaimeen tai organisaation omaan välityspalvelimeen. |
@@ -45,7 +45,7 @@ Pythonia, bashia, Dockeria, tietokantaa tai web-palvelinta ei tarvita. Tarkistus
 yhdellä komennolla: `./tyokalut/vnetcon-ai/vnetcon-ai doctor` (Windows:
 `tyokalut\vnetcon-ai\vnetcon-ai.cmd doctor`).
 
-> **Windows: asenna Node 18+ ja Git for Windows.** Nodella ajetaan paketin
+> **Windows: asenna Node 22.13+ ja Git for Windows.** Nodella ajetaan paketin
 > työkalut, gitillä rajataan dokumentoinnin skooppi (`git ls-files`) ja
 > synkronointi. **Bashia, Git Bashia tai WSL:ää ei tarvita.** Tarkista
 > PowerShellissa: `node -v` ja `git --version`. Loput kertoo `doctor` — se on

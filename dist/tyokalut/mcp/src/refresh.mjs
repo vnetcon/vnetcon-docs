@@ -113,7 +113,7 @@ export function startRefreshController(loaded, { onError = () => {} } = {}) {
   if (!['poll', 'webhook'].includes(settings.mode)) return { stop() {} };
   let stopped = false;
   let running = false;
-  const tick = () => {
+  const tick = async () => {
     if (stopped || running) return;
     running = true;
     try {
@@ -122,7 +122,7 @@ export function startRefreshController(loaded, { onError = () => {} } = {}) {
         // Hakemistolähteet skannataan samalla välillä. Skannaus vain päivittää
         // inventaarion: se ei hyväksy eikä julkaise mitään.
         for (const source of (loaded.config.sources || []).filter((item) => item.type === 'directory')) {
-          try { scanSource(loaded, source); } catch (error) { onError(error); }
+          try { await scanSource(loaded, source); } catch (error) { onError(error); }
         }
       }
       if (settings.auto_apply) runRefreshJobs(loaded, { dueOnly: true });

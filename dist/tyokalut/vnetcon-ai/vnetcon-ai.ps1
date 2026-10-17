@@ -10,7 +10,7 @@
 $ErrorActionPreference = 'Stop'
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Error 'vnetcon-ai: node puuttuu — tarvitaan Node 18+. Asenna: https://nodejs.org'
+    Write-Error 'vnetcon-ai: node puuttuu — tarvitaan Node 22.13+. Asenna: https://nodejs.org'
     exit 1
 }
 

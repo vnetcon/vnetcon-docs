@@ -17,7 +17,7 @@ import { tunnelCommands } from './tunnel.mjs';
 import { jobDetails, listJobs } from './agent.mjs';
 import { listTrash } from './manage.mjs';
 import { detectParentProject } from './parent.mjs';
-import { exportInstructions, exportProfiles, exportSummary, exportZip, listExports, readExport, selectedExportSources } from './exporter.mjs';
+import { exportAllowed, exportInstructions, exportProfiles, exportSummary, exportZip, listExports, readExport, selectedExportSources } from './exporter.mjs';
 import { getSource, previewFile, readInventory, sourceAllowed, sourceLimits, summarise } from './sources.mjs';
 
 // Hallintakäyttöliittymä. Lukunäkymät kootaan prosessin sisällä; muutokset ajetaan
@@ -192,13 +192,13 @@ export function registerUi(app, loaded, options) {
   }, { write: true });
 
   // Viennit sisältävät koko dokumentaation, joten niiden luku vaatii admin-oikeuden
-  // ja projektirajatulle näkyvät vain viennit, joiden kaikki projektit ovat sallittuja.
+  // ja rajatulle näkyvät vain viennit, joiden kaikki projektit ja lähteet ovat sallittuja.
   const exportFor = (req, principal) => {
     requireAdmin(principal);
     const id = String(req.params.id || '');
     if (!SAFE_EXPORT.test(id)) throw httpError(400, 'Virheellinen vienti_id.');
     const record = readExport(loaded, id);
-    if (!exportVisible(principal, record)) throw httpError(403, 'Käyttöoikeus viennin projekteihin puuttuu.');
+    if (!exportVisible(loaded, principal, record)) throw httpError(403, 'Käyttöoikeus viennin projekteihin tai lähteisiin puuttuu.');
     return record;
   };
   api('get', '/export-profiles', (_req, principal) => {
@@ -207,7 +207,7 @@ export function registerUi(app, loaded, options) {
   });
   api('get', '/exports', (_req, principal) => {
     requireAdmin(principal);
-    return { exports: listExports(loaded).filter((record) => exportVisible(principal, record)).map((record) => exportSummary(loaded, record)) };
+    return { exports: listExports(loaded).filter((record) => exportVisible(loaded, principal, record)).map((record) => exportSummary(loaded, record)) };
   });
   api('get', '/exports/:id', (req, principal) => {
     const record = exportFor(req, principal);
@@ -320,7 +320,10 @@ function allowExportArgs(loaded, principal, action, args) {
     const value = index === -1 ? '' : args[index].startsWith('--project=') ? args[index].slice(10) : args[index + 1] || '';
     projects = value.split(',').map((item) => item.trim()).filter(Boolean);
   } else if (['recreate', 'remove'].includes(action) && SAFE_EXPORT.test(String(args[2] || ''))) {
-    try { projects = readExport(loaded, args[2]).manifest.projects.map((project) => project.project_id); } catch { return; }
+    let manifest;
+    try { manifest = readExport(loaded, args[2]).manifest; } catch { return; }
+    if (!exportAllowed(loaded, principal, manifest)) throw httpError(403, 'Käyttöoikeus viennin projekteihin tai lähteisiin puuttuu.');
+    return;
   }
   const denied = principal.projects ? projects.filter((projectId) => !principal.projects.includes(projectId)) : [];
   if (denied.length) throw httpError(403, `Käyttöoikeus projektiin puuttuu: ${denied.join(', ')}`);
@@ -341,9 +344,8 @@ function allowExportArgs(loaded, principal, action, args) {
   }
 }
 
-function exportVisible(principal, record) {
-  if (!principal.projects) return true;
-  return record.manifest.projects.every((project) => principal.projects.includes(project.project_id));
+function exportVisible(loaded, principal, record) {
+  return exportAllowed(loaded, principal, record.manifest);
 }
 
 const GUIDES = ['README.md', 'tyokalut/mcp/README.md'];

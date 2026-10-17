@@ -1,11 +1,11 @@
 # Source materials: documents outside the code
 
 > 🇫🇮 [Suomeksi](lahdeaineistot.md) · [Back to the main guide](../README.en.md) ·
-> [Export](export.md)
+> [Export](export.md) · [Without code](without-code.md)
 
 An organisation's knowledge is not only in the code. Specifications, contract
 appendices, architecture and training decks and process descriptions live in
-Word, PowerPoint and Excel files. They are maintained outside the project's Git,
+Word, PowerPoint, Excel and PDF files. They are maintained outside the project's Git,
 for example on a network drive, in OneDrive or in SharePoint.
 
 **Source materials** bring these documents into MCP and exports as a source of
@@ -14,7 +14,8 @@ their own:
 - **A different kind of information.** Code documentation is verified against
   the code and bound to a commit. Source material is a human statement about how
   things should be or once were. It is always labelled: `kind: lahdeaineisto`,
-  `verified_against_code: false`.
+  `verified_against_code: false`. The human-readable label depends on whether
+  the source is linked to projects ([Labels](#labels)).
 - **A different source.** Source material has no repository and no commit. The
   version is a per-file content hash, and the files stay where they are
   maintained. They are not copied into the project's Git.
@@ -28,12 +29,36 @@ their own:
 | Word (.docx) | Headings (including localised Word styles), paragraphs, lists, tables and footnotes. Tracked deletions are skipped |
 | PowerPoint (.pptx) | Slides in order: title, text, tables and speaker notes |
 | Excel (.xlsx) | Sheets, ranges and values (`xlsx-kartta.mjs`) |
+| PDF (.pdf) | Text page by page (`## Sivu n`), as lines and paragraphs. See [PDF](#pdf) |
 | Markdown (.md), text (.txt) | As is |
 
 Images, charts, macros and embedded objects are skipped, and their count is
-shown in the conversion header. Not supported: PDF (coming), scanned documents
-and the old .doc, .ppt, .xls and .xlsb formats. They appear in the file list as
-*ei tuettu* (not supported) with the reason.
+shown in the conversion header. Not supported: scanned documents and the old
+.doc, .ppt, .xls and .xlsb formats. They appear in the file list as *ei tuettu*
+(not supported) with the reason.
+
+### PDF
+
+PDFs are read with pdf.js (`pdfjs-dist`), which is loaded only when a PDF is
+converted. The PDF's scripts and forms are not run, and fonts are not loaded.
+
+- **Page numbers are kept.** Every page is a search section of its own, and
+  `search_sources` results carry the field `page`.
+- **Structure is not kept.** A PDF has no reliable heading or table structure,
+  so the text is assembled into lines and paragraphs. Table rows stay rows. The
+  conversion header says so, and shows the PDF's title, author and creation
+  date when available.
+- **A scanned PDF** (more than half of the pages are images without text) gets
+  the state *ei tuettu*: text recognition (OCR) is not supported. From a
+  partly scanned PDF the text is taken, and pages without text are listed in
+  the header.
+- **A password-protected or damaged PDF** gets the state *virhe* (error).
+- **Limits:** up to 2000 pages and 60 seconds per file.
+- **Quality depends on the producer**, for example multi-column layouts and
+  headers and footers. Preview before approving.
+
+A failed conversion is not retried on every scan. It is retried when the file
+changes.
 
 Limits: source file up to 50 MB, conversion up to 5 MB. They can be changed in
 the configuration (`sources_defaults.max_file_bytes`, `max_converted_bytes`).
@@ -109,13 +134,30 @@ Scanning detects changes by content hash. When polling is enabled
 | Tool | What it does |
 |---|---|
 | `list_sources` | The channel's sources the user may see (optionally those linked to one project) |
-| `search_sources` | Search within one source. Results carry `kind: lahdeaineisto` and `verified_against_code: false` |
+| `search_sources` | Search within one source. Results carry `kind: lahdeaineisto` and `verified_against_code: false`, and for a PDF also `page` |
 | `fetch_source_document` | One source document with its header |
 
 Project search (`search`) never returns source material, and source search never
-returns code documentation. The server instructions tell the AI client to say
-when an answer is based on source material and, in a conflict, to rely on the
-code documentation for how the system is implemented.
+returns code documentation. The server instructions depend on the channel's
+content:
+
+- **Projects and sources:** the instructions tell the AI client to say when an
+  answer is based on source material and, in a conflict, to rely on the code
+  documentation for how the system is implemented.
+- **Sources only:** the instructions say the knowledge base is approved source
+  material, and tell the client to start with `list_sources` and to mention the
+  source, file and page. See [Without code](without-code.md).
+
+## Labels
+
+| Source | Document header |
+|---|---|
+| Linked to projects | **Lähdeaineisto, ei tarkistettu koodia vasten** (source material, not verified against the code) |
+| Not linked to projects | **Hyväksytty lähdeaineisto** (approved source material) |
+
+The header also shows the source, file, modification date, approval date, owner,
+classification and hash. The machine-readable field
+`verified_against_code: false` is always present.
 
 ## Access control
 
@@ -146,9 +188,11 @@ See [`metodi/konventiot.md`](../../../metodi/konventiot.md) section 4 (Finnish).
 
 `export create … --include-sources` adds the channel's sources linked to the
 exported projects (or `--source <id,…>`). They are separate files
-`70-lahdeaineisto-<source>.md`, labelled "not verified against the code", and
-the instructions include a rule for using them. Original files are never
-exported. See [Export](export.md).
+`70-lahdeaineisto-<source>.md`, labelled as in [Labels](#labels), and the
+instructions include a rule for using them. `--source` without `--project`
+exports source material only. A large source is split into parts by the
+profile's file size limit. Original files are never exported. See
+[Export](export.md).
 
 ## Storage
 

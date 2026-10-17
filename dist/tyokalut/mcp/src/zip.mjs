@@ -1,24 +1,11 @@
 import zlib from 'node:zlib';
 import { UserError } from './errors.mjs';
 
-// Minimaalinen zip-kirjoittaja ja -lukija ilman riippuvuuksia. zlib.crc32 puuttuu
-// Node 18:sta, joten CRC32 lasketaan omalla taulukolla. Nimet ovat UTF-8:aa
+// Minimaalinen zip-kirjoittaja ja -lukija ilman riippuvuuksia. Nimet ovat UTF-8:aa
 // (yleinen lippu, bitti 11), joten ääkköset säilyvät.
 
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let index = 0; index < 256; index += 1) {
-    let value = index;
-    for (let bit = 0; bit < 8; bit += 1) value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
-    table[index] = value >>> 0;
-  }
-  return table;
-})();
-
 export function crc32(buffer) {
-  let crc = 0xffffffff;
-  for (const byte of buffer) crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  return (crc ^ 0xffffffff) >>> 0;
+  return zlib.crc32(buffer);
 }
 
 function dosDateTime(date) {

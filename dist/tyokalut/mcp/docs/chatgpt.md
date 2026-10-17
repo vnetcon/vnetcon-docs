@@ -16,7 +16,7 @@ siihen OpenAI Secure MCP Tunnelin kautta. Kaikki tarvittava on
 ## Esivaatimukset
 
 - Git
-- Node.js 18 tai uudempi ja npm
+- Node.js 22.13 tai uudempi ja npm
 - Emoprojekti Git-repositoriona
 - vnetcon-docs-paketti (`vnetcon-docs-<versio>.zip`)
 - ChatGPT Business-, Enterprise- tai Edu-workspace, jossa omat MCP-yhteydet on

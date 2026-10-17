@@ -27,6 +27,7 @@ import {
   revokeWebhookToken,
 } from './auth.mjs';
 import { UserError } from './errors.mjs';
+import { nodeSupported } from './node-version.mjs';
 import { inspectRepository, resolveRef, revisionKey, separateDocs } from './git.mjs';
 import { serveStdio } from './mcp-server.mjs';
 import { isLoopback, serveHttp, serveSetup } from './http-server.mjs';
@@ -41,7 +42,7 @@ import {
   runRefreshJobs,
   startRefreshController,
 } from './refresh.mjs';
-import { fetchDocument, listProjects, searchProject } from './search.mjs';
+import { fetchDocument, listProjects, listSources, searchProject, searchSource } from './search.mjs';
 import { helpText } from './commands.mjs';
 import { channelManageCommand, exportCommand, guidanceCommand, interfaceCommand, projectSetCommand, publicationsCommand, removeProjectCommand, trashCommand } from './manage.mjs';
 import { commandLines, computeProcess } from './process.mjs';
@@ -79,8 +80,7 @@ function info(value) {
 
 export async function main(argv) {
   try {
-    const nodeMajor = Number(process.versions.node.split('.')[0]);
-    if (nodeMajor < 18) throw new UserError(`Node.js 18 tai uudempi vaaditaan (nykyinen ${process.version}).`);
+    if (!nodeSupported()) throw new UserError(`Node.js 22.13 tai uudempi vaaditaan (nykyinen ${process.version}).`);
     await dispatch(argv);
   } catch (error) {
     if (error instanceof UserError) {
@@ -443,10 +443,21 @@ function doctorCommand(argv, loaded) {
   const { flags } = parseArgs(argv);
   const selected = flags.project ? [getProject(loaded.config, String(flags.project))] : loaded.config.projects;
   let failures = 0;
+  const codeless = !loaded.config.projects.length && (loaded.config.sources || []).length > 0;
   out(`Node ${process.version}`);
-  try { out(`Git ${run('git', ['--version'])}`); } catch (error) { failures += 1; out(`VIRHE ${error.message}`); }
+  // Ilman projekteja Gitiä ei tarvita (lähdeaineistot ilman koodia).
+  try { out(`Git ${run('git', ['--version'])}`); } catch (error) {
+    if (codeless) out(`HUOM Git puuttuu: ${error.message}. Ei tarvita ilman projekteja.`);
+    else { failures += 1; out(`VIRHE ${error.message}`); }
+  }
+  try {
+    import.meta.resolve('pdfjs-dist/legacy/build/pdf.mjs');
+    out('PDF-tuki OK (pdfjs-dist)');
+  } catch {
+    out('VAROITUS PDF-tuki puuttuu: pdfjs-dist ei ole asennettu. Aja npm ci --prefix tyokalut/mcp.');
+  }
   out(`Konfiguraatio OK: ${loaded.filename}`);
-  if (!selected.length) out('VAROITUS Projekteja ei ole lisätty.');
+  if (!selected.length) out(codeless ? 'Projekteja ei ole: tietopohja on pelkkää lähdeaineistoa.' : 'VAROITUS Projekteja ei ole lisätty.');
   for (const project of selected) {
     const refs = flags.ref ? [String(flags.ref)] : concreteRefs(project);
     for (const ref of refs) {
@@ -1000,15 +1011,23 @@ function processCommand(argv, loaded) {
 function smokeTestCommand(argv, loaded) {
   const { flags } = parseArgs(argv);
   const channel = requireFlag(flags, 'channel');
-  const projects = listProjects(loaded, channel);
-  if (!projects.length) throw new UserError('Kanavalla ei ole projekteja.');
+  const bundle = loadChannel(channel, loaded);
+  const projects = listProjects(loaded, channel, bundle);
+  const sources = listSources(loaded, channel, bundle);
+  if (!projects.length && !sources.length) throw new UserError('Kanavalla ei ole projekteja eikä lähdeaineistoja.');
   for (const project of projects) {
-    const hits = searchProject(loaded, channel, project.project_id, project.display_name, 1);
+    const hits = searchProject(loaded, channel, project.project_id, project.display_name, 1, bundle);
     if (hits.some((hit) => hit.project_id !== project.project_id)) {
       throw new UserError(`Projektieristys rikkoutui haussa: ${project.project_id}`);
     }
   }
-  out(`OK: ${channel}, bundle ${loadChannel(channel, loaded).bundle_id}, projekteja ${projects.length}`);
+  for (const source of sources) {
+    const hits = searchSource(loaded, channel, source.source_id, source.display_name || source.source_id, 3, bundle);
+    if (hits.some((hit) => hit.source_id !== source.source_id || hit.kind !== 'lahdeaineisto')) {
+      throw new UserError(`Lähde-eristys rikkoutui haussa: ${source.source_id}`);
+    }
+  }
+  out(`OK: ${channel}, bundle ${bundle.bundle_id}, projekteja ${projects.length}, lähdeaineistoja ${sources.length}`);
 }
 
 function pilotCommand(argv, loaded) {

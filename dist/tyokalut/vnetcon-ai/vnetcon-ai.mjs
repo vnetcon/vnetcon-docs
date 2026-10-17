@@ -396,7 +396,11 @@ function cmdDoctor() {
   if (fs.existsSync(path.join(JUURI, 'kalibrointiraportti.md'))) ok('kalibrointiraportti.md löytyy');
   else varo('kalibrointiraporttia ei ole — aja: vnetcon-ai kalibroi');
 
-  ok(`node ${process.version}`);
+  {
+    const [major, minor] = process.versions.node.split('.').map(Number);
+    if (major > 22 || (major === 22 && minor >= 13)) ok(`node ${process.version}`);
+    else varo(`node ${process.version}: vaaditaan 22.13 tai uudempi (MCP ja PDF-lähdeaineistot)`);
+  }
 
   if (fs.existsSync(path.join(TYOKALU_DIR, '..', 'html-generaattori', 'node_modules'))) {
     ok('html-generaattorin riippuvuudet asennettu');

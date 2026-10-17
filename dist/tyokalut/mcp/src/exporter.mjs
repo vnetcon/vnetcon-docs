@@ -8,7 +8,7 @@ import { loadChannel, storageRoot } from './publisher.mjs';
 import { listInterfaces, readSharedGuidance } from './search.mjs';
 import { readPackageVersion } from './workspace.mjs';
 import { readZip, writeZip } from './zip.mjs';
-import { getSource, SOURCE_KIND, sourceReleaseRoot } from './sources.mjs';
+import { getSource, SOURCE_KIND, sourceAllowed, sourceReleaseRoot } from './sources.mjs';
 import { assertInside, ensureDirectory, listFilesRecursive, nowIso, readJson, sha256, writeFileAtomic, writeJson } from './util.mjs';
 
 // Vientipaketti: julkaistun kanavan dokumentaatio tiedostoina AI-clientin
@@ -105,33 +105,57 @@ const TEXT = {
       `Tiedostot: ${files.join(', ')}`,
     ].join('\n'),
     guidanceInline: 'Yhteinen ohjaus ja sanasto (menee oman päättelyn edelle):',
-    sourceHeader: (source, date) => [
+    sourceHeader: (source, date, linked) => [
       `> **vnetcon-docs-vienti** · Lähdeaineisto: ${source.display_name} (\`${source.source_id}\`)${source.owner ? ` · Omistaja: ${source.owner}` : ''}`,
-      `> **Tietolaji: lähdeaineisto, ei tarkistettu koodia vasten** · Julkaisu: \`${source.release_id}\` · Viety: ${date}`,
-      `> ${'Organisaation dokumentteja (Word, PowerPoint, Excel), joita ylläpidetään muualla kuin koodissa.'}${source.classification ? ` Tietoluokka: ${source.classification}` : ''}`,
+      `> **Tietolaji: ${linked ? 'lähdeaineisto, ei tarkistettu koodia vasten' : 'hyväksytty lähdeaineisto'}** · Julkaisu: \`${source.release_id}\` · Viety: ${date}`,
+      `> ${linked ? 'Organisaation dokumentteja, joita ylläpidetään muualla kuin koodissa.' : 'Organisaation dokumentteja, jotka on hyväksytty ennen julkaisua.'}${source.classification ? ` Tietoluokka: ${source.classification}` : ''}`,
       '',
     ].join('\n'),
     sourceTitle: (source) => `Lähdeaineisto: ${source.display_name}`,
     sourceRule: '- Tiedostot `70-lahdeaineisto-*` ovat lähdeaineistoa: organisaation dokumentteja, joita ei ole tarkistettu koodia vasten. Kerro, kun vastaus perustuu niihin. Jos ne ovat ristiriidassa koodidokumentaation kanssa, kerro molemmat ja painota toteutuksen osalta koodidokumentaatiota.',
     sourceReadme: 'Tiedostot `70-lahdeaineisto-*` ovat organisaation dokumentteja, joita ei ole tarkistettu koodia vasten.',
-    readme: ({ label, classification, profile, projects, files, created, instructionsChars, guidanceMode, warnings, exportId, sourcesIncluded, sourceReadmeLine }) => [
+    sourceReadmeCodeless: 'Tiedostot `70-lahdeaineisto-*` ovat organisaation dokumentteja, jotka on hyväksytty ennen julkaisua.',
+    sourceInstructions: ({ sources, guidanceMode, files, version }) => [
+      `Vastaa kysymyksiin liitetyn lähdeaineiston perusteella: ${sources.map((source) => source.display_name).join(', ')}.`,
+      '',
+      'Säännöt:',
+      '- Käytä vain liitettyjä tiedostoja. Jos tietoa ei löydy, sano se suoraan äläkä täydennä omalla tiedollasi.',
+      `- Mainitse vastauksessa dokumentti (esim. \`Toimintaohje.docx\`), PDF:stä sivu, ja viennin versio: ${version}.`,
+      '- Dokumentit on hyväksytty ennen julkaisua. Jos dokumentit ovat keskenään ristiriidassa, kerro molemmat ja niiden muokkauspäivät.',
+      '- Tämä on kopio tietystä versiosta. Jos käyttäjä kysyy muutoksista tämän jälkeen, kerro että aineisto voi olla vanhentunut.',
+      ...(guidanceMode === 'file' ? ['- Lue yhteinen ohjaus ja sanasto tiedostosta `50-ohjaus-ja-sanasto.md`. Se menee oman päättelyn edelle.'] : []),
+      '',
+      `Tiedostot: ${files.join(', ')}`,
+    ].join('\n'),
+    readme: ({ label, classification, profile, projects, files, created, instructionsChars, guidanceMode, warnings, exportId, sources, codeless, sourceReadmeLine }) => [
       '# vnetcon-docs-vienti',
       '',
       `Vienti \`${exportId}\`, muodostettu ${created}.${label ? ` Vastaanottaja: ${label}.` : ''}`,
       classification ? `Tietoluokka: **${classification}**.` : null,
       '',
-      'Paketti sisältää julkaistun dokumentaation tiedostoina AI-clientin kontekstiksi. '
-        + 'Se on kopio tietystä versiosta: dokumentaatio ei päivity, kun koodi muuttuu.',
+      codeless
+        ? 'Paketti sisältää hyväksytyn lähdeaineiston tiedostoina AI-clientin kontekstiksi. '
+          + 'Se on kopio tietystä versiosta: aineisto ei päivity, kun dokumentteja muutetaan.'
+        : 'Paketti sisältää julkaistun dokumentaation tiedostoina AI-clientin kontekstiksi. '
+          + 'Se on kopio tietystä versiosta: dokumentaatio ei päivity, kun koodi muuttuu.',
       '',
       '## Versio',
       '',
-      '| Projekti | Haara | Lähdecommit | Julkaisu |',
-      '|---|---|---|---|',
-      ...projects.map((p) => `| ${p.display_name} (\`${p.project_id}\`) | \`${p.ref}\` | \`${p.source_commit_sha}\` | \`${p.release_id}\` |`),
-      '',
+      ...(projects.length ? [
+        '| Projekti | Haara | Lähdecommit | Julkaisu |',
+        '|---|---|---|---|',
+        ...projects.map((p) => `| ${p.display_name} (\`${p.project_id}\`) | \`${p.ref}\` | \`${p.source_commit_sha}\` | \`${p.release_id}\` |`),
+        '',
+      ] : []),
+      ...(sources.length ? [
+        '| Lähdeaineisto | Dokumentteja | Julkaisu |',
+        '|---|---|---|',
+        ...sources.map((source) => `| ${source.display_name} (\`${source.source_id}\`) | ${source.documents.length} | \`${source.release_id}\` |`),
+        '',
+      ] : []),
       `## Käyttöönotto: ${profile.label}`,
       '',
-      '1. Luo uusi projekti (tai GPT). Käytä yhtä projektia per järjestelmä ja versio.',
+      codeless ? '1. Luo uusi projekti (tai GPT) tälle aineistolle.' : '1. Luo uusi projekti (tai GPT). Käytä yhtä projektia per järjestelmä ja versio.',
       `2. Lataa kansion \`${UPLOAD_DIR}/\` kaikki tiedostot (${files.length} kpl) projektin tiedostoiksi.`,
       `3. Kopioi \`ohjeet.md\`:n sisältö projektin ohjekenttään (Instructions)${instructionsChars ? `. Pituus ${instructionsChars} merkkiä.` : '.'}`,
       guidanceMode === 'file' ? '   Yhteinen ohjaus ei mahtunut ohjekenttään, joten se on tiedostona `50-ohjaus-ja-sanasto.md`.' : null,
@@ -144,11 +168,13 @@ const TEXT = {
       '',
       '## Mitä puuttuu MCP-yhteyteen verrattuna',
       '',
-      '- Ajantasaisuus: MCP-palvelu päivittyy koodin mukana, tämä paketti ei.',
-      '- Projektien eristys: AI-clientin tiedostohaku ei pidä järjestelmiä erillään, joten käytä yhtä projektia per järjestelmä.',
+      codeless
+        ? '- Ajantasaisuus: MCP-palvelu päivittyy, kun muuttuneet dokumentit hyväksytään, tämä paketti ei.'
+        : '- Ajantasaisuus: MCP-palvelu päivittyy koodin mukana, tämä paketti ei.',
+      ...(codeless ? [] : ['- Projektien eristys: AI-clientin tiedostohaku ei pidä järjestelmiä erillään, joten käytä yhtä projektia per järjestelmä.']),
       '- Käyttöoikeudet: kaikki, joilla on pääsy AI-clientin projektiin, näkevät koko sisällön.',
       '',
-      ...(sourcesIncluded ? [sourceReadmeLine, ''] : []),
+      ...(sources.length ? [sourceReadmeLine, ''] : []),
       '`manifest.json` sisältää tunnisteet ja tiedostojen tarkistussummat.',
       ...(warnings.length ? ['', '## Varoitukset', '', ...warnings.map((item) => `- ${item}`)] : []),
       '',
@@ -189,33 +215,57 @@ const TEXT = {
       `Files: ${files.join(', ')}`,
     ].join('\n'),
     guidanceInline: 'Shared guidance and glossary (takes precedence over your own inference):',
-    sourceHeader: (source, date) => [
+    sourceHeader: (source, date, linked) => [
       `> **vnetcon-docs export** · Source material: ${source.display_name} (\`${source.source_id}\`)${source.owner ? ` · Owner: ${source.owner}` : ''}`,
-      `> **Kind: source material, not verified against the code** · Release: \`${source.release_id}\` · Exported: ${date}`,
-      `> ${'Organisation documents (Word, PowerPoint, Excel) maintained outside the code.'}${source.classification ? ` Classification: ${source.classification}` : ''}`,
+      `> **Kind: ${linked ? 'source material, not verified against the code' : 'approved source material'}** · Release: \`${source.release_id}\` · Exported: ${date}`,
+      `> ${linked ? 'Organisation documents maintained outside the code.' : 'Organisation documents approved before publication.'}${source.classification ? ` Classification: ${source.classification}` : ''}`,
       '',
     ].join('\n'),
     sourceTitle: (source) => `Source material: ${source.display_name}`,
     sourceRule: '- Files `70-lahdeaineisto-*` are source material: organisation documents that have not been verified against the code. Say when your answer is based on them. If they contradict the code documentation, give both and rely on the code documentation for how the system is implemented.',
     sourceReadme: 'Files `70-lahdeaineisto-*` are organisation documents that have not been verified against the code.',
-    readme: ({ label, classification, profile, projects, files, created, instructionsChars, guidanceMode, warnings, exportId, sourcesIncluded, sourceReadmeLine }) => [
+    sourceReadmeCodeless: 'Files `70-lahdeaineisto-*` are organisation documents approved before publication.',
+    sourceInstructions: ({ sources, guidanceMode, files, version }) => [
+      `Answer questions based on the attached source material: ${sources.map((source) => source.display_name).join(', ')}.`,
+      '',
+      'Rules:',
+      '- Use only the attached files. If the information is not there, say so and do not fill in from your own knowledge.',
+      `- In every answer, mention the document (e.g. \`Guideline.docx\`), the page for a PDF, and the export version: ${version}.`,
+      '- The documents were approved before publication. If documents contradict each other, give both and their modification dates.',
+      '- This is a copy of a specific version. If the user asks about later changes, say that the material may be out of date.',
+      ...(guidanceMode === 'file' ? ['- Read the shared guidance and glossary in `50-ohjaus-ja-sanasto.md`. It takes precedence over your own inference.'] : []),
+      '',
+      `Files: ${files.join(', ')}`,
+    ].join('\n'),
+    readme: ({ label, classification, profile, projects, files, created, instructionsChars, guidanceMode, warnings, exportId, sources, codeless, sourceReadmeLine }) => [
       '# vnetcon-docs export',
       '',
       `Export \`${exportId}\`, created ${created}.${label ? ` Recipient: ${label}.` : ''}`,
       classification ? `Classification: **${classification}**.` : null,
       '',
-      'The package contains the published documentation as files for an AI client. '
-        + 'It is a copy of a specific version: it does not update when the code changes.',
+      codeless
+        ? 'The package contains approved source material as files for an AI client. '
+          + 'It is a copy of a specific version: it does not update when the documents change.'
+        : 'The package contains the published documentation as files for an AI client. '
+          + 'It is a copy of a specific version: it does not update when the code changes.',
       '',
       '## Version',
       '',
-      '| Project | Branch | Source commit | Release |',
-      '|---|---|---|---|',
-      ...projects.map((p) => `| ${p.display_name} (\`${p.project_id}\`) | \`${p.ref}\` | \`${p.source_commit_sha}\` | \`${p.release_id}\` |`),
-      '',
+      ...(projects.length ? [
+        '| Project | Branch | Source commit | Release |',
+        '|---|---|---|---|',
+        ...projects.map((p) => `| ${p.display_name} (\`${p.project_id}\`) | \`${p.ref}\` | \`${p.source_commit_sha}\` | \`${p.release_id}\` |`),
+        '',
+      ] : []),
+      ...(sources.length ? [
+        '| Source material | Documents | Release |',
+        '|---|---|---|',
+        ...sources.map((source) => `| ${source.display_name} (\`${source.source_id}\`) | ${source.documents.length} | \`${source.release_id}\` |`),
+        '',
+      ] : []),
       `## Setup: ${profile.label}`,
       '',
-      '1. Create a new project (or GPT). Use one project per system and version.',
+      codeless ? '1. Create a new project (or GPT) for this material.' : '1. Create a new project (or GPT). Use one project per system and version.',
       `2. Upload all files in \`${UPLOAD_DIR}/\` (${files.length}) as project files.`,
       `3. Paste the contents of \`ohjeet.md\` into the project instructions${instructionsChars ? ` (${instructionsChars} characters).` : '.'}`,
       guidanceMode === 'file' ? '   The shared guidance did not fit into the instructions, so it is the file `50-ohjaus-ja-sanasto.md`.' : null,
@@ -228,11 +278,13 @@ const TEXT = {
       '',
       '## What is missing compared to the MCP connection',
       '',
-      '- Freshness: the MCP service updates with the code, this package does not.',
-      '- Project isolation: the AI client file search does not keep systems apart, so use one project per system.',
+      codeless
+        ? '- Freshness: the MCP service updates when changed documents are approved, this package does not.'
+        : '- Freshness: the MCP service updates with the code, this package does not.',
+      ...(codeless ? [] : ['- Project isolation: the AI client file search does not keep systems apart, so use one project per system.']),
       '- Access control: everyone with access to the AI client project sees all of the content.',
       '',
-      ...(sourcesIncluded ? [sourceReadmeLine, ''] : []),
+      ...(sources.length ? [sourceReadmeLine, ''] : []),
       '`manifest.json` contains the identifiers and file checksums.',
       ...(warnings.length ? ['', '## Warnings', '', ...warnings.map((item) => `- ${item}`)] : []),
       '',
@@ -253,8 +305,13 @@ export function exportProfiles(loaded) {
 
 export function exportOptions(flags, loaded) {
   const channelId = String(flags.channel || loaded.config.service.default_channel);
-  const projects = String(flags.project || '').split(',').map((value) => value.trim()).filter(Boolean);
-  if (!projects.length) throw new UserError('--project puuttuu. Anna yksi projekti (tai useita pilkulla erotettuna ja --multi-project).');
+  const projects = String(flags.project && flags.project !== true ? flags.project : '').split(',').map((value) => value.trim()).filter(Boolean);
+  const sourceOptions = exportSourceOptions(flags, loaded);
+  if (!projects.length && !sourceOptions.sources) {
+    throw new UserError(flags['include-sources']
+      ? '--include-sources valitsee viennin projekteihin linkitetyt lähteet. Anna --project, tai valitse lähteet: --source <id,…>.'
+      : 'Anna --project <projekti> (useita pilkulla erotettuna ja --multi-project) tai --source <lähde,…> pelkkää lähdeaineistoa varten.');
+  }
   if (projects.length > 1 && !flags['multi-project']) {
     throw new UserError('Useampi projekti samassa viennissä vaatii valitsimen --multi-project. '
       + 'AI-clientin tiedostohaku ei pidä projekteja erillään, joten oletus on yksi projekti per vienti.');
@@ -275,7 +332,7 @@ export function exportOptions(flags, loaded) {
     classification,
     include_guidance: !flags['no-guidance'],
     include_interfaces: !flags['no-interfaces'],
-    ...exportSourceOptions(flags, loaded),
+    ...sourceOptions,
   };
 }
 
@@ -454,6 +511,39 @@ function interfacesRoot(loaded) {
 }
 
 // Muodostaa paketin muistiin. Ei kirjoita mitään.
+// Rajattu käyttäjä näkee viennin vain, jos sillä on oikeus jokaiseen viennin
+// projektiin ja lähteeseen.
+export function exportAllowed(loaded, access, manifest) {
+  if (!access || (!access.projects && !access.sources)) return true;
+  const projectsOk = !access.projects || manifest.projects.every((project) => access.projects.includes(project.project_id));
+  const sourcesOk = (manifest.sources || []).every((item) => {
+    const source = (loaded.config.sources || []).find((candidate) => candidate.source_id === item.source_id);
+    return Boolean(source) && sourceAllowed(access, source);
+  });
+  return projectsOk && sourcesOk;
+}
+
+// Iso lähde jaetaan osiin, jotta yksittäinen tiedosto pysyy profiilin
+// kokorajan alla. Dokumenttia ei pilkota.
+function sourceParts(documents, maxBytes) {
+  if (!maxBytes) return [documents];
+  const parts = [];
+  let current = [];
+  let size = 0;
+  for (const document of documents) {
+    const bytes = Buffer.byteLength(document.content) + 200;
+    if (current.length && size + bytes > maxBytes * 0.95) {
+      parts.push(current);
+      current = [];
+      size = 0;
+    }
+    current.push(document);
+    size += bytes;
+  }
+  if (current.length) parts.push(current);
+  return parts;
+}
+
 export function buildExport(loaded, options, { createdAt = nowIso(), createdBy = '' } = {}) {
   const profile = exportProfiles(loaded)[options.target];
   const text = TEXT[options.language];
@@ -494,7 +584,11 @@ export function buildExport(loaded, options, { createdAt = nowIso(), createdBy =
     return { ...release, documents };
   });
   if (options.include_sources && !sources.length) warnings.push('Kanavassa ei ole lähdeaineistoja, jotka on linkitetty viennin projekteihin.');
-  const versionText = projects.map((p) => `${p.project_id}@${p.ref} ${p.source_commit_sha.slice(0, 12)}`).join(', ') + ` (${date})`;
+  // Ilman projekteja vienti on pelkkää lähdeaineistoa (käyttö ilman koodia).
+  const codeless = !projects.length;
+  const versionText = (codeless
+    ? sources.map((source) => `${source.source_id} ${source.digest.slice(0, 12)}`)
+    : projects.map((p) => `${p.project_id}@${p.ref} ${p.source_commit_sha.slice(0, 12)}`)).join(', ') + ` (${date})`;
 
   // Tiedostosuunnitelma
   const bundleLevel = [];
@@ -552,7 +646,7 @@ export function buildExport(loaded, options, { createdAt = nowIso(), createdBy =
     rendered.push({ name: upload.name, kind: KIND, project_id: project.project_id, documents: upload.documents.map((document) => document.path), content });
   }
   for (const source of sources) {
-    const header = text.sourceHeader(source, date);
+    const header = text.sourceHeader(source, date, Boolean(source.linked_projects?.length));
     if (profile.grouping === 'per-document') {
       for (const document of source.documents) {
         rendered.push({
@@ -562,10 +656,14 @@ export function buildExport(loaded, options, { createdAt = nowIso(), createdBy =
         });
       }
     } else {
-      rendered.push({
-        name: `70-lahdeaineisto-${slug(source.source_id)}.md`,
-        kind: SOURCE_KIND, source_id: source.source_id, documents: source.documents.map((document) => document.path),
-        content: `${header}\n# ${text.sourceTitle(source)}\n\n${source.documents.map((document) => `<!-- vnetcon:document path="${document.path}" kind="${SOURCE_KIND}" -->\n## ${document.path}\n\n${transformDocument({ ...document, content: document.content.replace(/^# [^\n]*\n+/, '') }, 2, () => '', text)}`).join('\n')}`,
+      const parts = sourceParts(source.documents, profile.max_file_bytes);
+      parts.forEach((documents, index) => {
+        const suffix = parts.length > 1 ? `-${index + 1}` : '';
+        rendered.push({
+          name: `70-lahdeaineisto-${slug(source.source_id)}${suffix}.md`,
+          kind: SOURCE_KIND, source_id: source.source_id, documents: documents.map((document) => document.path),
+          content: `${header}\n# ${text.sourceTitle(source)}${parts.length > 1 ? ` (${index + 1}/${parts.length})` : ''}\n\n${documents.map((document) => `<!-- vnetcon:document path="${document.path}" kind="${SOURCE_KIND}" -->\n## ${document.path}\n\n${transformDocument({ ...document, content: document.content.replace(/^# [^\n]*\n+/, '') }, 2, () => '', text)}`).join('\n')}`,
+        });
       });
     }
   }
@@ -576,7 +674,9 @@ export function buildExport(loaded, options, { createdAt = nowIso(), createdBy =
     return names.length > 30 ? [`${names.length} (${UPLOAD_DIR}/)`] : names;
   };
   const makeInstructions = (mode) => {
-    const base = text.instructions({ projects, multi: projects.length > 1, guidanceMode: mode, files: uploadNames(), version: versionText, sourcesRule: sources.length ? text.sourceRule : '' });
+    const base = codeless
+      ? text.sourceInstructions({ sources, guidanceMode: mode, files: uploadNames(), version: versionText })
+      : text.instructions({ projects, multi: projects.length > 1, guidanceMode: mode, files: uploadNames(), version: versionText, sourcesRule: sources.length ? text.sourceRule : '' });
     return mode === 'instructions' ? `${base}\n\n${text.guidanceInline}\n\n${guidance.markdown}` : base;
   };
   if (interfaces.items.length) {
@@ -613,11 +713,12 @@ export function buildExport(loaded, options, { createdAt = nowIso(), createdBy =
   }
   if (projects.length > 1) warnings.push('Viennissä on useita projekteja. AI-clientin tiedostohaku ei pidä niitä erillään.');
 
-  const exportId = `${date.replace(/-/g, '')}-${slug(projects.length > 1 ? 'moniprojekti' : projects[0].project_id).slice(0, 36)}-${sha256(`${createdAt}\0${JSON.stringify(options)}\0${bundle.bundle_id}`).slice(0, 8)}`;
+  const subject = projects.length > 1 ? 'moniprojekti' : projects.length ? projects[0].project_id : sources.length === 1 ? sources[0].source_id : 'lahteet';
+  const exportId = `${date.replace(/-/g, '')}-${slug(subject).slice(0, 36)}-${sha256(`${createdAt}\0${JSON.stringify(options)}\0${bundle.bundle_id}`).slice(0, 8)}`;
   const readme = text.readme({
     label: options.label, classification: options.classification, profile, projects, files: uploadFiles, created: createdAt,
     instructionsChars: instructions.trim().length, guidanceMode, warnings, exportId,
-    sourcesIncluded: sources.length > 0, sourceReadmeLine: text.sourceReadme,
+    sources, codeless, sourceReadmeLine: codeless ? text.sourceReadmeCodeless : text.sourceReadme,
   });
   const entries = [
     { name: 'LUE-MINUT.md', data: readme },
@@ -641,7 +742,7 @@ export function buildExport(loaded, options, { createdAt = nowIso(), createdBy =
     projects: projects.map(({ documents, ...rest }) => ({ ...rest, document_count: documents.length })),
     guidance: { included: Boolean(guidance.markdown), mode: guidanceMode, digest: guidance.digest },
     interfaces: { included: interfaces.items.map((item) => item.id), digest: interfaces.digest },
-    sources: sources.map((source) => ({ source_id: source.source_id, display_name: source.display_name, digest: source.digest, document_count: source.documents.length })),
+    sources: sources.map((source) => ({ source_id: source.source_id, display_name: source.display_name, digest: source.digest, release_id: source.release_id, document_count: source.documents.length })),
     instructions_chars: instructions.trim().length,
     files: entries.map((entry) => {
       const meta = uploadFiles.find((file) => `${UPLOAD_DIR}/${file.name}` === entry.name);
@@ -778,6 +879,7 @@ export function exportSummary(loaded, record) {
     language: manifest.language,
     channel_id: manifest.channel_id,
     projects: manifest.projects.map(({ project_id: projectId, display_name: displayName, ref, source_commit_sha: sha }) => ({ project_id: projectId, display_name: displayName, ref, source_commit_sha: sha })),
+    sources: (manifest.sources || []).map(({ source_id: sourceId, display_name: displayName, document_count: count }) => ({ source_id: sourceId, display_name: displayName, document_count: count })),
     files: manifest.files,
     warnings: manifest.warnings,
     instructions_chars: manifest.instructions_chars,

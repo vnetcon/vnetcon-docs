@@ -41,7 +41,7 @@ tunnistuspalvelua vasten.
 ## Esivaatimukset
 
 - Git
-- Node.js 18 tai uudempi
+- Node.js 22.13 tai uudempi
 - npm ensiasennukseen
 - AI-agentti vain, jos `managed`-dokumentaatiota generoidaan
 
@@ -221,7 +221,8 @@ Yksityiskohtaiset ohjeet:
 - [AI-clienttien yhteensopivuus](docs/asiakkaat.md)
 - [ChatGPT-yhteys vaihe vaiheelta](docs/chatgpt.md)
 - [Vienti: dokumentaatio tiedostoina, kun MCP-yhteyttä ei voi käyttää](docs/vienti.md)
-- [Lähdeaineistot: Word-, PowerPoint- ja Excel-dokumentit omana lähteenään](docs/lahdeaineistot.md)
+- [Lähdeaineistot: Word-, PowerPoint-, Excel- ja PDF-dokumentit omana lähteenään](docs/lahdeaineistot.md)
+- [Lähdeaineistot ilman koodia: tietopohja pelkistä dokumenteista](docs/ilman-koodia.md)
 
 ## Hallintakäyttöliittymä
 

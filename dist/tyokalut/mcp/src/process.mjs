@@ -5,7 +5,7 @@ import { docsModeForRef, resolveRootPath } from './config.mjs';
 import { revisionKey } from './git.mjs';
 import { loadChannel } from './publisher.mjs';
 import { listInterfaces, readSharedGuidance } from './search.mjs';
-import { exportStatus, listExports } from './exporter.mjs';
+import { exportAllowed, exportStatus, listExports } from './exporter.mjs';
 import { readInventory, sourceAllowed, sourceDigest, approvedDocuments, summarise } from './sources.mjs';
 import { readWorkspaceState } from './workspace.mjs';
 import { DEFAULT_HTTP, isLoopbackHost, mcpEndpoint, storedTunnel, tunnelCommands } from './tunnel.mjs';
@@ -65,14 +65,25 @@ export function computeProcess(loaded, access = {}, running = null) {
 
   const drafts = listInterfaces(loaded, '', { includeDrafts: true }).filter((item) => item.status === 'draft');
   const guidance = readSharedGuidance(loaded);
+  // Käyttö ilman koodia: lähdeaineistot ilman projekteja on valmis tila, ei
+  // keskeneräinen. Järjestelmien dokumentaation voi lisätä myöhemmin.
+  const codeless = !loaded.config.projects.length && (loaded.config.sources || []).length > 0;
+  const channelContent = [
+    ...Object.entries(channel?.project_refs || {}).map(([p, r]) => `${p}@${r}`),
+    ...(channel?.sources || []).map((sourceId) => `lähde ${sourceId}`),
+  ];
   const workspace = [
     step('tyotila', 'MCP-työtila', DONE, loaded.root, null, [['init']]),
-    step('projektit', 'Projektit lisätty', projects.length ? DONE : TODO,
-      projects.length ? `${projects.length} projektia` : 'Lisää emoprojekti tai ulkopuolisia projekteja.',
+    step('projektit', 'Projektit lisätty', projects.length ? DONE : codeless ? INFO : TODO,
+      projects.length ? `${projects.length} projektia`
+        : codeless ? 'Ei projekteja: tietopohja on pelkkää lähdeaineistoa. Järjestelmien dokumentaation voi lisätä myöhemmin samaan tietopohjaan.'
+          : 'Lisää emoprojekti tai ulkopuolisia projekteja, tai aloita lähdeaineistoista.',
       { tab: 'projektit', label: 'Lisää projekti' }, [['add-project', '--id', '<tunnus>', '--path', '<repo>', '--refs', 'main', '--docs-mode', 'repository']]),
-    step('kanava', 'Julkaisukanava', channel && Object.keys(channel.project_refs || {}).length ? DONE : TODO,
-      channel ? `${channelId}: ${Object.entries(channel.project_refs || {}).map(([p, r]) => `${p}@${r}`).join(', ') || 'ei projekteja'}` : `Oletuskanavaa ${channelId} ei ole.`,
-      { tab: 'projektit', label: 'Kanavat' }, [['channel', 'create', channelId], ['channel', 'set-ref', channelId, '<projekti>', '<haara>']]),
+    step('kanava', 'Julkaisukanava', channel && channelContent.length ? DONE : TODO,
+      channel ? `${channelId}: ${channelContent.join(', ') || 'ei projekteja eikä lähdeaineistoja'}` : `Oletuskanavaa ${channelId} ei ole.`,
+      { tab: 'projektit', label: 'Kanavat' }, codeless
+        ? [['channel', 'create', channelId], ['channel', 'add-source', channelId, '<lähde>']]
+        : [['channel', 'create', channelId], ['channel', 'set-ref', channelId, '<projekti>', '<haara>']]),
     publishStep(loaded, channelId, channel, bundle),
     step('yhteinen-ohjaus', 'Yhteinen ohjaus ja integraatiot',
       drafts.length ? PARTIAL : INFO,
@@ -82,7 +93,7 @@ export function computeProcess(loaded, access = {}, running = null) {
     sourcesStep(loaded, access, channelId, bundle),
     exportsStep(loaded, access),
   ];
-  return { workspace, connection: connectionSteps(loaded, bundle, channelId, running), projects: projectProcesses, default_channel: channelId };
+  return { workspace, connection: connectionSteps(loaded, bundle, channelId, running), projects: projectProcesses, default_channel: channelId, codeless };
 }
 
 function projectSteps(loaded, project, ref, bundle) {
@@ -239,7 +250,7 @@ function connectionSteps(loaded, bundle, channelId, running) {
       `Aja vnetcon-docs-hakemistossa omassa terminaali-ikkunassa. Pidä run käynnissä${running ? ' ja tämä käyttöliittymä auki' : ' ja MCP-palvelin (ui tai serve --transport http) käynnissä'}. ${tunnel ? '' : 'Korvaa <TUNNEL_ID> tai tallenna tunniste ensin.'}`.trim(),
       null, [['tunnel', 'prepare', 'openai']], null, { group: 'chatgpt', terminal: { bash: commands.bash, powershell: commands.powershell } }),
     step('chatgpt', 'Yhteys ChatGPT:ssä', INFO,
-      'chatgpt.com → Settings → Connectors → Connection: Tunnel, valitse tunneli. Vaatii Business-, Enterprise- tai Edu-workspacen, jossa ylläpitäjä on sallinut omat MCP-yhteydet. Kokeile: "Mitä projekteja dokumentaatiossa on?"',
+      `chatgpt.com → Settings → Connectors → Connection: Tunnel, valitse tunneli. Vaatii Business-, Enterprise- tai Edu-workspacen, jossa ylläpitäjä on sallinut omat MCP-yhteydet. Kokeile: "${bundle && !bundle.projects?.length && bundle.sources?.length ? 'Mitä lähdeaineistoja tietopohjassa on?' : 'Mitä projekteja dokumentaatiossa on?'}"`,
       null, [], null, { group: 'chatgpt' }),
   ];
 }
@@ -254,7 +265,7 @@ function publishStep(loaded, channelId, channel, bundle) {
 function sourcesStep(loaded, access, channelId, bundle) {
   const sources = (loaded.config.sources || []).filter((source) => sourceAllowed(access, source));
   if (!sources.length) {
-    return step('lahdeaineistot', 'Lähdeaineistot', INFO, 'Ei lähdeaineistoja. Organisaation Word-, PowerPoint- ja Excel-dokumentit voi tuoda MCP:hen omana lähteenään.',
+    return step('lahdeaineistot', 'Lähdeaineistot', INFO, 'Ei lähdeaineistoja. Organisaation Word-, PowerPoint-, Excel- ja PDF-dokumentit voi tuoda MCP:hen omana lähteenään.',
       { tab: 'lahteet', label: 'Lähdeaineistot' }, [['source', 'add', '--id', '<id>', '--type', 'directory', '--location', '<hakemisto>']]);
   }
   let pending = 0;
@@ -281,7 +292,7 @@ function sourcesStep(loaded, access, channelId, bundle) {
 function exportsStep(loaded, access) {
   let records = [];
   try { records = listExports(loaded); } catch { records = []; }
-  records = records.filter((record) => !access.projects || record.manifest.projects.every((project) => access.projects.includes(project.project_id)));
+  records = records.filter((record) => exportAllowed(loaded, access, record.manifest));
   const stale = records.filter((record) => exportStatus(loaded, record).status !== 'ajan-tasalla');
   return step('viennit', 'Viennit asiakkaille', stale.length ? PARTIAL : INFO,
     records.length
