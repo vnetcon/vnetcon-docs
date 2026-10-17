@@ -145,6 +145,7 @@ have separate checkouts, documentation workspaces, and releases.
 - [AI client MCP compatibility](dist/tyokalut/mcp/docs/clients.md)
 - [Suomenkielinen käyttöohje](dist/tyokalut/mcp/README.md)
 - [Architecture and implementation specification (Finnish)](dist/tyokalut/mcp/docs/arkkitehtuuri.md)
+- [Export: documentation as files when MCP cannot be used](dist/tyokalut/mcp/docs/export.md)
 
 The current version uses local filesystem storage and supports both stdio and
 Streamable HTTP. HTTP offers an open local mode, bearer tokens, username and
@@ -153,6 +154,9 @@ can be detected by polling or a protected webhook without automatically
 starting AI. The management UI (`vnetcon-ai mcp ui`, at `/ui`) covers setup and
 maintenance without the command line. AWS storage belongs to a later phase. A helper
 prints the Secure MCP Tunnel commands needed for a private ChatGPT connection.
+When MCP cannot be used, an export package can be created from a published
+channel: files and ready-made instructions for, e.g., a ChatGPT project
+(`vnetcon-ai mcp export`).
 
 ## How it is used
 

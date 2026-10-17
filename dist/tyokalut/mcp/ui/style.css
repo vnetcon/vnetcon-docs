@@ -105,3 +105,9 @@ ul.plain { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px;
 .md blockquote { margin: 8px 0; padding: 6px 12px; border-left: 3px solid var(--teal); color: var(--muted); }
 .md table { margin: 8px 0; }
 .doc.md, #ohje { white-space: normal; }
+
+/* Vienti */
+.form-label { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.choices { display: flex; gap: 6px 16px; flex-wrap: wrap; }
+.warn-text { color: var(--amber); }
+.reasons { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }

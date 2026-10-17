@@ -41,7 +41,7 @@ import {
 } from './refresh.mjs';
 import { fetchDocument, listProjects, searchProject } from './search.mjs';
 import { helpText } from './commands.mjs';
-import { channelManageCommand, guidanceCommand, interfaceCommand, projectSetCommand, publicationsCommand, removeProjectCommand, trashCommand } from './manage.mjs';
+import { channelManageCommand, exportCommand, guidanceCommand, interfaceCommand, projectSetCommand, publicationsCommand, removeProjectCommand, trashCommand } from './manage.mjs';
 import { commandLines, computeProcess } from './process.mjs';
 import { agentCommand, docsCommand } from './agent.mjs';
 import { DEFAULT_HTTP, defaultTunnelProfile, installTunnelClient, mcpEndpoint, storedTunnel, tunnelClientPaths, tunnelCommands, uninstallTunnelClient, validateTunnelId, validateTunnelProfile } from './tunnel.mjs';
@@ -120,6 +120,7 @@ async function dispatch(argv) {
     case 'agent': return agentCommand(rest, loaded);
     case 'docs': return docsCommand(rest, loaded);
     case 'publications': return publicationsCommand(rest, loaded);
+    case 'export': return exportCommand(rest, loaded);
     case 'project': return projectCommand(rest, loaded);
     case 'channel': return channelCommand(rest, loaded);
     case 'config': return configCommand(rest, loaded);

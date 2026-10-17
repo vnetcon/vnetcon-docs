@@ -135,6 +135,7 @@ ja julkaisunsa.
 - [AI-clienttien MCP-yhteensopivuus](dist/tyokalut/mcp/docs/asiakkaat.md)
 - [Local setup and command reference in English](dist/tyokalut/mcp/README.en.md)
 - [Arkkitehtuuri- ja toteutusspeksi](dist/tyokalut/mcp/docs/arkkitehtuuri.md)
+- [Vienti: dokumentaatio tiedostoina, kun MCP-yhteyttä ei voi käyttää](dist/tyokalut/mcp/docs/vienti.md)
 
 Nykyinen versio käyttää paikallista tiedostotallennusta ja tukee sekä stdio- että
 Streamable HTTP -siirtotapaa. HTTP-palvelussa ovat valittavissa avoin
@@ -143,7 +144,9 @@ kanavakohtaiset rajaukset. Git-muutokset voidaan havaita pollingilla tai
 suojatulla webhookilla ilman automaattista AI-ajoa. Hallintakäyttöliittymä
 (`vnetcon-ai mcp ui`, osoitteessa `/ui`) kattaa käyttöönoton ja ylläpidon ilman
 komentoriviä. AWS-tallennus kuuluu myöhempään vaiheeseen. ChatGPT-yhteyden
-valmisteluun on Secure MCP Tunnel -komento-ohje.
+valmisteluun on Secure MCP Tunnel -komento-ohje. Kun MCP-yhteyttä ei voi käyttää,
+julkaistusta kanavasta voi muodostaa vientipaketin: tiedostot ja valmiin
+ohjetekstin esimerkiksi ChatGPT-projektiin (`vnetcon-ai mcp export`).
 
 ## Käyttömalli
 

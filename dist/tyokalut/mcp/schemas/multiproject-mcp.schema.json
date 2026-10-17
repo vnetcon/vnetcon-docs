@@ -141,6 +141,28 @@
         }
       }
     },
+    "exports": {
+      "type": "object",
+      "properties": {
+        "language": { "enum": ["fi", "en"] },
+        "profiles": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z0-9][a-z0-9._-]{0,62}$" },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string", "minLength": 1 },
+              "grouping": { "enum": ["merged", "per-document"] },
+              "max_files": { "type": ["integer", "null"], "minimum": 1 },
+              "max_file_bytes": { "type": ["integer", "null"], "minimum": 1 },
+              "instructions_chars": { "type": ["integer", "null"], "minimum": 100 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "channels": {
       "type": "array",
       "items": {

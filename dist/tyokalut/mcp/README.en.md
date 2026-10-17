@@ -216,6 +216,7 @@ Focused guides:
 - [Git change detection and refresh](docs/refresh.md)
 - [AI client compatibility](docs/clients.md)
 - [ChatGPT connection step by step (Finnish)](docs/chatgpt.md)
+- [Export: documentation as files when MCP cannot be used](docs/export.md)
 
 ## Management UI
 
@@ -257,6 +258,7 @@ started with `serve` serves the UI at the same path; disable it with
 | Prosessi (process) | Where each project is, what remains and how to do it; connecting AI clients (the ChatGPT chain step by step) | `process` |
 | Projektit (projects) | Add, edit, remove; documentation changes and commit | `add-project`, `project set`, `remove-project`, `docs diff`, `docs commit` |
 | Kanavat ja julkaisu (channels) | Channels, refs, default channel, publishing | `channel …`, `publish`, `smoke-test` |
+| Vienti (export) | Published documentation as files and instructions for an AI client project; download, status and re-creation (admin only) | `export …` |
 | Agenttiajot (agent runs) | Setup, documentation, sync, review corrections and integrations with an agent | `agent run`, `agent answer`, `agent cancel` |
 | Yhteinen ohjaus, Integraatiot | Shared guidance and glossary, interface records | `guidance …`, `interface …` |
 | Haku (search) | The same search as AI clients | (MCP tools `search`, `fetch`) |
@@ -368,6 +370,7 @@ pushed to the source repository.
 | `bootstrap` / `refresh` | Create or update ref-specific workspaces |
 | `document` / `review` / `approve` | Manage publication-side documentation |
 | `publish` / `smoke-test` | Publish and verify an immutable bundle |
+| `export plan/create/list/show/recreate/write/remove` | Export package for an AI client when MCP cannot be used ([guide](docs/export.md)) |
 | `server configure-http` | Store the HTTP address (does not change the default transport) |
 | `server set-transport` | Select stdio or HTTP as the default transport |
 | `auth set-mode` / `auth configure-oidc` | Select and configure authentication |

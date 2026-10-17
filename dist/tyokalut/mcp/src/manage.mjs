@@ -6,6 +6,22 @@ import { UserError } from './errors.mjs';
 import { inspectRepository } from './git.mjs';
 import { listInterfaces } from './search.mjs';
 import { storageRoot } from './publisher.mjs';
+import {
+  buildExport,
+  createdByDefault,
+  exportInstructions,
+  exportOptions,
+  exportProfiles,
+  exportsForProject,
+  exportSummary,
+  listExports,
+  moveExport,
+  readExport,
+  removeExportData,
+  restoreExport,
+  saveExport,
+  writeExportTo,
+} from './exporter.mjs';
 import { runtimeRoot } from './workspace.mjs';
 import { ensureDirectory, nowIso, parseArgs, readJson, requireFlag, safeChannelId, writeFileAtomic, writeJson } from './util.mjs';
 
@@ -92,6 +108,8 @@ function restoreItem(loaded, item, force) {
     if (fs.existsSync(filename) && !force) throw new UserError(`Tiedosto on jo olemassa: ${item.file}. Käytä --force korvataksesi.`);
     ensureDirectory(path.dirname(filename));
     writeFileAtomic(filename, item.content);
+  } else if (item.kind === 'export') {
+    restoreExport(loaded, item.id, path.join(trashRoot(loaded), path.basename(String(item.dir))));
   } else {
     throw new UserError(`Tuntematon roskakorin kohde: ${item.kind}`);
   }
@@ -108,10 +126,11 @@ export function removeProjectCommand(argv, loaded) {
     .filter((channel) => channel.project_refs?.[projectId])
     .map((channel) => [channel.channel_id, channel.project_refs[projectId]]));
   const data = projectDataPaths(loaded, projectId);
+  const exports = exportsForProject(loaded, projectId).map((record) => record.export_id);
   if (!flags.confirm) {
     out(`Suunnitelma: projekti ${projectId} poistetaan konfiguraatiosta${Object.keys(channelRefs).length ? ` ja kanavista ${Object.keys(channelRefs).join(', ')}` : ''}.`);
     out(flags.purge
-      ? `--purge poistaa pysyvästi myös työtilat ja julkaisut:\n  ${data.filter((item) => fs.existsSync(item)).join('\n  ') || '(ei dataa)'}`
+      ? `--purge poistaa pysyvästi myös työtilat, julkaisut ja viennit:\n  ${[...data.filter((item) => fs.existsSync(item)), ...exports.map((id) => `vienti ${id}`)].join('\n  ') || '(ei dataa)'}`
       : 'Projekti siirtyy roskakoriin, josta sen voi palauttaa (trash restore). Työtiloja ja julkaisuja ei poisteta.');
     return out('Suorita --confirm vahvistaaksesi.');
   }
@@ -120,7 +139,8 @@ export function removeProjectCommand(argv, loaded) {
   saveBase(loaded);
   if (flags.purge) {
     for (const item of data) fs.rmSync(item, { recursive: true, force: true });
-    out(`Poistettiin projekti ${projectId} pysyvästi, myös työtilat ja julkaisut.`);
+    for (const exportId of exports) removeExportData(loaded, exportId);
+    out(`Poistettiin projekti ${projectId} pysyvästi, myös työtilat, julkaisut${exports.length ? ` ja ${exports.length} vientiä` : ''}.`);
   } else {
     const entry = moveToTrash(loaded, 'project', projectId, { project, channel_refs: channelRefs });
     out(`Projekti ${projectId} siirrettiin roskakoriin: ${entry}`);
@@ -411,4 +431,109 @@ export function publicationsCommand(argv, loaded) {
   }
   for (const dir of [...bundleDirs, ...releaseDirs]) fs.rmSync(dir, { recursive: true, force: true });
   return out(`Poistettiin ${bundleDirs.length} pakettia ja ${releaseDirs.length} julkaisua. Säilytettiin ${keptBundles.size} pakettia.`);
+}
+
+
+// --- Viennit -------------------------------------------------------------------
+
+const STATUS_TEXT = { 'ajan-tasalla': 'ajan tasalla', vanhentunut: 'vanhentunut', 'kanava-poistettu': 'kanava poistettu' };
+
+function formatSize(bytes) {
+  return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} Mt` : `${Math.max(1, Math.ceil(bytes / 1024))} kt`;
+}
+
+function printExport(manifest, heading) {
+  out(heading);
+  out(`Kanava: ${manifest.channel_id}, paketti ${manifest.bundle_id.slice(0, 12)}`);
+  out(`Kohde: ${manifest.target.name} — ${manifest.target.label}`);
+  if (manifest.label) out(`Vastaanottaja: ${manifest.label}`);
+  if (manifest.classification) out(`Tietoluokka: ${manifest.classification}`);
+  for (const project of manifest.projects) out(`Projekti: ${project.project_id}@${project.ref} ${project.source_commit_sha.slice(0, 12)} (${project.document_count} ${project.document_count === 1 ? 'dokumentti' : 'dokumenttia'})`);
+  const uploads = manifest.files.filter((file) => file.path.startsWith('tiedostot/'));
+  out(`Ladattavat tiedostot (${uploads.length}${manifest.target.max_files ? `, raja ${manifest.target.max_files}` : ''}):`);
+  for (const file of uploads) out(`  ${file.path}  ${formatSize(file.bytes)}${file.documents ? `  ${file.documents.length} ${file.documents.length === 1 ? 'dokumentti' : 'dokumenttia'}` : ''}`);
+  const guidance = { instructions: 'ohjekentässä', file: 'tiedostona 50-ohjaus-ja-sanasto.md', none: 'ei mukana' }[manifest.guidance.mode];
+  out(`Ohjeteksti: ${manifest.instructions_chars} merkkiä${manifest.target.instructions_chars ? ` (raja ${manifest.target.instructions_chars})` : ''}; yhteinen ohjaus ${guidance}`);
+  out(`Rajapintatietueet: ${manifest.interfaces.included.length ? manifest.interfaces.included.join(', ') : 'ei mukana'}`);
+  if (manifest.warnings.length) {
+    out('Varoitukset:');
+    for (const warning of manifest.warnings) out(`  - ${warning}`);
+  }
+}
+
+export function exportCommand(argv, loaded) {
+  const { positional, flags } = parseArgs(argv);
+  const action = positional[0];
+  if (action === 'profiles') {
+    const profiles = Object.values(exportProfiles(loaded));
+    if (flags.json) return out(JSON.stringify({ profiles }, null, 2));
+    for (const profile of profiles) {
+      out(`${profile.name.padEnd(18)} ${profile.label}`);
+      out(`${''.padEnd(18)} tiedostoja ${profile.max_files ?? '—'}, tiedostokoko ${profile.max_file_bytes ? formatSize(profile.max_file_bytes) : '—'}, ohjeteksti ${profile.instructions_chars ?? '—'} merkkiä`);
+    }
+    return out('Rajat ovat oletuksia: tarkista ne palvelun ohjeista. Muuta tarvittaessa: exports.profiles.<nimi> konfiguraatiossa.');
+  }
+  if (action === 'plan' || action === 'create') {
+    const options = exportOptions(flags, loaded);
+    const built = buildExport(loaded, options, { createdBy: createdByDefault() });
+    if (action === 'plan') {
+      if (flags.json) return out(JSON.stringify({ manifest: built.manifest, instructions: built.instructions }, null, 2));
+      printExport(built.manifest, 'Esikatselu (ei tallennettu):');
+      return out('Muodosta: sama komento, export create.');
+    }
+    saveExport(loaded, built);
+    if (flags.json) return out(JSON.stringify(built.manifest, null, 2));
+    printExport(built.manifest, `Vienti ${built.manifest.export_id} muodostettiin.`);
+    out(`Lataa: hallintakäyttöliittymän Vienti-välilehti tai export write ${built.manifest.export_id} --out <hakemisto|tiedosto.zip>`);
+    return undefined;
+  }
+  if (action === 'list') {
+    const records = listExports(loaded).map((record) => exportSummary(loaded, record));
+    if (flags.json) return out(JSON.stringify({ exports: records }, null, 2));
+    if (!records.length) return out('Vientejä ei ole.');
+    for (const item of records) {
+      out(`${item.export_id}  ${STATUS_TEXT[item.status] || item.status}  ${item.target}  ${item.projects.map((project) => `${project.project_id}@${project.ref}`).join(',')}${item.label ? `  ${item.label}` : ''}  ${item.created_at}`);
+    }
+    return undefined;
+  }
+  const exportId = String(positional[1] || '');
+  if (action === 'show') {
+    const record = readExport(loaded, exportId);
+    if (flags.instructions) return process.stdout.write(exportInstructions(loaded, exportId));
+    const summary = exportSummary(loaded, record);
+    if (flags.json) return out(JSON.stringify({ ...summary, manifest: record.manifest }, null, 2));
+    printExport(record.manifest, `Vienti ${exportId}, muodostettu ${record.created_at} (${record.created_by || '—'})`);
+    out(`Tila: ${STATUS_TEXT[summary.status] || summary.status}`);
+    for (const reason of summary.reasons) out(`  - ${reason}`);
+    return undefined;
+  }
+  if (action === 'recreate') {
+    const record = readExport(loaded, exportId);
+    const built = buildExport(loaded, record.options, { createdBy: createdByDefault() });
+    saveExport(loaded, built);
+    printExport(built.manifest, `Vienti ${built.manifest.export_id} muodostettiin uudelleen viennin ${exportId} valinnoilla.`);
+    return out(`Edellinen vienti ${exportId} säilyy. Poista se, kun asiakas on vaihtanut tiedostot: export remove ${exportId}`);
+  }
+  if (action === 'write') {
+    const result = writeExportTo(loaded, exportId, requireFlag(flags, 'out'));
+    return out(result.kind === 'zip' ? `Kirjoitettiin ${result.path}` : `Purettiin ${result.path}`);
+  }
+  if (action === 'remove') {
+    const record = readExport(loaded, exportId);
+    if (!flags.confirm) {
+      out(`Suunnitelma: vienti ${exportId} (${record.manifest.label || 'ei vastaanottajaa'}) poistetaan.`);
+      out(flags.purge ? '--purge poistaa sen pysyvästi.' : 'Vienti siirtyy roskakoriin, josta sen voi palauttaa.');
+      return out('Suorita --confirm vahvistaaksesi.');
+    }
+    if (flags.purge) {
+      removeExportData(loaded, exportId);
+      return out(`Poistettiin vienti ${exportId} pysyvästi.`);
+    }
+    const dir = `${nowIso().replace(/[:.]/g, '-')}-export-${exportId}.d`;
+    moveExport(loaded, exportId, path.join(trashRoot(loaded), dir));
+    const entry = moveToTrash(loaded, 'export', exportId, { dir });
+    out(`Vienti ${exportId} siirrettiin roskakoriin: ${entry}`);
+    return out(`Palauta: trash restore ${entry}`);
+  }
+  throw new UserError('Käyttö: export profiles | plan | create (--channel <k> --project <id>[,…] --target <profiili>) | list | show <id> [--instructions] | recreate <id> | write <id> --out <polku> | remove <id> [--confirm] [--purge]');
 }

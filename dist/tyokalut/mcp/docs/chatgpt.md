@@ -317,6 +317,16 @@ Avaa ChatGPT:ssä uusi keskustelu, ota yhteys käyttöön työkaluvalikosta ja k
 ChatGPT valitsee ensin projektin `list_projects`-työkalulla ja hakee sitten
 `search`- ja `fetch`-työkaluilla. Haku tehdään aina yhdestä projektista kerrallaan.
 
+## Kun tunnelia ei voida käyttää
+
+Jos Secure MCP Tunnelia ei sallita tai sen hyväksyntä on kesken, julkaistusta
+kanavasta voi muodostaa **vientipaketin**: tiedostot ja valmiin ohjetekstin
+ChatGPT-projektiin. Hallintakäyttöliittymässä välilehti **Vienti**, komentorivillä
+`export create --channel local --project <emoprojekti> --target chatgpt-projekti`.
+
+Vienti on kopio tietystä versiosta eikä päivity koodin mukana. Ks.
+[Vienti](vienti.md).
+
 ## Dokumentaation päivitys
 
 Kun emoprojektin koodi tai dokumentaatio muuttuu ja muutos on commitoitu:

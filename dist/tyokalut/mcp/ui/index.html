@@ -17,6 +17,7 @@
   <button data-tab="prosessi" class="active">Prosessi</button>
   <button data-tab="projektit">Projektit</button>
   <button data-tab="kanavat">Kanavat ja julkaisu</button>
+  <button data-tab="vienti" class="admin">Vienti</button>
   <button data-tab="ajot">Agenttiajot</button>
   <button data-tab="ohjaus">Yhteinen ohjaus</button>
   <button data-tab="integraatiot">Integraatiot</button>
@@ -95,6 +96,33 @@
       <label>Haara <input id="ref-haara" value="main"></label>
       <div id="ref-toiminto"></div>
     </div>
+  </section>
+
+  <section id="vienti" class="tab" hidden>
+    <h2>Vienti</h2>
+    <p class="hint">Kun MCP-yhteyttä ei voi käyttää, julkaistusta kanavasta muodostetaan tiedostot ja valmis ohjeteksti, jotka asiakas lataa AI-clientin projektiin (esim. ChatGPT). Vienti on kopio tietystä versiosta: taulukko näyttää, milloin kanavassa on uudempi julkaisu.</p>
+    <form id="vienti-lomake" class="form grid">
+      <label>Kanava <select name="channel"></select></label>
+      <label>Kohde <select name="target"></select></label>
+      <label>Kieli <select name="lang"><option value="fi">suomi</option><option value="en">englanti</option></select></label>
+      <label>Vastaanottaja <input name="label" placeholder="Porvoon kaupunki / tietohallinto"></label>
+      <label>Tietoluokka <input name="classification" placeholder="Sisäinen"></label>
+      <div class="wide">
+        <div class="form-label">Projekti</div>
+        <div id="vienti-projektit" class="choices"></div>
+        <label class="check"><input type="checkbox" name="multi"> Useita projekteja samaan vientiin</label>
+        <p id="vienti-moni-varoitus" class="hint warn-text" hidden>AI-clientin tiedostohaku ei pidä projekteja erillään. Suositus on yksi projekti per vienti ja per AI-clientin projekti.</p>
+      </div>
+      <div class="wide choices">
+        <label class="check"><input type="checkbox" name="guidance" checked> Yhteinen ohjaus ja sanasto</label>
+        <label class="check"><input type="checkbox" name="interfaces" checked> Rajapintatietueet (vain active, kaikki osapuolet mukana)</label>
+      </div>
+      <p id="vienti-profiili" class="hint wide"></p>
+      <div id="vienti-toiminnot" class="wide"></div>
+    </form>
+    <pre id="vienti-esikatselu" class="mono" hidden></pre>
+    <h3>Viennit</h3>
+    <div id="vientilista"></div>
   </section>
 
   <section id="ajot" class="tab" hidden>

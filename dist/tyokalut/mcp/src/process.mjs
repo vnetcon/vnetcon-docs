@@ -5,6 +5,7 @@ import { docsModeForRef, resolveRootPath } from './config.mjs';
 import { revisionKey } from './git.mjs';
 import { loadChannel } from './publisher.mjs';
 import { listInterfaces, readSharedGuidance } from './search.mjs';
+import { exportStatus, listExports } from './exporter.mjs';
 import { readWorkspaceState } from './workspace.mjs';
 import { DEFAULT_HTTP, isLoopbackHost, mcpEndpoint, storedTunnel, tunnelCommands } from './tunnel.mjs';
 import { run } from './util.mjs';
@@ -77,6 +78,7 @@ export function computeProcess(loaded, access = {}, running = null) {
       `${guidance.length} ohjaustiedostoa${drafts.length ? `, ${drafts.length} integraatioluonnosta odottaa hyväksyntää` : ''}`,
       { tab: drafts.length ? 'integraatiot' : 'ohjaus', label: drafts.length ? 'Integraatiot' : 'Yhteinen ohjaus' },
       [['guidance', 'list'], ['interface', 'list']]),
+    exportsStep(loaded, access),
   ];
   return { workspace, connection: connectionSteps(loaded, bundle, channelId, running), projects: projectProcesses, default_channel: channelId };
 }
@@ -244,6 +246,20 @@ function publishStep(loaded, channelId, channel, bundle) {
   return step('julkaisu', 'Julkaisu AI-clienteille', !bundle ? TODO : DONE,
     bundle ? `${channelId} julkaistu ${bundle.created_at}` : `Kanavaa ${channelId} ei ole julkaistu.`,
     channel ? { action: 'publish', label: 'Julkaise' } : null, [['publish', '--channel', channelId], ['smoke-test', '--channel', channelId]]);
+}
+
+// Viennit ovat varakanava asiakkaille, joilla MCP-yhteyttä ei voi käyttää.
+// Vanhentunut vienti on muistutus toimittaa asiakkaalle uusi paketti.
+function exportsStep(loaded, access) {
+  let records = [];
+  try { records = listExports(loaded); } catch { records = []; }
+  records = records.filter((record) => !access.projects || record.manifest.projects.every((project) => access.projects.includes(project.project_id)));
+  const stale = records.filter((record) => exportStatus(loaded, record).status !== 'ajan-tasalla');
+  return step('viennit', 'Viennit asiakkaille', stale.length ? PARTIAL : INFO,
+    records.length
+      ? `${records.length} vientiä${stale.length ? `, ${stale.length} vanhentunut: muodosta uudelleen ja toimita asiakkaalle` : ', kaikki ajan tasalla'}`
+      : 'Ei vientejä. Vienti tehdään, kun asiakas ei voi käyttää MCP-yhteyttä.',
+    { tab: 'vienti', label: 'Vienti' }, [['export', 'list']]);
 }
 
 function step(id, title, status, detail, ui, cli, slash = null, extra = {}) {

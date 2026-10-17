@@ -36,6 +36,16 @@ export const COMMANDS = [
   { path: ['smoke-test'], group: 'Päivitys ja julkaisu', usage: 'smoke-test --channel <kanava>', description: 'Tarkistaa julkaisun haun.', ui: true },
   { path: ['publications', 'prune'], group: 'Päivitys ja julkaisu', usage: 'publications prune [--keep <n>] [--confirm]', description: 'Poistaa vanhat julkaisut säilytyskäytännön mukaan.', ui: true, destructive: true },
 
+  // Vienti
+  { path: ['export', 'profiles'], group: 'Vienti', usage: 'export profiles [--json]', description: 'Listaa kohdeprofiilit ja niiden rajat (tiedostomäärä, tiedostokoko, ohjetekstin pituus).' },
+  { path: ['export', 'plan'], group: 'Vienti', usage: 'export plan --channel <kanava> --project <id>[,<id>…] [--multi-project] --target <profiili> [--label <vastaanottaja>] [--classification <luokka>] [--lang <fi|en>] [--no-guidance] [--no-interfaces] [--json]', description: 'Esikatselee vientipaketin: tiedostot, koot ja varoitukset. Ei kirjoita mitään.', ui: true },
+  { path: ['export', 'create'], group: 'Vienti', usage: 'export create --channel <kanava> --project <id>[,<id>…] [--multi-project] --target <profiili> [--label <vastaanottaja>] [--classification <luokka>] [--lang <fi|en>] [--no-guidance] [--no-interfaces]', description: 'Muodostaa julkaistusta kanavasta vientipaketin (tiedostot + ohjeteksti) AI-clientille, kun MCP-yhteyttä ei voi käyttää.', ui: true },
+  { path: ['export', 'list'], group: 'Vienti', usage: 'export list [--json]', description: 'Listaa viennit ja niiden tilan (ajan tasalla / vanhentunut).' },
+  { path: ['export', 'show'], group: 'Vienti', usage: 'export show <vienti> [--instructions] [--json]', description: 'Näyttää viennin tiedostot ja tilan; --instructions tulostaa ohjetekstin.' },
+  { path: ['export', 'recreate'], group: 'Vienti', usage: 'export recreate <vienti>', description: 'Muodostaa uuden viennin samoilla valinnoilla kanavan nykyisestä julkaisusta.', ui: true },
+  { path: ['export', 'write'], group: 'Vienti', usage: 'export write <vienti> --out <hakemisto|tiedosto.zip>', description: 'Kirjoittaa viennin zipiksi tai puretuksi hakemistoksi.' },
+  { path: ['export', 'remove'], group: 'Vienti', usage: 'export remove <vienti> [--confirm] [--purge]', description: 'Poistaa viennin roskakoriin. --purge poistaa pysyvästi.', ui: true, destructive: true },
+
   // Dokumentointi (agentit)
   { path: ['agent', 'run'], group: 'Dokumentointi', usage: 'agent run --project <id> [--ref <haara>] --workflow <vnetcon-init|dokumentoi|dokumentoi-kaikki|synkronoi|katselmoi|kuvaa-integraatio|yhdenmukaista> [--module <moduuli>] [--input-file <polku> | --input-stdin] [--background]', description: 'Ajaa dokumentoivan agentin ilman vuorovaikutusta. Kysymykset kirjataan ja ajoa jatketaan vastauksilla.', ui: true },
   { path: ['agent', 'list'], group: 'Dokumentointi', usage: 'agent list', description: 'Listaa agenttiajot.' },

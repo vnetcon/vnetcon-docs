@@ -26,7 +26,7 @@ export function createMcpServer(loaded, channelId, access = {}) {
   // the middle of an existing conversation.
   const bundle = loadChannel(channelId, loaded);
   const server = new McpServer(
-    { name: 'vnetcon-multiproject-docs', version: '0.3.0' },
+    { name: 'vnetcon-multiproject-docs', version: '0.4.0' },
     { instructions: 'Valitse projekti list_projects-työkalulla ja kohdista jokainen search- ja fetch-kutsu täsmälleen yhteen project_id-arvoon. '
       + 'Lue get_shared_guidance ennen kuin tulkitset käsitteitä, jotka esiintyvät useassa projektissa: se on ihmisen ylläpitämää ohjausta ja menee oman päättelyn edelle.' },
   );

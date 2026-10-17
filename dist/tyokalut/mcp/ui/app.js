@@ -4,7 +4,7 @@
 'use strict';
 
 const AUTH_KEY = 'vnetcon-mcp-auth';
-const S = { session: null, overview: null, process: null, jobs: [], guidance: [], interfaces: { interfaces: [], template: '' }, commands: [], selectedJob: null, editProject: null };
+const S = { session: null, overview: null, process: null, jobs: [], guidance: [], interfaces: { interfaces: [], template: '' }, commands: [], selectedJob: null, editProject: null, exportProfiles: [], exports: [] };
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -296,7 +296,7 @@ $('#tabs').addEventListener('click', (event) => {
 function openTab(name) {
   $$('#tabs button').forEach((item) => item.classList.toggle('active', item.dataset.tab === name));
   $$('.tab').forEach((tab) => { tab.hidden = tab.id !== name; });
-  const loaders = { ohjaus: () => loadGuidance(), integraatiot: () => loadInterfaces(), ajot: loadJobs, roskakori: loadTrash, ohjeet: () => loadGuides(), asetukset: renderSettings };
+  const loaders = { vienti: loadExports, ohjaus: () => loadGuidance(), integraatiot: () => loadInterfaces(), ajot: loadJobs, roskakori: loadTrash, ohjeet: () => loadGuides(), asetukset: renderSettings };
   if (loaders[name] && S.overview) loaders[name]();
 }
 
@@ -304,7 +304,7 @@ function openTab(name) {
 
 const STATUS = { valmis: ['ok', 'valmis'], kesken: ['warn', 'kesken'], odottaa: ['info', 'odottaa'], 'ei-koske': ['', 'ei koske'], tieto: ['', 'tieto'] };
 const FLOW = [['Työtila', ['tyotila']], ['Projektit', ['projektit']], ['Käyttöönotto', ['kayttoonotto']], ['Dokumentointi', ['dokumentointi']],
-  ['Commit', ['commit']], ['Päivitys', ['paivitys']], ['Julkaisu', ['julkaisu']], ['Yhteys', ['yhteys-julkaisu', 'http', 'tunnistus', 'tunneli', 'tunnel-client-asennus', 'tunnel-client', 'chatgpt']], ['Ylläpito', ['synkronointi', 'yhteinen-ohjaus']]];
+  ['Commit', ['commit']], ['Päivitys', ['paivitys']], ['Julkaisu', ['julkaisu']], ['Yhteys', ['yhteys-julkaisu', 'http', 'tunnistus', 'tunneli', 'tunnel-client-asennus', 'tunnel-client', 'chatgpt']], ['Ylläpito', ['synkronointi', 'yhteinen-ohjaus', 'viennit']]];
 
 // Vaiheen pieni lomake: kentät täyttävät komennon {nimi}-paikat.
 function formAction(ui) {
@@ -505,6 +505,114 @@ function fillSelects() {
     select.replaceChildren(...S.overview.projects.map((project) => el('option', { value: project.project_id }, `${project.display_name} (${project.project_id})`)));
     if (current) select.value = current;
   }
+}
+
+// --- Vienti -----------------------------------------------------------------
+
+const EXPORT_STATUS = { 'ajan-tasalla': ['ok', 'ajan tasalla'], vanhentunut: ['warn', 'vanhentunut'], 'kanava-poistettu': ['', 'kanava poistettu'] };
+
+function exportArgs(action) {
+  const form = $('#vienti-lomake');
+  const value = (name) => field(form, name).value.trim();
+  const projects = $$('#vienti-projektit input:checked').map((input) => input.value);
+  if (!projects.length) throw new Error('Valitse projekti.');
+  const args = ['export', action, '--channel', value('channel') || '<kanava>', '--project', projects.join(','), '--target', value('target') || 'chatgpt-projekti'];
+  if (projects.length > 1) args.push('--multi-project');
+  if (value('label')) args.push('--label', value('label'));
+  if (value('classification')) args.push('--classification', value('classification'));
+  if (value('lang') !== 'fi') args.push('--lang', value('lang'));
+  if (!field(form, 'guidance').checked) args.push('--no-guidance');
+  if (!field(form, 'interfaces').checked) args.push('--no-interfaces');
+  return args;
+}
+
+function renderExportForm() {
+  const form = $('#vienti-lomake');
+  const multi = field(form, 'multi').checked;
+  const selected = new Set($$('#vienti-projektit input:checked').map((input) => input.value));
+  if (!selected.size && S.overview.projects[0]) selected.add(S.overview.projects[0].project_id);
+  const first = [...selected][0];
+  fill($('#vienti-projektit'), S.overview.projects.map((project) => el('label', { class: 'check' },
+    el('input', { type: multi ? 'checkbox' : 'radio', name: 'export_project', value: project.project_id, checked: multi ? selected.has(project.project_id) : project.project_id === first }),
+    ` ${project.display_name} `, el('code', {}, project.project_id))));
+  $('#vienti-moni-varoitus').hidden = !multi;
+  const target = field(form, 'target');
+  if (!target.options.length && S.exportProfiles.length) {
+    target.replaceChildren(...S.exportProfiles.map((profile) => el('option', { value: profile.name }, profile.name)));
+    target.value = 'chatgpt-projekti';
+  }
+  const profile = S.exportProfiles.find((item) => item.name === target.value);
+  $('#vienti-profiili').textContent = profile
+    ? `${profile.label}. Rajat: tiedostoja ${profile.max_files ?? '—'}, tiedostokoko ${profile.max_file_bytes ? `${(profile.max_file_bytes / 1024 / 1024).toFixed(0)} Mt` : '—'}, ohjeteksti ${profile.instructions_chars ?? '—'} merkkiä. Rajat ovat oletuksia: tarkista ne palvelun ohjeista.`
+    : '';
+  const refreshActions = () => { plan.refresh(); create.refresh(); };
+  const plan = action('Esikatsele', () => exportArgs('plan'), { ghost: true, small: false, after: (result) => {
+    $('#vienti-esikatselu').hidden = false;
+    $('#vienti-esikatselu').textContent = result.output;
+  } });
+  const create = action('Muodosta vienti', () => exportArgs('create'), { small: false, after: async (result) => {
+    $('#vienti-esikatselu').hidden = !result.ok;
+    if (result.ok) $('#vienti-esikatselu').textContent = result.output;
+    await loadExports();
+  } });
+  fill($('#vienti-toiminnot'), el('div', { class: 'actions' }, plan, create));
+  form.oninput = (event) => {
+    if (event.target.name === 'multi' || event.target.name === 'target') { renderExportForm(); return; }
+    refreshActions();
+  };
+  form.onchange = form.oninput;
+}
+
+async function downloadExport(id) {
+  try {
+    const headers = {};
+    if (authHeader()) headers.Authorization = authHeader();
+    const response = await fetch(`api/exports/${encodeURIComponent(id)}/download`, { headers });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `HTTP ${response.status}`);
+    const url = URL.createObjectURL(await response.blob());
+    const link = el('a', { href: url, download: `vnetcon-vienti-${id}.zip` });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    setStatus(`Ladattiin vnetcon-vienti-${id}.zip`, true);
+  } catch (error) {
+    setStatus(error.message, false);
+  }
+}
+
+async function copyInstructions(id) {
+  try { await copy((await api(`/exports/${encodeURIComponent(id)}`)).instructions); } catch (error) { setStatus(error.message, false); }
+}
+
+async function loadExports() {
+  try {
+    if (!S.exportProfiles.length) S.exportProfiles = (await api('/export-profiles')).profiles;
+    S.exports = (await api('/exports')).exports;
+  } catch (error) { setStatus(error.message, false); return; }
+  renderExportForm();
+  const target = $('#vientilista');
+  if (!S.exports.length) { fill(target, el('p', { class: 'hint' }, 'Vientejä ei ole vielä muodostettu.')); return; }
+  fill(target, el('div', { class: 'table-wrap' }, el('table', {},
+    el('thead', {}, el('tr', {}, ...['Vastaanottaja', 'Projekti', 'Kohde', 'Luotu', 'Tila', ''].map((h) => el('th', {}, h)))),
+    el('tbody', {}, S.exports.map((item) => {
+      const [chipClass, chipText] = EXPORT_STATUS[item.status] || ['', item.status];
+      const files = item.files.filter((file) => file.path.startsWith('tiedostot/'));
+      return el('tr', {},
+        el('td', {}, item.label || '—', item.classification ? el('div', { class: 'hint' }, item.classification) : null, el('div', {}, el('code', {}, item.export_id))),
+        el('td', {}, item.projects.map((project) => el('div', {}, el('code', {}, `${project.project_id}@${project.ref}`), ` ${short(project.source_commit_sha)}`))),
+        el('td', {}, item.target, el('div', { class: 'hint' }, `${files.length} tiedostoa, ohje ${item.instructions_chars} merkkiä`)),
+        el('td', {}, when(item.created_at), el('div', { class: 'hint' }, item.created_by || '')),
+        el('td', {}, el('span', { class: `chip ${chipClass}` }, chipText),
+          item.reasons.length ? el('ul', { class: 'reasons' }, item.reasons.map((reason) => el('li', {}, reason))) : null,
+          item.warnings.length ? el('ul', { class: 'reasons' }, item.warnings.map((warning) => el('li', {}, `⚠ ${warning}`))) : null),
+        el('td', {}, el('div', { class: 'actions' },
+          el('button', { type: 'button', class: 'small', onclick: () => downloadExport(item.export_id) }, 'Lataa zip'),
+          el('button', { type: 'button', class: 'small ghost', onclick: () => copyInstructions(item.export_id) }, 'Kopioi ohjeteksti'),
+          el('details', { class: 'cli' }, el('summary', {}, 'Tiedostot'), el('ul', { class: 'plain' }, files.map((file) => el('li', {}, el('code', {}, file.path.replace(/^tiedostot\//, '')), ` ${Math.max(1, Math.ceil(file.bytes / 1024))} kt`)))),
+          action('Muodosta uudelleen', ['export', 'recreate', item.export_id], { ghost: item.status !== 'vanhentunut', after: () => loadExports() }),
+          deleteAction('Poista', ['export', 'remove', item.export_id], item.export_id))));
+    })))));
 }
 
 // --- Agenttiajot ------------------------------------------------------------
@@ -723,7 +831,7 @@ function renderSettings() {
 async function loadTrash() {
   let entries = [];
   try { entries = (await api('/trash')).entries; } catch (error) { setStatus(error.message, false); return; }
-  const kinds = { project: 'projekti', channel: 'kanava', interface: 'integraatio', guidance: 'ohjaus' };
+  const kinds = { project: 'projekti', channel: 'kanava', interface: 'integraatio', guidance: 'ohjaus', export: 'vienti' };
   fill($('#roskakori-sisalto'),
     entries.length ? el('div', { class: 'table-wrap' }, el('table', {},
       el('thead', {}, el('tr', {}, ...['Kohde', 'Laji', 'Poistettu', ''].map((h) => el('th', {}, h)))),
@@ -835,6 +943,7 @@ async function refresh() {
   renderJobForm();
   const active = $('#tabs button.active')?.dataset.tab;
   if (active === 'asetukset') renderSettings();
+  if (active === 'vienti') await loadExports();
 }
 
 async function start() {

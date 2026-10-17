@@ -209,7 +209,7 @@ function ensureManagedConfig(docsRoot, project, sourceRoot, loaded) {
 
 // Asennetussa tai puretussa paketissa versio on .vnetcon-docs-versio-tiedostossa;
 // lähderepossa (vnetcon-docs = dist/) se on repon juuren VERSIO-tiedostossa.
-function readPackageVersion() {
+export function readPackageVersion() {
   for (const filename of [path.join(DOCS_ROOT, '.vnetcon-docs-versio'), path.join(DOCS_ROOT, '..', 'VERSIO')]) {
     try {
       const version = fs.readFileSync(filename, 'utf8').trim();

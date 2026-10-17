@@ -15,6 +15,7 @@ import { tunnelCommands } from './tunnel.mjs';
 import { jobDetails, listJobs } from './agent.mjs';
 import { listTrash } from './manage.mjs';
 import { detectParentProject } from './parent.mjs';
+import { exportInstructions, exportProfiles, exportSummary, exportZip, listExports, readExport } from './exporter.mjs';
 
 // Hallintakäyttöliittymä. Lukunäkymät kootaan prosessin sisällä; muutokset ajetaan
 // samalla CLI:llä kuin päätteessä, jotta validointi ja logiikka eivät kahdennu.
@@ -119,8 +120,8 @@ export function registerUi(app, loaded, options) {
     });
   };
 
-  const cli = async (args, stdin) => {
-    const result = await runCli(loaded, args, stdin);
+  const cli = async (args, stdin, principal) => {
+    const result = await runCli(loaded, args, stdin, principal);
     Object.assign(loaded, loadConfig({ explicit: loaded.filename, profile: loaded.profile }));
     return result;
   };
@@ -174,7 +175,7 @@ export function registerUi(app, loaded, options) {
 
   // Kaikki muutokset: yksi rekisteröity CLI-komento kerrallaan, samat argumentit
   // kuin päätteessä. Agenttiajot käynnistetään aina taustalle.
-  api('post', '/run', async (req) => {
+  api('post', '/run', async (req, principal) => {
     const args = Array.isArray(req.body?.args) ? req.body.args.map(String) : [];
     const command = matchCommand(args);
     if (!command || !command.ui) throw httpError(400, `Komento ei ole sallittu käyttöliittymästä: ${args.slice(0, 3).join(' ')}`);
@@ -182,9 +183,78 @@ export function registerUi(app, loaded, options) {
       throw httpError(400, 'Valitsimet --config ja --profile asettaa palvelin.');
     }
     if (command.path[0] === 'agent' && ['run', 'answer'].includes(command.path[1]) && !args.includes('--background')) args.push('--background');
-    const result = await cli(args, typeof req.body?.stdin === 'string' ? req.body.stdin : undefined);
+    if (command.path[0] === 'export') allowExportArgs(loaded, principal, command.path[1], args);
+    const result = await cli(args, typeof req.body?.stdin === 'string' ? req.body.stdin : undefined, principal);
     return { ...result, args };
   }, { write: true });
+
+  // Viennit sisältävät koko dokumentaation, joten niiden luku vaatii admin-oikeuden
+  // ja projektirajatulle näkyvät vain viennit, joiden kaikki projektit ovat sallittuja.
+  const exportFor = (req, principal) => {
+    requireAdmin(principal);
+    const id = String(req.params.id || '');
+    if (!SAFE_EXPORT.test(id)) throw httpError(400, 'Virheellinen vienti_id.');
+    const record = readExport(loaded, id);
+    if (!exportVisible(principal, record)) throw httpError(403, 'Käyttöoikeus viennin projekteihin puuttuu.');
+    return record;
+  };
+  api('get', '/export-profiles', (_req, principal) => {
+    requireAdmin(principal);
+    return { profiles: Object.values(exportProfiles(loaded)) };
+  });
+  api('get', '/exports', (_req, principal) => {
+    requireAdmin(principal);
+    return { exports: listExports(loaded).filter((record) => exportVisible(principal, record)).map((record) => exportSummary(loaded, record)) };
+  });
+  api('get', '/exports/:id', (req, principal) => {
+    const record = exportFor(req, principal);
+    return { ...exportSummary(loaded, record), instructions: exportInstructions(loaded, record.export_id) };
+  });
+  app.get(`${base}/api/exports/:id/download`, async (req, res) => {
+    try {
+      const principal = await authenticateRequest(req, loaded, { loopback: options.loopback });
+      if (!principal) return res.status(401).json({ error: 'Kirjautuminen vaaditaan.', auth_mode: authMode(loaded), oidc: oidcPublic(loaded) });
+      const record = exportFor(req, principal);
+      const zip = exportZip(loaded, record.export_id);
+      // Vain metatiedot lokiin, ei sisältöä.
+      process.stderr.write(`vienti ladattu: ${record.export_id} ${principal.id} ${new Date().toISOString()}\n`);
+      res.set({
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="vnetcon-vienti-${record.export_id}.zip"`,
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      return res.send(zip);
+    } catch (error) {
+      return res.status(error.status || 400).json({ error: error.message });
+    }
+  });
+}
+
+const SAFE_EXPORT = /^[a-z0-9][a-z0-9._-]{1,62}$/;
+
+function requireAdmin(principal) {
+  if (!principal.admin) throw httpError(403, 'Viennit vaativat admin-oikeuden.');
+}
+
+// Projektirajattu ylläpitäjä saa viedä vain sallittuja projekteja.
+function allowExportArgs(loaded, principal, action, args) {
+  if (!principal.projects) return;
+  let projects = [];
+  if (action === 'plan' || action === 'create') {
+    const index = args.findIndex((value) => value === '--project' || value.startsWith('--project='));
+    const value = index === -1 ? '' : args[index].startsWith('--project=') ? args[index].slice(10) : args[index + 1] || '';
+    projects = value.split(',').map((item) => item.trim()).filter(Boolean);
+  } else if (['recreate', 'remove'].includes(action) && SAFE_EXPORT.test(String(args[2] || ''))) {
+    try { projects = readExport(loaded, args[2]).manifest.projects.map((project) => project.project_id); } catch { return; }
+  }
+  const denied = projects.filter((projectId) => !principal.projects.includes(projectId));
+  if (denied.length) throw httpError(403, `Käyttöoikeus projektiin puuttuu: ${denied.join(', ')}`);
+}
+
+function exportVisible(principal, record) {
+  if (!principal.projects) return true;
+  return record.manifest.projects.every((project) => principal.projects.includes(project.project_id));
 }
 
 const GUIDES = ['README.md', 'tyokalut/mcp/README.md'];
@@ -277,12 +347,13 @@ function refStatus(loaded, project, ref) {
   };
 }
 
-function runCli(loaded, args, stdin) {
+// Käyttöliittymän käyttäjä välitetään komennolle (esim. viennin tekijä).
+function runCli(loaded, args, stdin, principal) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLI, ...args, '--config', loaded.filename, '--profile', loaded.profile], {
       cwd: loaded.root,
       stdio: [stdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
-      env: { ...process.env, NO_COLOR: '1' },
+      env: { ...process.env, NO_COLOR: '1', ...(principal ? { VNETCON_UI_PRINCIPAL: principal.id } : {}) },
     });
     if (stdin !== undefined) child.stdin.end(stdin);
     let output = '';
