@@ -23,21 +23,35 @@ export const SAFE_EXPORT_ID = /^[a-z0-9][a-z0-9._-]{1,62}$/;
 const KIND = 'koodidokumentaatio';
 const UPLOAD_DIR = 'tiedostot';
 
-// Rajat ovat oletuksia, jotka on tarkistettava palvelun ohjeista ennen käyttöä
-// (ne vaihtelevat tilaustason mukaan). Konfiguraatio voi korvata ne:
-// exports.profiles.<nimi>.{max_files,max_file_bytes,instructions_chars,label,grouping}.
+// Rajat palveluiden ohjeista (tarkistettu 17.10.2026; checked + sources kertovat
+// mistä). Ne vaihtelevat palvelun ja tilaustason mukaan, ja konfiguraatio voi
+// korvata ne: exports.profiles.<nimi>.{max_files,max_file_bytes,instructions_chars,label,grouping}.
+// max_file_bytes on laatuun perustuva raja, ei palvelun enimmäiskoko: ChatGPT
+// lukee tekstitiedostosta enintään 2 miljoonaa tokenia, ja suomenkielinen teksti
+// vie tokeneita enemmän kuin englanti, joten 5 Mt jättää varaa.
 export const DEFAULT_PROFILES = {
   'chatgpt-projekti': {
-    label: 'ChatGPT-projekti (Business/Enterprise): projektin tiedostot ja ohjeet',
-    grouping: 'merged', max_files: 20, max_file_bytes: 5 * 1024 * 1024, instructions_chars: 8000,
+    label: 'ChatGPT-projekti (Business, Enterprise, Edu, Pro): projektin tiedostot ja ohjeet',
+    grouping: 'merged', max_files: 40, max_file_bytes: 5 * 1024 * 1024, instructions_chars: 8000,
+    checked: '2026-10-17',
+    notes: 'Plus ja Go: 25 tiedostoa, Free: 5 (aseta max_files). Kerralla voi ladata 10 tiedostoa. '
+      + 'Tiedosto enintään 512 Mt ja 2 milj. tokenia. Projektin ohjekentän pituudelle ei löytynyt virallista rajaa; '
+      + '8000 merkkiä on sama kuin Custom GPT:ssä.',
+    sources: ['https://help.openai.com/en/articles/10169521-projects-in-chatgpt', 'https://help.openai.com/en/articles/8555545-file-uploads-faq'],
   },
   'custom-gpt': {
     label: 'Custom GPT: Knowledge-tiedostot ja Instructions',
     grouping: 'merged', max_files: 20, max_file_bytes: 5 * 1024 * 1024, instructions_chars: 8000,
+    checked: '2026-10-17',
+    notes: '20 tiedostoa GPT:n elinkaaren aikana, ohjeteksti enintään 8000 merkkiä. Tiedosto enintään 512 Mt ja 2 milj. tokenia.',
+    sources: ['https://help.openai.com/en/articles/8555545-file-uploads-faq', 'https://help.openai.com/en/articles/8843948-knowledge-in-gpts'],
   },
   'claude-projekti': {
     label: 'Claude-projekti: projektin tiedostot ja ohjeet',
-    grouping: 'merged', max_files: 50, max_file_bytes: 5 * 1024 * 1024, instructions_chars: 8000,
+    grouping: 'merged', max_files: null, max_file_bytes: 30 * 1024 * 1024, instructions_chars: null,
+    checked: '2026-10-17',
+    notes: 'Tiedostojen määrää ei rajata, tiedosto enintään 30 Mt. Kun sisältö lähestyy kontekstin rajaa, Claude siirtyy RAG-hakuun.',
+    sources: ['https://support.claude.com/en/articles/8241126-what-kinds-of-documents-can-i-upload-to-claude', 'https://support.claude.com/en/articles/11473015-retrieval-augmented-generation-rag-for-projects'],
   },
   yleinen: {
     label: 'Yleinen: yksi tiedosto per dokumentti (Copilot, Gemini, arkistointi)',

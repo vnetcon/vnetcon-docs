@@ -94,23 +94,40 @@ vnetcon-vienti-<vienti>.zip
 
 ## Kohdeprofiilit
 
-| Profiili | Käyttö | Ryhmittely |
-|---|---|---|
-| `chatgpt-projekti` | ChatGPT Business/Enterprise, projektin tiedostot ja ohjeet | koostetiedostot |
-| `custom-gpt` | Custom GPT:n Knowledge ja Instructions | koostetiedostot |
-| `claude-projekti` | Claude-projekti | koostetiedostot |
-| `yleinen` | Copilot, Gemini, arkistointi | yksi tiedosto per dokumentti |
+| Profiili | Käyttö | Tiedostoja | Tiedostokoko | Ohjeteksti |
+|---|---|---|---|---|
+| `chatgpt-projekti` | ChatGPT-projekti (Business, Enterprise, Edu, Pro) | 40 | 5 Mt | 8000 merkkiä |
+| `custom-gpt` | Custom GPT:n Knowledge ja Instructions | 20 | 5 Mt | 8000 merkkiä |
+| `claude-projekti` | Claude-projekti | ei rajaa | 30 Mt | ei rajaa |
+| `yleinen` | Copilot, Gemini, arkistointi; yksi tiedosto per dokumentti | ei rajaa | ei rajaa | ei rajaa |
 
-`export profiles` näyttää rajat (tiedostomäärä, tiedostokoko, ohjetekstin
-pituus). **Rajat ovat oletuksia**, ja ne vaihtelevat palvelun ja tilaustason
-mukaan. Tarkista ne palvelun ohjeista ja muuta tarvittaessa konfiguraatiossa:
+Rajat on tarkistettu palveluiden ohjeista 17.10.2026:
+
+- **ChatGPT-projekti:** 40 tiedostoa Business-, Enterprise-, Edu- ja
+  Pro-tileillä, Plus ja Go 25, Free 5. Kerralla voi ladata 10 tiedostoa. Tiedosto
+  enintään 512 Mt ja tekstitiedosto enintään 2 miljoonaa tokenia
+  ([Projects in ChatGPT](https://help.openai.com/en/articles/10169521-projects-in-chatgpt),
+  [File uploads FAQ](https://help.openai.com/en/articles/8555545-file-uploads-faq)).
+  Projektin ohjekentän pituudelle ei löytynyt virallista rajaa, joten käytössä on
+  Custom GPT:n 8000 merkkiä.
+- **Custom GPT:** 20 tiedostoa GPT:n elinkaaren aikana, ohjeteksti enintään 8000
+  merkkiä.
+- **Claude-projekti:** tiedosto enintään 30 Mt, tiedostojen määrää ei rajata. Kun
+  sisältö lähestyy kontekstin rajaa, Claude siirtyy RAG-hakuun
+  ([tiedostot](https://support.claude.com/en/articles/8241126-what-kinds-of-documents-can-i-upload-to-claude),
+  [RAG](https://support.claude.com/en/articles/11473015-retrieval-augmented-generation-rag-for-projects)).
+- **5 Mt** on laatuun perustuva raja, ei palvelun enimmäiskoko. Se pitää
+  suomenkielisen tekstin selvästi alle 2 miljoonan tokenin.
+
+`export profiles` näyttää rajat ja huomiot. Rajat muuttuvat palveluissa, ja ne
+voi muuttaa konfiguraatiossa, esimerkiksi Plus-tilille `max_files: 25`:
 
 ```yaml
 exports:
   language: fi            # fi tai en; oletus fi
   profiles:
     chatgpt-projekti:
-      max_files: 40
+      max_files: 25       # ChatGPT Plus
     oma-profiili:
       label: Organisaation AI-portaali
       grouping: merged    # merged tai per-document

@@ -97,23 +97,39 @@ vnetcon-vienti-<export>.zip
 
 ## Target profiles
 
-| Profile | Use | Grouping |
-|---|---|---|
-| `chatgpt-projekti` | ChatGPT Business/Enterprise, project files and instructions | merged files |
-| `custom-gpt` | Custom GPT Knowledge and Instructions | merged files |
-| `claude-projekti` | Claude project | merged files |
-| `yleinen` | Copilot, Gemini, archiving | one file per document |
+| Profile | Use | Files | File size | Instructions |
+|---|---|---|---|---|
+| `chatgpt-projekti` | ChatGPT project (Business, Enterprise, Edu, Pro) | 40 | 5 MB | 8000 characters |
+| `custom-gpt` | Custom GPT Knowledge and Instructions | 20 | 5 MB | 8000 characters |
+| `claude-projekti` | Claude project | no limit | 30 MB | no limit |
+| `yleinen` | Copilot, Gemini, archiving; one file per document | no limit | no limit | no limit |
 
-`export profiles` shows the limits (file count, file size, instruction length).
-**The limits are defaults** and vary by service and plan. Check them in the
-service's documentation and override them in the configuration:
+The limits were checked against the services' documentation on 17 October 2026:
+
+- **ChatGPT project:** 40 files on Business, Enterprise, Edu and Pro, 25 on Plus
+  and Go, 5 on Free. Up to 10 files can be uploaded at once. A file can be up to
+  512 MB, and a text file up to 2 million tokens
+  ([Projects in ChatGPT](https://help.openai.com/en/articles/10169521-projects-in-chatgpt),
+  [File uploads FAQ](https://help.openai.com/en/articles/8555545-file-uploads-faq)).
+  No official limit was found for project instructions, so the Custom GPT limit
+  of 8000 characters is used.
+- **Custom GPT:** 20 files over the GPT's lifetime, instructions up to 8000 characters.
+- **Claude project:** files up to 30 MB, no limit on the number of files. When the
+  content approaches the context limit, Claude switches to RAG search
+  ([files](https://support.claude.com/en/articles/8241126-what-kinds-of-documents-can-i-upload-to-claude),
+  [RAG](https://support.claude.com/en/articles/11473015-retrieval-augmented-generation-rag-for-projects)).
+- **5 MB** is a quality limit, not the service maximum. It keeps Finnish text
+  well below 2 million tokens.
+
+`export profiles` shows the limits and notes. The limits change in the services
+and can be overridden in the configuration, for example `max_files: 25` for ChatGPT Plus:
 
 ```yaml
 exports:
   language: en            # fi or en; default fi
   profiles:
     chatgpt-projekti:
-      max_files: 40
+      max_files: 25       # ChatGPT Plus
     own-profile:
       label: Organisation AI portal
       grouping: merged    # merged or per-document

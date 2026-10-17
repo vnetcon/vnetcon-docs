@@ -543,7 +543,7 @@ function renderExportForm() {
   }
   const profile = S.exportProfiles.find((item) => item.name === target.value);
   $('#vienti-profiili').textContent = profile
-    ? `${profile.label}. Rajat: tiedostoja ${profile.max_files ?? '—'}, tiedostokoko ${profile.max_file_bytes ? `${(profile.max_file_bytes / 1024 / 1024).toFixed(0)} Mt` : '—'}, ohjeteksti ${profile.instructions_chars ?? '—'} merkkiä. Rajat ovat oletuksia: tarkista ne palvelun ohjeista.`
+    ? `${profile.label}. Rajat: tiedostoja ${profile.max_files ?? '—'}, tiedostokoko ${profile.max_file_bytes ? `${(profile.max_file_bytes / 1024 / 1024).toFixed(0)} Mt` : '—'}, ohjeteksti ${profile.instructions_chars ?? '—'} merkkiä${profile.checked ? ` (tarkistettu ${profile.checked.split('-').reverse().map(Number).join('.')})` : ''}.${profile.notes ? ` ${profile.notes}` : ''}`
     : '';
   const refreshActions = () => { plan.refresh(); create.refresh(); };
   const plan = action('Esikatsele', () => exportArgs('plan'), { ghost: true, small: false, after: (result) => {

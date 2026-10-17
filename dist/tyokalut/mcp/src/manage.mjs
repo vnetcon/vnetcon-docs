@@ -469,9 +469,10 @@ export function exportCommand(argv, loaded) {
     if (flags.json) return out(JSON.stringify({ profiles }, null, 2));
     for (const profile of profiles) {
       out(`${profile.name.padEnd(18)} ${profile.label}`);
-      out(`${''.padEnd(18)} tiedostoja ${profile.max_files ?? '—'}, tiedostokoko ${profile.max_file_bytes ? formatSize(profile.max_file_bytes) : '—'}, ohjeteksti ${profile.instructions_chars ?? '—'} merkkiä`);
+      out(`${''.padEnd(18)} tiedostoja ${profile.max_files ?? '—'}, tiedostokoko ${profile.max_file_bytes ? formatSize(profile.max_file_bytes) : '—'}, ohjeteksti ${profile.instructions_chars ?? '—'} merkkiä${profile.checked ? `, tarkistettu ${profile.checked}` : ''}`);
+      if (profile.notes) out(`${''.padEnd(18)} ${profile.notes}`);
     }
-    return out('Rajat ovat oletuksia: tarkista ne palvelun ohjeista. Muuta tarvittaessa: exports.profiles.<nimi> konfiguraatiossa.');
+    return out('Rajat muuttuvat palveluissa. Muuta tarvittaessa: exports.profiles.<nimi> konfiguraatiossa.');
   }
   if (action === 'plan' || action === 'create') {
     const options = exportOptions(flags, loaded);
