@@ -207,6 +207,7 @@ export function accessFromFlags(flags) {
   return normaliseAccess({
     channels: csv(flags.channels),
     projects: csv(flags.projects),
+    sources: csv(flags.sources),
     admin: Boolean(flags.admin),
   });
 }
@@ -218,6 +219,7 @@ function principal(id, method, record = {}) {
     method,
     channels: record.channels,
     projects: record.projects,
+    sources: record.sources,
     admin: record.admin === true,
   };
 }
@@ -226,6 +228,7 @@ function normaliseAccess(access) {
   const result = {};
   if (access.channels?.length) result.channels = [...new Set(access.channels)].sort();
   if (access.projects?.length) result.projects = [...new Set(access.projects)].sort();
+  if (access.sources?.length) result.sources = [...new Set(access.sources)].sort();
   if (access.admin) result.admin = true;
   return result;
 }
@@ -308,6 +311,8 @@ function accessFromOidcRules(payload, rules) {
   if (!rules.length) return {};
   const channels = new Set();
   const projects = new Set();
+  const sources = new Set();
+  let sourcesRestricted = false;
   let matched = 0;
   let channelsRestricted = false;
   let projectsRestricted = false;
@@ -322,11 +327,14 @@ function accessFromOidcRules(payload, rules) {
     if (rule.projects) projectsRestricted = true;
     for (const channel of rule.channels || []) channels.add(channel);
     for (const project of rule.projects || []) projects.add(project);
+    if (rule.sources) sourcesRestricted = true;
+    for (const source of rule.sources || []) sources.add(source);
   }
-  if (!matched) return { channels: [], projects: [] };
+  if (!matched) return { channels: [], projects: [], sources: [] };
   return {
     ...(channelsRestricted ? { channels: [...channels].sort() } : {}),
     ...(projectsRestricted ? { projects: [...projects].sort() } : {}),
+    ...(sourcesRestricted ? { sources: [...sources].sort() } : {}),
     ...(admin ? { admin: true } : {}),
   };
 }

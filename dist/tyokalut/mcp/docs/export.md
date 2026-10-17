@@ -81,6 +81,7 @@ vnetcon-vienti-<export>.zip
     <project>-40-datamallit.md
     50-ohjaus-ja-sanasto.md              only if it does not fit the instructions
     60-rajapinnat.md                     approved interface records
+    70-lahdeaineisto-<source>.md         only with --include-sources: source material
 ```
 
 - **The source is always a published channel.** Unpublished workspace changes are
@@ -94,6 +95,11 @@ vnetcon-vienti-<export>.zip
 - **Shared guidance and glossary** are added to the instructions when they fit
   the profile's character limit. Otherwise they become `50-ohjaus-ja-sanasto.md`.
 - **Interface records:** only `active` records whose parties are all in the export.
+- **Source material** ([Source materials](sources.md)) is included only with
+  `--include-sources` (in the UI *Lähdeaineisto*): the channel's sources linked
+  to the exported projects, or `--source <id,…>`. The files are labelled "not
+  verified against the code", and the instructions include a rule for using
+  them. Original files are never exported.
 
 ## Target profiles
 
@@ -175,7 +181,7 @@ the line *Viennit asiakkaille*.
 | Command | In the UI |
 |---|---|
 | `export profiles [--json]` | Target menu |
-| `export plan --channel <c> --project <id>[,…] [--multi-project] --target <profile> [--label …] [--classification …] [--lang fi\|en] [--no-guidance] [--no-interfaces] [--json]` | Esikatsele |
+| `export plan --channel <c> --project <id>[,…] [--multi-project] --target <profile> [--label …] [--classification …] [--lang fi\|en] [--no-guidance] [--no-interfaces] [--include-sources] [--source <source,…>] [--json]` | Esikatsele |
 | `export create …` (same options) | Muodosta vienti |
 | `export list [--json]` | Export table |
 | `export show <export> [--instructions] [--json]` | Tiedostot, Kopioi ohjeteksti |

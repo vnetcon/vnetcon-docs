@@ -18,6 +18,7 @@
   <button data-tab="projektit">Projektit</button>
   <button data-tab="kanavat">Kanavat ja julkaisu</button>
   <button data-tab="vienti" class="admin">Vienti</button>
+  <button data-tab="lahteet" class="admin">Lähdeaineistot</button>
   <button data-tab="ajot">Agenttiajot</button>
   <button data-tab="ohjaus">Yhteinen ohjaus</button>
   <button data-tab="integraatiot">Integraatiot</button>
@@ -116,6 +117,7 @@
       <div class="wide choices">
         <label class="check"><input type="checkbox" name="guidance" checked> Yhteinen ohjaus ja sanasto</label>
         <label class="check"><input type="checkbox" name="interfaces" checked> Rajapintatietueet (vain active, kaikki osapuolet mukana)</label>
+        <label class="check"><input type="checkbox" name="sources"> Lähdeaineisto (projekteihin linkitetyt lähteet, merkittynä: ei tarkistettu koodia vasten)</label>
       </div>
       <p id="vienti-profiili" class="hint wide"></p>
       <div id="vienti-toiminnot" class="wide"></div>
@@ -123,6 +125,26 @@
     <pre id="vienti-esikatselu" class="mono" hidden></pre>
     <h3>Viennit</h3>
     <div id="vientilista"></div>
+  </section>
+
+  <section id="lahteet" class="tab" hidden>
+    <h2>Lähdeaineistot</h2>
+    <p class="hint">Organisaation dokumentit (Word, PowerPoint, Excel, Markdown, teksti), joita ylläpidetään muualla kuin projektin Gitissä. Ne näkyvät AI-clienteille omana tietolajinaan: <strong>ei tarkistettu koodia vasten</strong>. Mikään tiedosto ei päädy julkaisuun ilman hyväksyntää. PDF-tuki tulee myöhemmin.</p>
+    <div id="lahdelista"></div>
+    <div id="lahde-tiedostot"></div>
+    <div id="lahde-esikatselu"></div>
+    <h3 id="lahde-lomake-otsikko">Lisää lähde</h3>
+    <form id="lahde-lomake" class="form grid">
+      <label>Tunnus <input name="id" placeholder="asiakasportaali-maarittelyt" pattern="[a-z0-9][a-z0-9._-]{1,62}"></label>
+      <label>Nimi <input name="name" placeholder="Asiakasportaalin määrittelyt"></label>
+      <label>Tyyppi <select name="type"><option value="directory">Hakemisto (verkkolevy, synkronoitu kansio)</option><option value="upload">Ladatut tiedostot</option></select></label>
+      <label class="directory-only wide">Hakemisto palvelimella <input name="location" placeholder="/mnt/yhteiset/asiakasportaali/maarittelyt"></label>
+      <label>Omistaja <input name="owner" placeholder="Tietohallinto"></label>
+      <label>Tietoluokka <input name="classification" placeholder="Sisäinen"></label>
+      <div class="wide"><div class="form-label">Projektit, joihin lähde liittyy</div><div id="lahde-projektit" class="choices"></div>
+        <p class="hint">Projektirajattu käyttäjä näkee lähteen vain, jos kaikki valitut projektit ovat hänelle sallittuja. Ilman projekteja lähde on organisaatiotason lähde.</p></div>
+      <div id="lahde-lomake-toiminnot" class="wide"></div>
+    </form>
   </section>
 
   <section id="ajot" class="tab" hidden>

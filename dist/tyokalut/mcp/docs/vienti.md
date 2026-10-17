@@ -77,6 +77,7 @@ vnetcon-vienti-<vienti>.zip
     <projekti>-40-datamallit.md
     50-ohjaus-ja-sanasto.md               vain jos ei mahdu ohjetekstiin
     60-rajapinnat.md                      hyväksytyt rajapintatietueet
+    70-lahdeaineisto-<lähde>.md           vain --include-sources: lähdeaineisto
 ```
 
 - **Lähde on aina julkaistu kanava.** Työtilan julkaisemattomat muutokset eivät
@@ -91,6 +92,11 @@ vnetcon-vienti-<vienti>.zip
   merkkirajaan. Muuten ne ovat tiedostona `50-ohjaus-ja-sanasto.md`.
 - **Rajapintatietueista** mukaan tulevat vain `active`-tietueet, joiden kaikki
   osapuolet ovat viennissä.
+- **Lähdeaineisto** ([Lähdeaineistot](lahdeaineistot.md)) tulee mukaan vain
+  valinnalla `--include-sources` (käyttöliittymässä *Lähdeaineisto*): kanavan
+  lähteet, jotka on linkitetty vietäviin projekteihin, tai `--source <id,…>`.
+  Tiedostot on merkitty "ei tarkistettu koodia vasten", ja ohjetekstissä on
+  sääntö niiden käytöstä. Alkuperäisiä tiedostoja ei viedä.
 
 ## Kohdeprofiilit
 
@@ -174,7 +180,7 @@ rivillä *Viennit asiakkaille*.
 | Komento | Käyttöliittymässä |
 |---|---|
 | `export profiles [--json]` | Kohde-valikko |
-| `export plan --channel <k> --project <id>[,…] [--multi-project] --target <profiili> [--label …] [--classification …] [--lang fi\|en] [--no-guidance] [--no-interfaces] [--json]` | Esikatsele |
+| `export plan --channel <k> --project <id>[,…] [--multi-project] --target <profiili> [--label …] [--classification …] [--lang fi\|en] [--no-guidance] [--no-interfaces] [--include-sources] [--source <lähde,…>] [--json]` | Esikatsele |
 | `export create …` (samat valinnat) | Muodosta vienti |
 | `export list [--json]` | Vientitaulukko |
 | `export show <vienti> [--instructions] [--json]` | Tiedostot, Kopioi ohjeteksti |

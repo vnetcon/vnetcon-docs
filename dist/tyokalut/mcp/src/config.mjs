@@ -150,6 +150,18 @@ export function validateConfig(config) {
       if (!ids.has(projectId)) errors.push(`${channel.channel_id}: tuntematon projekti ${projectId}`);
     }
   }
+  const sourceIds = new Set();
+  for (const source of config.sources || []) {
+    if (!source.source_id || !/^[a-z0-9][a-z0-9._-]{1,62}$/.test(source.source_id)) errors.push(`virheellinen source_id: ${source.source_id}`);
+    if (sourceIds.has(source.source_id)) errors.push(`source_id esiintyy kahdesti: ${source.source_id}`);
+    sourceIds.add(source.source_id);
+    if (!['directory', 'upload'].includes(source.type)) errors.push(`${source.source_id}: type pitää olla directory tai upload`);
+    if (source.type === 'directory' && !source.location) errors.push(`${source.source_id}: directory-lähteeltä puuttuu location`);
+    for (const projectId of source.linked_projects || []) if (!ids.has(projectId)) errors.push(`${source.source_id}: tuntematon projekti ${projectId}`);
+  }
+  for (const channel of config.channels || []) {
+    for (const sourceId of channel.sources || []) if (!sourceIds.has(sourceId)) errors.push(`${channel.channel_id}: tuntematon lähde ${sourceId}`);
+  }
   const authentication = config.runtime?.http?.authentication;
   if (authentication?.mode === 'oidc') {
     const oidc = authentication.oidc || {};
@@ -164,6 +176,7 @@ export function validateConfig(config) {
       if (rule.name) ruleNames.add(rule.name);
       for (const projectId of rule.projects || []) if (!ids.has(projectId)) errors.push(`OIDC access_rule: tuntematon projekti ${projectId}`);
       for (const channelId of rule.channels || []) if (!channelIds.has(channelId)) errors.push(`OIDC access_rule: tuntematon kanava ${channelId}`);
+      for (const sourceId of rule.sources || []) if (!sourceIds.has(sourceId)) errors.push(`OIDC access_rule: tuntematon lähde ${sourceId}`);
     }
   }
   if (errors.length) throw new UserError(`Konfiguraatio ei kelpaa:\n- ${errors.join('\n- ')}`);

@@ -61,6 +61,27 @@ tila: luonnos | valmis | vanhentunut
 `lahteet` on **päivitettävyyden ydin**: kun jokin listattu polku muuttuu,
 dokumentti tunnistetaan päivitettäväksi. Pidä se ajan tasalla.
 
+**Lähdeaineistoviite.** Jos dokumentin sisältö perustuu koodin lisäksi
+organisaation dokumenttiin (määrittely, sopimusliite, esitys), joka on tuotu
+moniprojekti-MCP:hen lähdeaineistona, viittaa siihen `lahteet`-listassa
+muodossa `lahde:<lähde>/<polku lähteessä>#<tiivisteen alku>`:
+
+```yaml
+lahteet:
+  - src/tilaukset/reitit.ts
+  - "lahde:asiakasportaali-maarittelyt/Toiminnallinen määrittely v3.docx#9f3c1a2b"
+```
+
+- Lähdeaineistoviite **ei ole koodipolku**: sitä ei tarkisteta `git ls-files`
+  -komennolla eikä käsitellä synkronoinnin commit-diffissä. Lähde ja tiiviste
+  näkyvät MCP:n `list_sources`- ja `search_sources`-työkaluissa sekä komennolla
+  `vnetcon-ai mcp source show <lähde>`.
+- Lähdeaineisto on ihmisen väite, jota ei ole tarkistettu koodia vasten. Kun
+  dokumentin väite perustuu siihen eikä koodiin, kirjoita se näkyviin
+  (esim. "määrittelyn mukaan …") ja kerro ristiriita, jos koodi tekee toisin.
+- Käytä lainausmerkkejä, jos polussa on välilyöntejä.
+- Vanhentuneen tiivisteen tunnistaa `vnetcon-ai linkit --lahteet --lahdeaineistot <mcp-työtila>`.
+
 ## 5. Pysyvät vaihe-tunnisteet
 
 Prosessi- ja liiketoimintaprosessikuvausten vaiheet numeroidaan ja niihin

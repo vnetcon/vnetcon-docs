@@ -22,6 +22,7 @@ import {
   saveExport,
   writeExportTo,
 } from './exporter.mjs';
+import { restoreSource } from './source-command.mjs';
 import { runtimeRoot } from './workspace.mjs';
 import { ensureDirectory, nowIso, parseArgs, readJson, requireFlag, safeChannelId, writeFileAtomic, writeJson } from './util.mjs';
 
@@ -42,7 +43,7 @@ export function trashRoot(loaded) {
   return path.join(loaded.root, '.multiproject', 'roskakori');
 }
 
-function moveToTrash(loaded, kind, id, payload) {
+export function moveToTrash(loaded, kind, id, payload) {
   const entry = `${nowIso().replace(/[:.]/g, '-')}-${kind}-${id}`;
   writeJson(path.join(trashRoot(loaded), `${entry}.json`), { schema_version: 1, entry, kind, id, removed_at: nowIso(), ...payload });
   return entry;
@@ -108,6 +109,8 @@ function restoreItem(loaded, item, force) {
     if (fs.existsSync(filename) && !force) throw new UserError(`Tiedosto on jo olemassa: ${item.file}. Käytä --force korvataksesi.`);
     ensureDirectory(path.dirname(filename));
     writeFileAtomic(filename, item.content);
+  } else if (item.kind === 'source') {
+    restoreSource(loaded, item);
   } else if (item.kind === 'export') {
     restoreExport(loaded, item.id, path.join(trashRoot(loaded), path.basename(String(item.dir))));
   } else {

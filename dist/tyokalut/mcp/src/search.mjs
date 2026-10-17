@@ -5,6 +5,7 @@ import { getProject, resolveRootPath } from './config.mjs';
 import { UserError } from './errors.mjs';
 import { loadChannel, storageRoot } from './publisher.mjs';
 import { listFilesRecursive } from './util.mjs';
+import { getSource, sourceReleaseRoot } from './sources.mjs';
 
 function releaseForProject(bundle, projectId, loaded) {
   if (loaded && !loaded.config.projects.some((project) => project.project_id === projectId)) {
@@ -55,8 +56,23 @@ export function searchProject(loaded, channelId, projectId, query, limit = 8, se
   if (!query.trim()) throw new UserError('Hakukysely on tyhjä.');
   const bundle = selectedBundle || loadChannel(channelId, loaded);
   const release = releaseForProject(bundle, projectId, loaded);
+  return rankChunks(loadChunks(loaded, release), query, limit).map(({ score, chunk }) => ({
+    score,
+    project_id: chunk.project_id,
+    release_id: chunk.release_id,
+    ref: chunk.ref,
+    source_commit_sha: chunk.source_commit_sha,
+    document_id: chunk.document_id,
+    section_id: chunk.section_id,
+    path: chunk.path,
+    heading: chunk.heading,
+    excerpt: chunk.content.slice(0, 1600),
+  }));
+}
+
+function rankChunks(chunks, query, limit) {
   const terms = [...new Set(query.toLocaleLowerCase('fi').split(/[^\p{L}\p{N}_-]+/u).filter((term) => term.length > 1))];
-  const hits = loadChunks(loaded, release).map((chunk) => {
+  const hits = chunks.map((chunk) => {
     const haystack = `${chunk.heading}\n${chunk.content}`.toLocaleLowerCase('fi');
     let score = 0;
     for (const term of terms) {
@@ -69,18 +85,79 @@ export function searchProject(loaded, channelId, projectId, query, limit = 8, se
     return { score, chunk };
   }).filter((hit) => hit.score > 0);
   hits.sort((a, b) => b.score - a.score || a.chunk.path.localeCompare(b.chunk.path));
-  return hits.slice(0, Math.max(1, Math.min(Number(limit) || 8, 25))).map(({ score, chunk }) => ({
+  return hits.slice(0, Math.max(1, Math.min(Number(limit) || 8, 25)));
+}
+
+// --- Lähdeaineistot ---------------------------------------------------------
+// Erillään projektihausta: lähdehaku ei palauta projektidokumentteja eikä päinvastoin.
+
+function releaseForSource(bundle, sourceId, loaded) {
+  getSource(loaded.config, sourceId);
+  const release = (bundle.sources || []).find((item) => item.source_id === sourceId);
+  if (!release) throw new UserError(`Lähde ${sourceId} ei kuulu kanavaan ${bundle.channel_id}.`);
+  return release;
+}
+
+function loadSourceChunks(loaded, release) {
+  const filename = path.join(sourceReleaseRoot(loaded, release.source_id, release.release_id), 'documents.jsonl');
+  if (!fs.existsSync(filename)) throw new UserError(`Lähteen hakuindeksi puuttuu: ${filename}`);
+  return fs.readFileSync(filename, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
+}
+
+export function listSources(loaded, channelId, selectedBundle) {
+  const bundle = selectedBundle || loadChannel(channelId, loaded);
+  const configured = new Set((loaded.config.sources || []).map((source) => source.source_id));
+  return (bundle.sources || []).filter((release) => configured.has(release.source_id)).map((release) => ({
+    kind: release.kind,
+    source_id: release.source_id,
+    display_name: release.display_name,
+    owner: release.owner,
+    classification: release.classification,
+    linked_projects: release.linked_projects,
+    release_id: release.release_id,
+    document_count: release.document_count,
+    created_at: release.created_at,
+    verified_against_code: false,
+  }));
+}
+
+export function searchSource(loaded, channelId, sourceId, query, limit = 8, selectedBundle) {
+  if (!query.trim()) throw new UserError('Hakukysely on tyhjä.');
+  const bundle = selectedBundle || loadChannel(channelId, loaded);
+  const release = releaseForSource(bundle, sourceId, loaded);
+  return rankChunks(loadSourceChunks(loaded, release), query, limit).map(({ score, chunk }) => ({
     score,
-    project_id: chunk.project_id,
+    kind: chunk.kind,
+    verified_against_code: false,
+    source_id: chunk.source_id,
     release_id: chunk.release_id,
-    ref: chunk.ref,
-    source_commit_sha: chunk.source_commit_sha,
     document_id: chunk.document_id,
     section_id: chunk.section_id,
     path: chunk.path,
+    modified: chunk.modified,
+    owner: release.owner,
     heading: chunk.heading,
     excerpt: chunk.content.slice(0, 1600),
   }));
+}
+
+export function fetchSourceDocument(loaded, channelId, sourceId, documentId, selectedBundle) {
+  const bundle = selectedBundle || loadChannel(channelId, loaded);
+  const release = releaseForSource(bundle, sourceId, loaded);
+  const chunks = loadSourceChunks(loaded, release).filter((chunk) => chunk.document_id === documentId);
+  if (chunks.length === 0) throw new UserError(`Dokumenttia ei löytynyt lähteestä ${sourceId}: ${documentId}`);
+  return {
+    kind: chunks[0].kind,
+    verified_against_code: false,
+    source_id: sourceId,
+    release_id: release.release_id,
+    document_id: documentId,
+    path: chunks[0].path,
+    modified: chunks[0].modified,
+    owner: release.owner,
+    classification: release.classification,
+    content: chunks.map((chunk) => chunk.content).join('\n\n'),
+  };
 }
 
 export function fetchDocument(loaded, channelId, projectId, documentId, selectedBundle) {

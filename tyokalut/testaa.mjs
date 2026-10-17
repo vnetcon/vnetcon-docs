@@ -570,6 +570,39 @@ process.stdout.write('\n'); him('Vahvistetut kohdat');
   if (!PIDA) fs.rmSync(v, { recursive: true, force: true });
 }
 
+// --- Lähdeaineistoviitteet (konventiot.md 4) --------------------------------
+
+process.stdout.write('\n'); him('Lähdeaineistoviitteet');
+{
+  // lahde:-viite ei ole koodipolku: --lahteet ei saa pitää sitä puuttuvana
+  // tiedostona, ja --lahdeaineistot tarkistaa sen MCP-työtilan inventaariosta.
+  const v = fs.mkdtempSync(path.join(os.tmpdir(), 'vnetcon-lahde-'));
+  fs.mkdirSync(path.join(v, 'vnetcon-docs', 'tyokalut'), { recursive: true });
+  fs.mkdirSync(path.join(v, 'vnetcon-docs', 'moduulit', 'm'), { recursive: true });
+  fs.mkdirSync(path.join(v, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(v, 'src', 'a.js'), 'x\n');
+  fs.copyFileSync(path.join(REPO, 'dist', 'tyokalut', 'tarkista-linkit.mjs'), path.join(v, 'vnetcon-docs', 'tyokalut', 'tarkista-linkit.mjs'));
+  fs.writeFileSync(path.join(v, 'vnetcon-docs', 'moduulit', 'm', 'yleiskuvaus.md'),
+    '---\nlahteet:\n  - src/a.js\n  - "lahde:maar/Määrittely v3.docx#9f3c1a"\n---\n# M\n');
+  const tyotila = path.join(v, 'mcp-tyotila');
+  const inventaario = path.join(tyotila, '.multiproject', 'sources', 'maar', 'inventory.json');
+  fs.mkdirSync(path.dirname(inventaario), { recursive: true });
+  const kirjoita = (tiiviste) => fs.writeFileSync(inventaario, JSON.stringify({ files: { 'Määrittely v3.docx': { approved_sha256: tiiviste } } }));
+  const aja = (...lisa) => ajaNode(path.join(v, 'vnetcon-docs', 'tyokalut', 'tarkista-linkit.mjs'), ['--lahteet', ...lisa]);
+  let r = aja();
+  onSama('lahde:-viite ei ole puuttuva koodipolku', 0, r.status);
+  sisaltaaTeksti('lahde:-viite lasketaan erikseen', '1 lähdeaineistoviitettä', r.stdout);
+  kirjoita(`9f3c1a${'0'.repeat(58)}`);
+  onSama('ajantasainen lahde:-viite hyväksytään', 0, aja('--lahdeaineistot', tyotila).status);
+  kirjoita('a'.repeat(64));
+  r = aja('--lahdeaineistot', tyotila);
+  onSama('vanhentunut tiiviste on varoitus, ei virhe', 0, r.status);
+  sisaltaaTeksti('vanhentunut tiiviste näytetään', 'VAROITUS', r.stdout);
+  fs.rmSync(inventaario);
+  onSama('puuttuva lähde on virhe', 1, aja('--lahdeaineistot', tyotila).status);
+  if (!PIDA) fs.rmSync(v, { recursive: true, force: true });
+}
+
 // --- Moniprojekti-MCP ------------------------------------------------------
 
 process.stdout.write('\n'); him('Moniprojekti-MCP');

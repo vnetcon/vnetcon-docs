@@ -6,6 +6,7 @@ import { UserError } from './errors.mjs';
 import { resolveRef, revisionKey } from './git.mjs';
 import { nowIso, readJson, writeJson } from './util.mjs';
 import { bootstrapProject, readWorkspaceState } from './workspace.mjs';
+import { scanSource } from './sources.mjs';
 
 const QUEUE_FILE = path.join('.multiproject', 'refresh', 'queue.json');
 
@@ -116,7 +117,14 @@ export function startRefreshController(loaded, { onError = () => {} } = {}) {
     if (stopped || running) return;
     running = true;
     try {
-      if (settings.mode === 'poll') detectChanges(loaded);
+      if (settings.mode === 'poll') {
+        detectChanges(loaded);
+        // Hakemistolähteet skannataan samalla välillä. Skannaus vain päivittää
+        // inventaarion: se ei hyväksy eikä julkaise mitään.
+        for (const source of (loaded.config.sources || []).filter((item) => item.type === 'directory')) {
+          try { scanSource(loaded, source); } catch (error) { onError(error); }
+        }
+      }
       if (settings.auto_apply) runRefreshJobs(loaded, { dueOnly: true });
     } catch (error) {
       onError(error);

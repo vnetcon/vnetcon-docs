@@ -13,6 +13,7 @@ import {
   writeJson,
 } from './util.mjs';
 import { readWorkspaceState, updateWorkspaceRevision } from './workspace.mjs';
+import { getSource, publishSource } from './sources.mjs';
 
 const DEFAULT_GROUPS = ['liiketoimintaprosessit', 'jarjestelmaprosessit', 'moduulit', 'datamallit'];
 
@@ -94,6 +95,7 @@ export function publishProject(project, ref, loaded) {
     created_at: nowIso(),
     document_count: documents.length,
     chunk_count: chunks.length,
+    source_references: sourceReferences(documents),
   };
   writeJson(path.join(releaseRoot, 'manifest.json'), manifest);
   writeJson(path.join(root, 'projects', project.project_id, 'refs', `${Buffer.from(ref).toString('base64url')}.json`), manifest);
@@ -106,40 +108,33 @@ export function publishChannel(channelId, loaded) {
   for (const [projectId, ref] of Object.entries(channel.project_refs || {})) {
     releases.push(publishProject(getProject(loaded.config, projectId), ref, loaded));
   }
-  if (releases.length === 0) throw new UserError(`Kanavalla ei ole projekteja: ${channelId}`);
-  const bundleId = sha256(releases
-    .map((release) => `${release.project_id}\0${release.release_id}`)
-    .sort()
-    .join('\0'));
-  const bundle = { schema_version: 1, bundle_id: bundleId, channel_id: channelId, created_at: nowIso(), projects: releases };
+  const sources = (channel.sources || []).map((sourceId) => publishSource(loaded, getSource(loaded.config, sourceId)));
+  if (releases.length === 0 && sources.length === 0) throw new UserError(`Kanavalla ei ole projekteja: ${channelId}`);
+  // Lähteet muuttavat paketin tunnistetta vain, kun niitä on; muuten tunniste on sama kuin ennen.
+  const bundleId = sha256([
+    ...releases.map((release) => `${release.project_id}\0${release.release_id}`),
+    ...sources.map((source) => `source\0${source.source_id}\0${source.digest}`),
+  ].sort().join('\0'));
+  const bundle = {
+    schema_version: 1, bundle_id: bundleId, channel_id: channelId, created_at: nowIso(), projects: releases,
+    ...(sources.length ? { sources: sources.map(({ files, ...rest }) => ({ ...rest, file_count: files.length })) } : {}),
+  };
   const root = storageRoot(loaded);
   writeJson(path.join(root, 'bundles', bundleId, 'manifest.json'), bundle);
   writeJson(path.join(root, 'channels', `${channelId}.json`), bundle);
   return bundle;
 }
 
-function chunkMarkdown(projectId, releaseId, ref, sourceCommitSha, document) {
-  const lines = document.content.split(/\r?\n/);
-  const chunks = [];
+// Pilkkoo Markdownin otsikoiden (# … ###) kohdalta osiksi { heading, content }.
+export function splitMarkdownSections(text) {
+  const sections = [];
   let heading = '';
   let buffer = [];
   const flush = () => {
     const content = buffer.join('\n').trim();
-    if (!content) return;
-    const sectionId = sha256(`${document.path}\0${heading}\0${chunks.length}`).slice(0, 24);
-    chunks.push({
-      document_id: sha256(`${projectId}\0${releaseId}\0${document.path}`).slice(0, 32),
-      section_id: sectionId,
-      project_id: projectId,
-      release_id: releaseId,
-      ref,
-      source_commit_sha: sourceCommitSha,
-      path: document.path,
-      heading,
-      content,
-    });
+    if (content) sections.push({ heading, content });
   };
-  for (const line of lines) {
+  for (const line of text.split(/\r?\n/)) {
     if (/^#{1,3}\s+/.test(line) && buffer.length) {
       flush();
       buffer = [];
@@ -148,7 +143,40 @@ function chunkMarkdown(projectId, releaseId, ref, sourceCommitSha, document) {
     buffer.push(line);
   }
   flush();
-  return chunks;
+  return sections;
+}
+
+function chunkMarkdown(projectId, releaseId, ref, sourceCommitSha, document) {
+  return splitMarkdownSections(document.content).map(({ heading, content }, index) => ({
+    document_id: sha256(`${projectId}\0${releaseId}\0${document.path}`).slice(0, 32),
+    section_id: sha256(`${document.path}\0${heading}\0${index}`).slice(0, 24),
+    project_id: projectId,
+    release_id: releaseId,
+    ref,
+    source_commit_sha: sourceCommitSha,
+    path: document.path,
+    heading,
+    content,
+  }));
+}
+
+// Koodidokumentaation lahteet-kentän lähdeaineistoviitteet (lahde:<lähde>/<polku>#<tiiviste>).
+export function sourceReferences(documents) {
+  const result = [];
+  for (const document of documents) {
+    const frontmatter = (document.content.match(/^---\r?\n([\s\S]*?)\r?\n---/) || [])[1];
+    if (!frontmatter) continue;
+    for (const match of frontmatter.matchAll(/^[ \t]*-[ \t]*["']?(lahde:[^"'\n]+?)["']?[ \t]*$/gm)) {
+      const parsed = parseSourceReference(match[1]);
+      if (parsed) result.push({ document: document.path, ...parsed });
+    }
+  }
+  return result;
+}
+
+export function parseSourceReference(value) {
+  const match = String(value).match(/^lahde:([a-z0-9][a-z0-9._-]{1,62})\/([^#]+?)(?:#([0-9a-f]{6,64}))?$/);
+  return match ? { reference: value, source_id: match[1], path: match[2], sha256_prefix: match[3] || '' } : null;
 }
 
 export function loadChannel(channelId, loaded) {

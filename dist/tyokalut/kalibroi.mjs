@@ -568,6 +568,8 @@ for (const f of DOKIT) {
   const rel = path.relative(JUURI, f).split(path.sep).join('/');
   if (rel.startsWith('moduulit/')) dokTila.dokumentoidutModuulit.add(rel.split('/')[1]);
   for (const l of (fm._lahteet || [])) {
+    // lahde:-viitteet osoittavat MCP-työtilan lähdeaineistoon, eivät projektin puuhun.
+    if (/^["']?lahde:/.test(l)) continue;
     const puhdas = l.split(':')[0];
     if (!puhdas || puhdas.includes('<') || puhdas.includes('...')) continue;
     dokTila.lahteitaYhteensa++;

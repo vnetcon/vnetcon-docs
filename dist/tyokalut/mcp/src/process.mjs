@@ -6,6 +6,7 @@ import { revisionKey } from './git.mjs';
 import { loadChannel } from './publisher.mjs';
 import { listInterfaces, readSharedGuidance } from './search.mjs';
 import { exportStatus, listExports } from './exporter.mjs';
+import { readInventory, sourceAllowed, sourceDigest, approvedDocuments, summarise } from './sources.mjs';
 import { readWorkspaceState } from './workspace.mjs';
 import { DEFAULT_HTTP, isLoopbackHost, mcpEndpoint, storedTunnel, tunnelCommands } from './tunnel.mjs';
 import { run } from './util.mjs';
@@ -78,6 +79,7 @@ export function computeProcess(loaded, access = {}, running = null) {
       `${guidance.length} ohjaustiedostoa${drafts.length ? `, ${drafts.length} integraatioluonnosta odottaa hyväksyntää` : ''}`,
       { tab: drafts.length ? 'integraatiot' : 'ohjaus', label: drafts.length ? 'Integraatiot' : 'Yhteinen ohjaus' },
       [['guidance', 'list'], ['interface', 'list']]),
+    sourcesStep(loaded, access, channelId, bundle),
     exportsStep(loaded, access),
   ];
   return { workspace, connection: connectionSteps(loaded, bundle, channelId, running), projects: projectProcesses, default_channel: channelId };
@@ -246,6 +248,32 @@ function publishStep(loaded, channelId, channel, bundle) {
   return step('julkaisu', 'Julkaisu AI-clienteille', !bundle ? TODO : DONE,
     bundle ? `${channelId} julkaistu ${bundle.created_at}` : `Kanavaa ${channelId} ei ole julkaistu.`,
     channel ? { action: 'publish', label: 'Julkaise' } : null, [['publish', '--channel', channelId], ['smoke-test', '--channel', channelId]]);
+}
+
+// Lähdeaineistot: hyväksyntää odottavat tiedostot ja julkaisemattomat hyväksynnät.
+function sourcesStep(loaded, access, channelId, bundle) {
+  const sources = (loaded.config.sources || []).filter((source) => sourceAllowed(access, source));
+  if (!sources.length) {
+    return step('lahdeaineistot', 'Lähdeaineistot', INFO, 'Ei lähdeaineistoja. Organisaation Word-, PowerPoint- ja Excel-dokumentit voi tuoda MCP:hen omana lähteenään.',
+      { tab: 'lahteet', label: 'Lähdeaineistot' }, [['source', 'add', '--id', '<id>', '--type', 'directory', '--location', '<hakemisto>']]);
+  }
+  let pending = 0;
+  const unpublished = [];
+  for (const source of sources) {
+    pending += summarise(readInventory(loaded, source.source_id)).pending;
+    const channel = loaded.config.channels.find((item) => item.channel_id === channelId);
+    if (!(channel?.sources || []).includes(source.source_id)) continue;
+    let digest = '';
+    try { digest = sourceDigest(source, approvedDocuments(loaded, source)); } catch { digest = ''; }
+    const published = (bundle?.sources || []).find((item) => item.source_id === source.source_id);
+    if (!published || published.digest !== digest) unpublished.push(source.source_id);
+  }
+  const parts = [`lähteitä ${sources.length}`];
+  if (pending) parts.push(`hyväksyntää odottaa ${pending} tiedosto${pending === 1 ? '' : 'a'}`);
+  if (unpublished.length) parts.push(`hyväksyttyjä muutoksia julkaisematta: ${unpublished.join(', ')}`);
+  return step('lahdeaineistot', 'Lähdeaineistot', pending || unpublished.length ? PARTIAL : DONE, parts.join(', '),
+    { tab: 'lahteet', label: 'Lähdeaineistot' },
+    [['source', 'list'], ...(unpublished.length ? [['publish', '--channel', channelId]] : [])]);
 }
 
 // Viennit ovat varakanava asiakkaille, joilla MCP-yhteyttä ei voi käyttää.

@@ -62,6 +62,11 @@ Toimi muutostyypin mukaan:
 | **R** — uudelleennimetty | Päivitä `lahteet`-polku uuteen nimeen ja käsittele kuten **M**. |
 | Muutos koskee vain skeemalähdettä (migraatio, OpenAPI, tyypit) | Päivitä `datamallit/` ([`datamalli-tyonkulku.md`](datamalli-tyonkulku.md)) ja siihen linkittävät datarakenteet. |
 
+`lahteet`-kentän `lahde:`-viitteet (lähdeaineisto, [`konventiot.md`](konventiot.md)
+kohta 4) eivät ole koodipolkuja: ohita ne commit-diffissä. Lähdeaineiston
+muutokset näkyvät moniprojekti-MCP:ssä (`source show`) ja linkkitarkistuksessa
+(`vnetcon-ai linkit --lahteet --lahdeaineistot <mcp-työtila>`).
+
 Älä arvaa. Epävarmat kohdat `> TODO:`-merkinnällä ja dokki `tila: luonnos`.
 
 ### S3b — Rivinumeroviittausten siirto (helposti unohtuva)

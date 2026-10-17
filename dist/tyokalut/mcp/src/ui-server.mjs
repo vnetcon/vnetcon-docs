@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import os from 'node:os';
+import express from 'express';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +17,8 @@ import { tunnelCommands } from './tunnel.mjs';
 import { jobDetails, listJobs } from './agent.mjs';
 import { listTrash } from './manage.mjs';
 import { detectParentProject } from './parent.mjs';
-import { exportInstructions, exportProfiles, exportSummary, exportZip, listExports, readExport } from './exporter.mjs';
+import { exportInstructions, exportProfiles, exportSummary, exportZip, listExports, readExport, selectedExportSources } from './exporter.mjs';
+import { getSource, previewFile, readInventory, sourceAllowed, sourceLimits, summarise } from './sources.mjs';
 
 // Hallintakäyttöliittymä. Lukunäkymät kootaan prosessin sisällä; muutokset ajetaan
 // samalla CLI:llä kuin päätteessä, jotta validointi ja logiikka eivät kahdennu.
@@ -210,6 +213,76 @@ export function registerUi(app, loaded, options) {
     const record = exportFor(req, principal);
     return { ...exportSummary(loaded, record), instructions: exportInstructions(loaded, record.export_id) };
   });
+  // Lähdeaineistot: tiedostoluettelo ja esikatselu vaativat admin-oikeuden, koska
+  // ne näyttävät hyväksymätöntä sisältöä.
+  const sourceFor = (req, principal) => {
+    requireAdmin(principal);
+    const id = String(req.params.id || '');
+    if (!SAFE_SOURCE.test(id)) throw httpError(400, 'Virheellinen source_id.');
+    const source = getSource(loaded.config, id);
+    if (!sourceAllowed(principal, source)) throw httpError(403, `Käyttöoikeus lähteeseen puuttuu: ${id}`);
+    return source;
+  };
+  const channelsOf = (sourceId) => loaded.config.channels.filter((channel) => (channel.sources || []).includes(sourceId)).map((channel) => channel.channel_id);
+  api('get', '/sources', (_req, principal) => {
+    requireAdmin(principal);
+    return {
+      sources: (loaded.config.sources || []).filter((source) => sourceAllowed(principal, source))
+        .map((source) => ({ ...source, channels: channelsOf(source.source_id), ...summarise(readInventory(loaded, source.source_id)) })),
+      limits: sourceLimits(loaded),
+    };
+  });
+  api('get', '/sources/:id', (req, principal) => {
+    const source = sourceFor(req, principal);
+    const inventory = readInventory(loaded, source.source_id);
+    return { source, channels: channelsOf(source.source_id), ...summarise(inventory), files: Object.values(inventory.files).sort((a, b) => a.path.localeCompare(b.path)) };
+  });
+  api('get', '/sources/:id/preview', (req, principal) => {
+    const source = sourceFor(req, principal);
+    return previewFile(loaded, source, String(req.query.file || ''));
+  });
+  // Tiedoston lataus: raakadata väliaikaistiedostoon, sitten sama CLI-komento kuin päätteessä.
+  // Tunnistus ja oikeudet tarkistetaan ennen kuin runko luetaan muistiin.
+  const uploadGate = async (req, res, next) => {
+    try {
+      const principal = await authenticateRequest(req, loaded, { loopback: options.loopback });
+      if (!principal) return res.status(401).json({ error: 'Kirjautuminen vaaditaan.', auth_mode: authMode(loaded), oidc: oidcPublic(loaded) });
+      if (req.get('x-vnetcon-ui') !== '1' || !sameOrigin(req)) return res.status(403).json({ error: 'Pyyntö ei tullut hallintakäyttöliittymästä.' });
+      req.vnetconPrincipal = principal;
+      req.vnetconSource = sourceFor(req, principal);
+      return next();
+    } catch (error) {
+      return res.status(error.status || 400).json({ error: error.message });
+    }
+  };
+  const rawBody = express.raw({ type: 'application/octet-stream', limit: sourceLimits(loaded).max_file_bytes });
+  const readBody = (req, res, next) => rawBody(req, res, (error) => (error
+    ? res.status(error.type === 'entity.too.large' ? 413 : 400).json({ error: error.type === 'entity.too.large' ? 'Tiedosto on liian suuri.' : error.message })
+    : next()));
+  app.post(`${base}/api/sources/:id/upload`, uploadGate, readBody, async (req, res) => {
+    let temp = '';
+    try {
+      const principal = req.vnetconPrincipal;
+      const source = req.vnetconSource;
+      if (!Buffer.isBuffer(req.body) || !req.body.length) throw httpError(400, 'Tiedosto puuttuu (Content-Type: application/octet-stream).');
+      let name = '';
+      try { name = decodeURIComponent(String(req.get('x-file-name') || '')); } catch { throw httpError(400, 'Virheellinen tiedostonimi.'); }
+      if (!name || name.startsWith('--')) throw httpError(400, 'Tiedostonimi puuttuu (X-File-Name).');
+      temp = fs.mkdtempSync(path.join(os.tmpdir(), 'vnetcon-upload-'));
+      const filename = path.join(temp, 'tiedosto');
+      fs.writeFileSync(filename, req.body);
+      const args = ['source', 'upload', source.source_id, '--file', filename, '--name', name];
+      const result = queue.then(() => cli(args, undefined, principal));
+      queue = result.catch(() => {});
+      const output = await result;
+      return res.json({ ...output, args: ['source', 'upload', source.source_id, '--file', name] });
+    } catch (error) {
+      return res.status(error.status || 400).json({ error: error.message });
+    } finally {
+      if (temp) fs.rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   app.get(`${base}/api/exports/:id/download`, async (req, res) => {
     try {
       const principal = await authenticateRequest(req, loaded, { loopback: options.loopback });
@@ -232,6 +305,7 @@ export function registerUi(app, loaded, options) {
 }
 
 const SAFE_EXPORT = /^[a-z0-9][a-z0-9._-]{1,62}$/;
+const SAFE_SOURCE = /^[a-z0-9][a-z0-9._-]{1,62}$/;
 
 function requireAdmin(principal) {
   if (!principal.admin) throw httpError(403, 'Viennit vaativat admin-oikeuden.');
@@ -239,7 +313,7 @@ function requireAdmin(principal) {
 
 // Projektirajattu ylläpitäjä saa viedä vain sallittuja projekteja.
 function allowExportArgs(loaded, principal, action, args) {
-  if (!principal.projects) return;
+  if (!principal.projects && !principal.sources) return;
   let projects = [];
   if (action === 'plan' || action === 'create') {
     const index = args.findIndex((value) => value === '--project' || value.startsWith('--project='));
@@ -248,8 +322,23 @@ function allowExportArgs(loaded, principal, action, args) {
   } else if (['recreate', 'remove'].includes(action) && SAFE_EXPORT.test(String(args[2] || ''))) {
     try { projects = readExport(loaded, args[2]).manifest.projects.map((project) => project.project_id); } catch { return; }
   }
-  const denied = projects.filter((projectId) => !principal.projects.includes(projectId));
+  const denied = principal.projects ? projects.filter((projectId) => !principal.projects.includes(projectId)) : [];
   if (denied.length) throw httpError(403, `Käyttöoikeus projektiin puuttuu: ${denied.join(', ')}`);
+  if ((action === 'plan' || action === 'create') && (args.includes('--include-sources') || args.some((value) => value === '--source' || value.startsWith('--source=')))) {
+    const index = args.findIndex((value) => value === '--source' || value.startsWith('--source='));
+    const listed = index === -1 ? [] : (args[index].startsWith('--source=') ? args[index].slice(9) : args[index + 1] || '').split(',').map((item) => item.trim()).filter(Boolean);
+    const channelIndex = args.indexOf('--channel');
+    const channelId = channelIndex === -1 ? loaded.config.service.default_channel : args[channelIndex + 1];
+    let candidates = listed;
+    if (!listed.length) {
+      try { candidates = selectedExportSources(loaded, { include_sources: true, channel_id: channelId, projects }); } catch { candidates = []; }
+    }
+    const blocked = candidates.filter((sourceId) => {
+      const source = (loaded.config.sources || []).find((item) => item.source_id === sourceId);
+      return !source || !sourceAllowed(principal, source);
+    });
+    if (blocked.length) throw httpError(403, `Käyttöoikeus lähteeseen puuttuu: ${blocked.join(', ')}`);
+  }
 }
 
 function exportVisible(principal, record) {
@@ -294,9 +383,10 @@ function overview(loaded, principal, options) {
           bundle_id: bundle.bundle_id,
           created_at: bundle.created_at || null,
           projects: (bundle.projects || []).map((item) => ({ project_id: item.project_id, ref: item.ref, source_commit_sha: item.source_commit_sha })),
+          sources: (bundle.sources || []).map((item) => ({ source_id: item.source_id, digest: item.digest, document_count: item.document_count })),
         };
       } catch { /* ei julkaistu */ }
-      return { channel_id: channel.channel_id, project_refs: channel.project_refs || {}, published };
+      return { channel_id: channel.channel_id, project_refs: channel.project_refs || {}, sources: channel.sources || [], published };
     });
   const http = loaded.config.runtime?.http || {};
   const mcpUrl = `http://${options.host}:${options.port}${options.mcpPath}`;
@@ -305,6 +395,7 @@ function overview(loaded, principal, options) {
     default_channel: loaded.config.service.default_channel,
     projects,
     channels,
+    sources: (loaded.config.sources || []).filter((source) => sourceAllowed(principal, source)).map((source) => source.source_id),
     refresh: refreshSettings(loaded),
     connection: {
       mcp_url: mcpUrl,

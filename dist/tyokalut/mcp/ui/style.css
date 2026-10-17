@@ -111,3 +111,8 @@ ul.plain { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px;
 .choices { display: flex; gap: 6px 16px; flex-wrap: wrap; }
 .warn-text { color: var(--amber); }
 .reasons { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+
+/* Lähdeaineistot */
+.dropzone { border: 2px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center; color: var(--muted); margin-top: 8px; }
+.dropzone.over { border-color: var(--teal); color: var(--teal); }
+pre.diff .add { color: var(--green); } pre.diff .del { color: var(--red); }

@@ -31,6 +31,8 @@ import { inspectRepository, resolveRef, revisionKey, separateDocs } from './git.
 import { serveStdio } from './mcp-server.mjs';
 import { isLoopback, serveHttp, serveSetup } from './http-server.mjs';
 import { calculateDocumentationRevision, loadChannel, publishChannel } from './publisher.mjs';
+import { getSource } from './sources.mjs';
+import { sourceCommand, staleSourceReferences } from './source-command.mjs';
 import {
   detectChanges,
   enqueueRefresh,
@@ -121,6 +123,7 @@ async function dispatch(argv) {
     case 'docs': return docsCommand(rest, loaded);
     case 'publications': return publicationsCommand(rest, loaded);
     case 'export': return exportCommand(rest, loaded);
+    case 'source': return sourceCommand(rest, loaded);
     case 'project': return projectCommand(rest, loaded);
     case 'channel': return channelCommand(rest, loaded);
     case 'config': return configCommand(rest, loaded);
@@ -398,6 +401,20 @@ function channelCommand(argv, loaded) {
     out(`${channelId}: ${projectId}@${ref}`);
     return;
   }
+  if (action === 'add-source' || action === 'remove-source') {
+    const [channelId, sourceId] = positional.slice(1);
+    if (!channelId || !sourceId) throw new UserError(`Käyttö: channel ${action} <kanava> <lähde>`);
+    const channel = getChannel(loaded.base, channelId);
+    getSource(loaded.base, sourceId);
+    const current = new Set(channel.sources || []);
+    if (action === 'add-source') current.add(sourceId); else if (!current.delete(sourceId)) throw new UserError(`Kanavassa ${channelId} ei ole lähdettä ${sourceId}.`);
+    channel.sources = [...current].sort();
+    if (!channel.sources.length) delete channel.sources;
+    saveBase(loaded);
+    out(`${channelId}: lähde ${sourceId} ${action === 'add-source' ? 'lisättiin' : 'poistettiin'}.`);
+    out('Julkaise kanava, jotta muutos näkyy AI-clienteille.');
+    return;
+  }
   if (action === 'show') {
     const channel = getChannel(loaded.config, positional[1]);
     const result = { ...channel, resolved: {} };
@@ -407,7 +424,7 @@ function channelCommand(argv, loaded) {
     out(YAML.stringify(result, { lineWidth: 100 }));
     return;
   }
-  throw new UserError('Käyttö: channel create|set-ref|unset-ref|set-default|remove|show ...');
+  throw new UserError('Käyttö: channel create|set-ref|unset-ref|set-default|add-source|remove-source|remove|show ...');
 }
 
 function configCommand(argv, loaded) {
@@ -661,7 +678,12 @@ function publishCommand(argv, loaded) {
   const { flags } = parseArgs(argv);
   const channel = requireFlag(flags, 'channel');
   const bundle = publishChannel(channel, loaded);
-  out(`Julkaistiin ${channel}: bundle ${bundle.bundle_id}, projekteja ${bundle.projects.length}`);
+  out(`Julkaistiin ${channel}: bundle ${bundle.bundle_id}, projekteja ${bundle.projects.length}`
+    + `${bundle.sources?.length ? `, lähteitä ${bundle.sources.length} (${bundle.sources.reduce((sum, source) => sum + source.document_count, 0)} hyväksyttyä dokumenttia)` : ''}`);
+  for (const source of bundle.sources || []) {
+    if (!source.document_count) out(`Huom: lähteessä ${source.source_id} ei ole hyväksyttyjä dokumentteja.`);
+  }
+  for (const warning of staleSourceReferences(loaded, bundle)) out(`Huom: ${warning}`);
 }
 
 function statusCommand(loaded) {
@@ -782,8 +804,8 @@ async function authCommand(argv, loaded) {
     out(YAML.stringify({
       mode: authConfig(loaded).mode || 'none',
       oidc: authConfig(loaded).mode === 'oidc' ? authConfig(loaded).oidc : undefined,
-      bearer_tokens: secrets.bearer_tokens.map((item) => ({ name: item.name, channels: item.channels, projects: item.projects, admin: item.admin === true })),
-      basic_users: secrets.basic_users.map((item) => ({ username: item.username, channels: item.channels, projects: item.projects })),
+      bearer_tokens: secrets.bearer_tokens.map((item) => ({ name: item.name, channels: item.channels, projects: item.projects, sources: item.sources, admin: item.admin === true })),
+      basic_users: secrets.basic_users.map((item) => ({ username: item.username, channels: item.channels, projects: item.projects, sources: item.sources })),
     }, { lineWidth: 100 }));
     return;
   }
@@ -1064,6 +1086,7 @@ function ensureOidcProfile(loaded) {
 function validateAccess(access, loaded) {
   for (const channelId of access.channels || []) getChannel(loaded.config, channelId);
   for (const projectId of access.projects || []) getProject(loaded.config, projectId);
+  for (const sourceId of access.sources || []) getSource(loaded.config, sourceId);
   return access;
 }
 

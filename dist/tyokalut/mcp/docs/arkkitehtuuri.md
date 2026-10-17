@@ -1140,6 +1140,28 @@ Manifestissa ovat vähintään:
 Lyhyttä Git-hashia voidaan näyttää käyttöliittymässä, mutta sitä ei käytetä
 identiteettinä, tallennusavaimena tai auditointitietona.
 
+### 10.1 Lähdeaineiston snapshot (1.17)
+
+Koodin ulkopuoliset dokumentit (Word, PowerPoint, Excel, Markdown, teksti) ovat
+omia lähteitään projektien rinnalla. Lähdeaineiston snapshotin identiteetti on
+`(source_id, digest)`, jossa digest lasketaan hyväksyttyjen tiedostojen
+`(polku, sisältötiiviste)`-pareista ja lähteen metatiedoista. Julkaisupaketti
+viittaa kanavan lähteisiin kentässä `sources`, ja `bundle_id` lasketaan myös
+niistä. Ilman lähteitä tunniste on sama kuin ennen.
+
+```text
+<storage.root>/sources/<source_id>/releases/<digest>/
+  manifest.json
+  documents/<polku>.md
+  documents.jsonl        osat merkinnällä kind: lahdeaineisto
+```
+
+Lähdeaineisto ei koskaan sekoitu projektin hakuindeksiin. MCP tarjoaa sen omilla
+työkaluillaan (`list_sources`, `search_sources`, `fetch_source_document`), ja
+jokainen tulos on merkitty `verified_against_code: false`. Käyttöoikeus: rajattu
+principal näkee lähteen, jos kaikki sen `linked_projects` ovat sallittuja tai
+lähde on erikseen sallittu (`sources`). Ks. [Lähdeaineistot](lahdeaineistot.md).
+
 ## 11. Hakutekniikka
 
 Ensimmäisessä versiossa käytetään projektikohtaista determinististä

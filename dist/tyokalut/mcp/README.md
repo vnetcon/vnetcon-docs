@@ -221,6 +221,7 @@ Yksityiskohtaiset ohjeet:
 - [AI-clienttien yhteensopivuus](docs/asiakkaat.md)
 - [ChatGPT-yhteys vaihe vaiheelta](docs/chatgpt.md)
 - [Vienti: dokumentaatio tiedostoina, kun MCP-yhteyttä ei voi käyttää](docs/vienti.md)
+- [Lähdeaineistot: Word-, PowerPoint- ja Excel-dokumentit omana lähteenään](docs/lahdeaineistot.md)
 
 ## Hallintakäyttöliittymä
 
@@ -262,6 +263,7 @@ osoitteessa; sen voi poistaa asetuksella `runtime.http.ui.enabled: false`.
 | Prosessi | Missä kukin projekti on, mitä on jäljellä ja miten se tehdään; yhteys AI-clienteihin (ChatGPT-ketju vaiheittain) | `process` |
 | Projektit | Lisäys, muokkaus, poisto; dokumentaation muutokset ja commit | `add-project`, `project set`, `remove-project`, `docs diff`, `docs commit` |
 | Kanavat ja julkaisu | Kanavat, haarat, oletuskanava, julkaisu | `channel …`, `publish`, `smoke-test` |
+| Lähdeaineistot | Koodin ulkopuoliset dokumentit: lähteet, tiedostojen lataus, esikatselu ja hyväksyntä (vain admin) | `source …`, `channel add-source` |
 | Vienti | Julkaistu dokumentaatio tiedostoina ja ohjetekstinä AI-clientin projektiin; lataus, tila ja uudelleenmuodostus (vain admin) | `export …` |
 | Agenttiajot | Käyttöönotto, dokumentointi, synkronointi, katselmointi ja integraatiot agentilla | `agent run`, `agent answer`, `agent cancel` |
 | Yhteinen ohjaus, Integraatiot | Yhteinen ohjaus ja sanasto, integraatiotietueet | `guidance …`, `interface …` |
@@ -375,6 +377,7 @@ commitoida tai pushata lähderepositoryyn.
 | `bootstrap` / `refresh` | Luo tai päivittää refikohtaiset työtilat |
 | `document` / `review` / `approve` | Hallitsee managed-dokumentaatiota |
 | `publish` / `smoke-test` | Julkaisee ja tarkistaa snapshot-bundlen |
+| `source add/scan/upload/preview/approve/reject/remove` | Lähdeaineistot: koodin ulkopuoliset dokumentit hyväksyttyinä ja merkittyinä ([ohje](docs/lahdeaineistot.md)) |
 | `export plan/create/list/show/recreate/write/remove` | Vientipaketti AI-clientille, kun MCP-yhteyttä ei voi käyttää ([ohje](docs/vienti.md)) |
 | `server configure-http` | Tallentaa HTTP-osoitteen (ei muuta oletussiirtotapaa) |
 | `server set-transport` | Valitsee oletukseksi stdio- tai HTTP-siirtotavan |

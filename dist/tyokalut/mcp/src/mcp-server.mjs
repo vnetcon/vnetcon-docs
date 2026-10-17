@@ -3,13 +3,17 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import * as z from 'zod/v4';
 import {
   fetchDocument,
+  fetchSourceDocument,
   getInterface,
   getProjectVersion,
   listInterfaces,
   listProjects,
+  listSources,
   readSharedGuidance,
   searchProject,
+  searchSource,
 } from './search.mjs';
+import { getSource, sourceAllowed } from './sources.mjs';
 import { assertProjectAccess, filterProjects } from './auth.mjs';
 import { loadChannel } from './publisher.mjs';
 
@@ -26,9 +30,11 @@ export function createMcpServer(loaded, channelId, access = {}) {
   // the middle of an existing conversation.
   const bundle = loadChannel(channelId, loaded);
   const server = new McpServer(
-    { name: 'vnetcon-multiproject-docs', version: '0.4.0' },
+    { name: 'vnetcon-multiproject-docs', version: '0.5.0' },
     { instructions: 'Valitse projekti list_projects-työkalulla ja kohdista jokainen search- ja fetch-kutsu täsmälleen yhteen project_id-arvoon. '
-      + 'Lue get_shared_guidance ennen kuin tulkitset käsitteitä, jotka esiintyvät useassa projektissa: se on ihmisen ylläpitämää ohjausta ja menee oman päättelyn edelle.' },
+      + 'Lue get_shared_guidance ennen kuin tulkitset käsitteitä, jotka esiintyvät useassa projektissa: se on ihmisen ylläpitämää ohjausta ja menee oman päättelyn edelle. '
+      + 'Lähdeaineisto (list_sources, search_sources, fetch_source_document) on ihmisen kirjoittamaa, eikä sitä ole tarkistettu koodia vasten. '
+      + 'Kerro, kun vastaus perustuu siihen. Jos se on ristiriidassa koodidokumentaation kanssa, kerro molemmat ja painota toteutuksen osalta koodidokumentaatiota.' },
   );
 
   server.registerTool('list_projects', {
@@ -94,6 +100,52 @@ export function createMcpServer(loaded, channelId, access = {}) {
     const item = getInterface(loaded, interface_id);
     if (!interfaceAllowed(access, item)) throw new Error(`Käyttöoikeus rajapintaan puuttuu: ${interface_id}`);
     return result(item);
+  });
+
+  const allowedSource = (sourceId) => {
+    const source = getSource(loaded.config, sourceId);
+    if (!sourceAllowed(access, source)) throw new Error(`Käyttöoikeus lähteeseen puuttuu: ${sourceId}`);
+    return source;
+  };
+
+  server.registerTool('list_sources', {
+    title: 'List source materials',
+    description: 'Listaa kanavan lähdeaineistot: organisaation dokumentit (Word, PowerPoint, Excel), joita ei ole tarkistettu koodia vasten. Valinnainen project_id rajaa projektiin linkitettyihin.',
+    inputSchema: { project_id: z.string().optional() },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  }, async ({ project_id }) => {
+    if (project_id) assertProjectAccess(access, project_id);
+    const sources = listSources(loaded, channelId, bundle)
+      .filter((item) => sourceAllowed(access, item))
+      .filter((item) => !project_id || (item.linked_projects || []).includes(project_id));
+    return result({ sources });
+  });
+
+  server.registerTool('search_sources', {
+    title: 'Search source materials',
+    description: 'Hakee yhdestä lähdeaineistosta. Tulokset ovat lähdeaineistoa (kind: lahdeaineisto), eivät koodidokumentaatiota, eikä niitä ole tarkistettu koodia vasten.',
+    inputSchema: {
+      source_id: z.string().min(1),
+      query: z.string().min(1),
+      limit: z.number().int().min(1).max(25).optional(),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  }, async ({ source_id, query, limit }) => {
+    allowedSource(source_id);
+    return result({ source_id, results: searchSource(loaded, channelId, source_id, query, limit, bundle) });
+  });
+
+  server.registerTool('fetch_source_document', {
+    title: 'Fetch source document',
+    description: 'Hakee yhden search_sources-työkalun palauttaman lähdedokumentin.',
+    inputSchema: {
+      source_id: z.string().min(1),
+      document_id: z.string().min(1),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  }, async ({ source_id, document_id }) => {
+    allowedSource(source_id);
+    return result(fetchSourceDocument(loaded, channelId, source_id, document_id, bundle));
   });
 
   server.registerTool('get_shared_guidance', {

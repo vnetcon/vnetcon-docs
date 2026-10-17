@@ -615,7 +615,8 @@ Käyttö: vnetcon-ai <komento> [argumentit]
   toteuta <tunnus>        Käynnistä toteutusagentti tiketin valmiilla kehotteella
   html [--zip]            Generoi selattava HTML (ja paketoi)
   mcp <komento> [...]     Moniprojekti-MCP: julkaisu ja jakelu AI-clienteille (ks. tyokalut/mcp/README.md)
-  linkit [--lahteet]      Tarkista dokumentaation linkit ja lähdepolut
+  linkit [--lahteet] [--lahdeaineistot <mcp-työtila>]
+                          Tarkista dokumentaation linkit, lähdepolut ja lähdeaineistoviitteet
   tunnisteet [--alusta]   Näytä / luo ~/.vnetcon/credentials.env
   token <claude|codex>    Tulosta tunniste (Claude Coden apiKeyHelperille)
   asenna-kehotteet        Asenna Codex-slash-kehotteet ~/.codex/prompts/

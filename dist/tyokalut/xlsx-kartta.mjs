@@ -245,7 +245,30 @@ function keraaKaavat(wb) {
 
 // --- Osat ------------------------------------------------------------------
 
-const tulosta = (s = '') => process.stdout.write(s + '\n');
+// Tuloste menee oletuksena stdoutiin; kuvaaTyokirja kerää sen merkkijonoksi.
+let kerays = null;
+const tulosta = (s = '') => { if (kerays) kerays.push(s); else process.stdout.write(s + '\n'); };
+
+/**
+ * Palauttaa työkirjan kuvauksen Markdownina (sama sisältö kuin komentorivillä).
+ * Moniprojekti-MCP käyttää tätä lähdeaineistojen muunnokseen.
+ */
+export function kuvaaTyokirja(polku, osat = ['rakenne', 'arvot']) {
+  const edellinen = kerays;
+  kerays = [];
+  try {
+    const wb = lueTyokirja(polku);
+    if (osat.includes('rakenne')) osaRakenne(wb);
+    if (osat.includes('kaavat')) osaKaavat(wb);
+    if (osat.includes('funktiot')) osaFunktiot(wb);
+    if (osat.includes('arvot')) osaArvot(wb);
+    if (osat.includes('linkit')) osaLinkit(wb);
+    if (osat.includes('riskit')) osaRiskit(wb);
+    return kerays.join('\n');
+  } finally {
+    kerays = edellinen;
+  }
+}
 
 function osaRakenne(wb) {
   tulosta('## Rakenne\n');

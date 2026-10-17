@@ -136,6 +136,7 @@ ja julkaisunsa.
 - [Local setup and command reference in English](dist/tyokalut/mcp/README.en.md)
 - [Arkkitehtuuri- ja toteutusspeksi](dist/tyokalut/mcp/docs/arkkitehtuuri.md)
 - [Vienti: dokumentaatio tiedostoina, kun MCP-yhteyttä ei voi käyttää](dist/tyokalut/mcp/docs/vienti.md)
+- [Lähdeaineistot: Word-, PowerPoint- ja Excel-dokumentit omana lähteenään](dist/tyokalut/mcp/docs/lahdeaineistot.md)
 
 Nykyinen versio käyttää paikallista tiedostotallennusta ja tukee sekä stdio- että
 Streamable HTTP -siirtotapaa. HTTP-palvelussa ovat valittavissa avoin
@@ -146,7 +147,10 @@ suojatulla webhookilla ilman automaattista AI-ajoa. Hallintakäyttöliittymä
 komentoriviä. AWS-tallennus kuuluu myöhempään vaiheeseen. ChatGPT-yhteyden
 valmisteluun on Secure MCP Tunnel -komento-ohje. Kun MCP-yhteyttä ei voi käyttää,
 julkaistusta kanavasta voi muodostaa vientipaketin: tiedostot ja valmiin
-ohjetekstin esimerkiksi ChatGPT-projektiin (`vnetcon-ai mcp export`).
+ohjetekstin esimerkiksi ChatGPT-projektiin (`vnetcon-ai mcp export`). Organisaation
+Word-, PowerPoint- ja Excel-dokumentit voi tuoda MCP:hen omana lähteenään
+(`vnetcon-ai mcp source`): ne hyväksytään ennen julkaisua ja merkitään aina
+tietolajiksi, jota ei ole tarkistettu koodia vasten.
 
 ## Käyttömalli
 

@@ -4,7 +4,7 @@
 'use strict';
 
 const AUTH_KEY = 'vnetcon-mcp-auth';
-const S = { session: null, overview: null, process: null, jobs: [], guidance: [], interfaces: { interfaces: [], template: '' }, commands: [], selectedJob: null, editProject: null, exportProfiles: [], exports: [] };
+const S = { session: null, overview: null, process: null, jobs: [], guidance: [], interfaces: { interfaces: [], template: '' }, commands: [], selectedJob: null, editProject: null, exportProfiles: [], exports: [], sources: [], selectedSource: null, editSource: null };
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -168,7 +168,7 @@ function action(label, args, { stdin, ghost, admin = true, small = true, after, 
 }
 
 // Poisto: suunnitelma, kirjoitettu vahvistus ja valinnainen pysyvä poisto.
-function deleteAction(label, args, targetId) {
+function deleteAction(label, args, targetId, { purge: allowPurge = true } = {}) {
   const box = el('div', { class: 'action admin' });
   const confirmInput = el('input', { placeholder: targetId });
   const purge = el('input', { type: 'checkbox' });
@@ -178,7 +178,7 @@ function deleteAction(label, args, targetId) {
   purge.addEventListener('change', refreshCli);
   const panel = el('div', { class: 'confirm', hidden: true },
     el('p', { class: 'hint' }, 'Suunnitelma näkyy lokissa. Poistettu kohde siirtyy roskakoriin, josta sen voi palauttaa.'),
-    el('label', { class: 'check' }, purge, ' Poista pysyvästi (--purge): ei palautusta'),
+    allowPurge ? el('label', { class: 'check' }, purge, ' Poista pysyvästi (--purge): ei palautusta') : null,
     el('label', {}, `Vahvista kirjoittamalla ${targetId}`, confirmInput),
     el('div', { class: 'actions' },
       el('button', { type: 'button', class: 'small danger', onclick: async () => {
@@ -296,7 +296,7 @@ $('#tabs').addEventListener('click', (event) => {
 function openTab(name) {
   $$('#tabs button').forEach((item) => item.classList.toggle('active', item.dataset.tab === name));
   $$('.tab').forEach((tab) => { tab.hidden = tab.id !== name; });
-  const loaders = { vienti: loadExports, ohjaus: () => loadGuidance(), integraatiot: () => loadInterfaces(), ajot: loadJobs, roskakori: loadTrash, ohjeet: () => loadGuides(), asetukset: renderSettings };
+  const loaders = { lahteet: () => loadSources(), vienti: loadExports, ohjaus: () => loadGuidance(), integraatiot: () => loadInterfaces(), ajot: loadJobs, roskakori: loadTrash, ohjeet: () => loadGuides(), asetukset: renderSettings };
   if (loaders[name] && S.overview) loaders[name]();
 }
 
@@ -304,7 +304,7 @@ function openTab(name) {
 
 const STATUS = { valmis: ['ok', 'valmis'], kesken: ['warn', 'kesken'], odottaa: ['info', 'odottaa'], 'ei-koske': ['', 'ei koske'], tieto: ['', 'tieto'] };
 const FLOW = [['Työtila', ['tyotila']], ['Projektit', ['projektit']], ['Käyttöönotto', ['kayttoonotto']], ['Dokumentointi', ['dokumentointi']],
-  ['Commit', ['commit']], ['Päivitys', ['paivitys']], ['Julkaisu', ['julkaisu']], ['Yhteys', ['yhteys-julkaisu', 'http', 'tunnistus', 'tunneli', 'tunnel-client-asennus', 'tunnel-client', 'chatgpt']], ['Ylläpito', ['synkronointi', 'yhteinen-ohjaus', 'viennit']]];
+  ['Commit', ['commit']], ['Päivitys', ['paivitys']], ['Julkaisu', ['julkaisu']], ['Yhteys', ['yhteys-julkaisu', 'http', 'tunnistus', 'tunneli', 'tunnel-client-asennus', 'tunnel-client', 'chatgpt']], ['Ylläpito', ['synkronointi', 'yhteinen-ohjaus', 'lahdeaineistot', 'viennit']]];
 
 // Vaiheen pieni lomake: kentät täyttävät komennon {nimi}-paikat.
 function formAction(ui) {
@@ -479,6 +479,10 @@ function renderChannels() {
         published ? el('span', { class: 'chip ok' }, `julkaistu ${when(published.created_at)}`) : el('span', { class: 'chip warn' }, 'ei julkaistu')),
       refs.length ? el('ul', { class: 'plain' }, refs.map(([project, ref]) => el('li', { class: 'inline-item' }, el('span', {}, `${project} @ ${ref}`),
         action('Poista kanavasta', ['channel', 'unset-ref', channel.channel_id, project], { ghost: true })))) : el('p', { class: 'hint' }, 'Ei projekteja.'),
+      channel.sources.length ? el('ul', { class: 'plain' }, channel.sources.map((sourceId) => el('li', { class: 'inline-item' },
+        el('span', {}, `Lähdeaineisto ${sourceId}`), published?.sources?.find((item) => item.source_id === sourceId) ? el('small', { class: 'hint' }, ` ${published.sources.find((item) => item.source_id === sourceId).document_count} julkaistua dokumenttia`) : null,
+        action('Poista kanavasta', ['channel', 'remove-source', channel.channel_id, sourceId], { ghost: true })))) : null,
+      addSourceAction(channel),
       el('div', { class: 'actions' },
         action('Julkaise', ['publish', '--channel', channel.channel_id], { small: false }),
         action('Tarkista haku', ['smoke-test', '--channel', channel.channel_id], { ghost: true }),
@@ -491,6 +495,15 @@ function renderChannels() {
   const setRef = action('Aseta', () => ['channel', 'set-ref', $('#ref-kanava').value || '<kanava>', $('#ref-projekti').value || '<projekti>', $('#ref-haara').value.trim() || '<haara>']);
   ['#ref-kanava', '#ref-projekti', '#ref-haara'].forEach((selector) => { $(selector).oninput = () => setRef.refresh(); $(selector).onchange = () => setRef.refresh(); });
   $('#ref-toiminto').replaceChildren(setRef);
+}
+
+function addSourceAction(channel) {
+  const candidates = (S.overview.sources || []).filter((sourceId) => !channel.sources.includes(sourceId));
+  if (!candidates.length) return null;
+  const select = el('select', {}, candidates.map((sourceId) => el('option', { value: sourceId }, sourceId)));
+  const add = action('Lisää lähdeaineisto', () => ['channel', 'add-source', channel.channel_id, select.value], { ghost: true });
+  select.onchange = () => add.refresh();
+  return el('div', { class: 'form inline admin' }, el('label', {}, 'Lähdeaineisto kanavaan', select), add);
 }
 
 function fillSelects() {
@@ -523,6 +536,7 @@ function exportArgs(action) {
   if (value('lang') !== 'fi') args.push('--lang', value('lang'));
   if (!field(form, 'guidance').checked) args.push('--no-guidance');
   if (!field(form, 'interfaces').checked) args.push('--no-interfaces');
+  if (field(form, 'sources').checked) args.push('--include-sources');
   return args;
 }
 
@@ -613,6 +627,168 @@ async function loadExports() {
           action('Muodosta uudelleen', ['export', 'recreate', item.export_id], { ghost: item.status !== 'vanhentunut', after: () => loadExports() }),
           deleteAction('Poista', ['export', 'remove', item.export_id], item.export_id))));
     })))));
+}
+
+// --- Lähdeaineistot ---------------------------------------------------------
+
+const SOURCE_STATUS = {
+  uusi: ['info', 'uusi'], muuttunut: ['warn', 'muuttunut'], hyvaksytty: ['ok', 'hyväksytty'], hylatty: ['', 'hylätty'],
+  poistettu: ['', 'poistettu'], 'ei-tuettu': ['', 'ei tuettu'], virhe: ['err', 'virhe'],
+};
+const size = (bytes) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} Mt` : `${Math.max(1, Math.ceil(bytes / 1024))} kt`);
+
+async function loadSources() {
+  try { S.sources = (await api('/sources')).sources; } catch (error) { setStatus(error.message, false); return; }
+  const target = $('#lahdelista');
+  if (!S.sources.length) fill(target, el('p', { class: 'hint' }, 'Lähdeaineistoja ei ole. Lisää ensimmäinen alla.'));
+  else {
+    fill(target, S.sources.map((source) => el('div', { class: 'card' },
+      el('div', { class: 'toolbar' },
+        el('h3', {}, source.display_name || source.source_id, ' ', el('code', {}, source.source_id)),
+        ...Object.entries(source.counts).filter(([, value]) => value).map(([key, value]) => el('span', { class: `chip ${(SOURCE_STATUS[key] || [''])[0]}` }, `${(SOURCE_STATUS[key] || ['', key])[1]} ${value}`))),
+      el('div', { class: 'hint' }, `${source.type === 'upload' ? 'Ladatut tiedostot' : `Hakemisto ${source.location}`}`
+        + `${source.owner ? ` · omistaja ${source.owner}` : ''}${source.classification ? ` · ${source.classification}` : ''}`
+        + ` · projektit ${(source.linked_projects || []).join(', ') || '— (organisaatiotaso)'} · kanavat ${source.channels.join(', ') || '— (lisää Kanavat ja julkaisu -välilehdellä)'}`
+        + ` · skannattu ${when(source.scanned_at)}`),
+      el('div', { class: 'actions' },
+        el('button', { type: 'button', class: 'small', onclick: () => openSource(source.source_id) }, 'Tiedostot'),
+        action('Skannaa nyt', ['source', 'scan', source.source_id], { ghost: true, after: () => { loadSources(); if (S.selectedSource === source.source_id) openSource(source.source_id); } }),
+        source.pending ? action(`Hyväksy uudet ja muuttuneet (${source.pending})`, ['source', 'approve', source.source_id, '--all-changed'], { after: () => { loadSources(); openSource(source.source_id); } }) : null,
+        el('button', { type: 'button', class: 'small ghost admin', onclick: () => editSource(source) }, 'Muokkaa'),
+        deleteAction('Poista', ['source', 'remove', source.source_id], source.source_id)),
+      source.type === 'upload' ? uploadZone(source) : null)));
+  }
+  renderSourceForm();
+}
+
+function uploadZone(source) {
+  const input = el('input', { type: 'file', multiple: true, accept: '.docx,.pptx,.xlsx,.md,.txt' });
+  const zone = el('div', { class: 'dropzone admin' }, 'Pudota tiedostot tähän tai ', input);
+  const send = async (files) => {
+    for (const file of files) {
+      setStatus(`Ladataan ${file.name}…`);
+      const headers = { 'Content-Type': 'application/octet-stream', 'X-Vnetcon-UI': '1', 'X-File-Name': encodeURIComponent(file.name) };
+      if (authHeader()) headers.Authorization = authHeader();
+      try {
+        const response = await fetch(`api/sources/${encodeURIComponent(source.source_id)}/upload`, { method: 'POST', headers, body: file });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || data.output || `HTTP ${response.status}`);
+        $('#komento').hidden = false;
+        $('#komento').textContent = `$ ${commandLines(data.args).bash}`;
+        $('#loki').textContent = data.output;
+        setStatus(`Ladattiin ${file.name}`, true);
+      } catch (error) {
+        setStatus(`${file.name}: ${error.message}`, false);
+        return;
+      }
+    }
+    await loadSources();
+    openSource(source.source_id);
+  };
+  input.onchange = () => send([...input.files]);
+  zone.addEventListener('dragover', (event) => { event.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', (event) => { event.preventDefault(); zone.classList.remove('over'); send([...event.dataTransfer.files]); });
+  return zone;
+}
+
+async function openSource(sourceId) {
+  S.selectedSource = sourceId;
+  let data;
+  try { data = await api(`/sources/${encodeURIComponent(sourceId)}`); } catch (error) { setStatus(error.message, false); return; }
+  const after = () => { loadSources(); openSource(sourceId); };
+  fill($('#lahde-tiedostot'), el('div', { class: 'card' },
+    el('div', { class: 'toolbar' }, el('h3', {}, `Tiedostot: ${data.source.display_name || sourceId}`),
+      el('button', { type: 'button', class: 'small ghost', onclick: () => { fill($('#lahde-tiedostot')); fill($('#lahde-esikatselu')); S.selectedSource = null; } }, 'Sulje')),
+    data.files.length ? el('div', { class: 'table-wrap' }, el('table', {},
+      el('thead', {}, el('tr', {}, ...['Tiedosto', 'Koko', 'Muokattu', 'Tila', ''].map((h) => el('th', {}, h)))),
+      el('tbody', {}, data.files.map((entry) => {
+        const [chipClass, chipText] = SOURCE_STATUS[entry.status] || ['', entry.status];
+        const canApprove = ['uusi', 'muuttunut', 'hylatty'].includes(entry.status);
+        return el('tr', {},
+          el('td', {}, el('code', {}, entry.path), entry.error ? el('div', { class: 'hint' }, entry.error) : null,
+            entry.approved_by ? el('div', { class: 'hint' }, `hyväksyi ${entry.approved_by} ${when(entry.approved_at)}`) : null),
+          el('td', {}, entry.size ? size(entry.size) : '—'),
+          el('td', {}, when(entry.mtime)),
+          el('td', {}, el('span', { class: `chip ${chipClass}` }, chipText)),
+          el('td', {}, el('div', { class: 'actions' },
+            entry.sha256 && !entry.error ? el('button', { type: 'button', class: 'small ghost', onclick: () => previewSource(sourceId, entry.path) }, 'Esikatsele') : null,
+            canApprove ? action('Hyväksy', ['source', 'approve', sourceId, '--file', entry.path], { after }) : null,
+            canApprove && entry.status !== 'hylatty' ? action('Hylkää', ['source', 'reject', sourceId, '--file', entry.path], { ghost: true, after }) : null,
+            entry.approved_sha256 && entry.status !== 'uusi' ? action('Peru hyväksyntä', ['source', 'reject', sourceId, '--file', entry.path, '--withdraw'], { ghost: true, after }) : null,
+            data.source.type === 'upload' && !entry.missing ? deleteAction('Poista tiedosto', ['source', 'remove-file', sourceId, '--file', entry.path], entry.path.split('/').pop(), { purge: false }) : null)));
+      })))) : el('p', { class: 'hint' }, data.source.type === 'upload' ? 'Ei tiedostoja. Lataa tiedostot yllä.' : 'Ei tiedostoja. Skannaa lähde.')));
+  fill($('#lahde-esikatselu'));
+}
+
+async function previewSource(sourceId, file) {
+  let data;
+  try { data = await api(`/sources/${encodeURIComponent(sourceId)}/preview?${new URLSearchParams({ file })}`); } catch (error) { setStatus(error.message, false); return; }
+  const diff = data.diff && !data.diff.truncated
+    ? el('details', { class: 'cli', open: true }, el('summary', {}, 'Ero hyväksyttyyn versioon'),
+      el('pre', { class: 'mono diff' }, data.diff.lines.filter((line) => line.op !== ' ').map((line) => el('div', { class: line.op === '+' ? 'add' : 'del' }, `${line.op} ${line.text}`))))
+    : data.diff?.truncated ? el('p', { class: 'hint' }, 'Ero hyväksyttyyn versioon on liian suuri näytettäväksi riveittäin.') : null;
+  fill($('#lahde-esikatselu'), el('div', { class: 'card' },
+    el('div', { class: 'toolbar' }, el('h3', {}, `Esikatselu: ${file}`), el('button', { type: 'button', class: 'small ghost', onclick: () => fill($('#lahde-esikatselu')) }, 'Sulje')),
+    el('p', { class: 'hint' }, 'Näin tiedosto näkyy AI-clienteille hyväksynnän ja julkaisun jälkeen.'),
+    diff, el('article', { class: 'doc md' }, markdown(data.markdown || '(ei muunnosta)'))));
+  $('#lahde-esikatselu').scrollIntoView({ behavior: 'smooth' });
+}
+
+function sourceArgs() {
+  const form = $('#lahde-lomake');
+  const value = (name) => field(form, name).value.trim();
+  const id = value('id');
+  if (!id) throw new Error('Anna lähteen tunnus.');
+  const args = S.editSource ? ['source', 'set', id] : ['source', 'add', '--id', id, '--type', value('type')];
+  if (value('name')) args.push('--name', value('name'));
+  if (value('type') === 'directory' && value('location')) args.push('--location', value('location'));
+  else if (!S.editSource && value('type') === 'directory') throw new Error('Anna hakemisto.');
+  const linked = $$('#lahde-projektit input:checked').map((input) => input.value);
+  if (linked.length || S.editSource) args.push('--link', linked.join(',') || 'none');
+  if (value('owner') || S.editSource) args.push('--owner', value('owner'));
+  if (value('classification') || S.editSource) args.push('--classification', value('classification'));
+  return args;
+}
+
+function renderSourceForm() {
+  const form = $('#lahde-lomake');
+  const linked = new Set(S.editSource?.linked_projects || $$('#lahde-projektit input:checked').map((input) => input.value));
+  fill($('#lahde-projektit'), S.overview.projects.map((project) => el('label', { class: 'check' },
+    el('input', { type: 'checkbox', value: project.project_id, checked: linked.has(project.project_id) }), ` ${project.display_name} `, el('code', {}, project.project_id))));
+  $$('.directory-only').forEach((label) => { label.hidden = field(form, 'type').value !== 'directory'; });
+  $('#lahde-lomake-otsikko').textContent = S.editSource ? `Muokkaa lähdettä ${S.editSource.source_id}` : 'Lisää lähde';
+  const save = action(S.editSource ? 'Tallenna muutokset' : 'Lisää lähde', sourceArgs, { small: false, after: (result) => { if (result.ok) { resetSourceForm(); loadSources(); } } });
+  fill($('#lahde-lomake-toiminnot'), el('div', { class: 'actions' }, save,
+    S.editSource ? el('button', { type: 'button', class: 'ghost', onclick: resetSourceForm }, 'Peruuta muokkaus') : null));
+  form.oninput = (event) => { if (event.target.name === 'type') $$('.directory-only').forEach((label) => { label.hidden = field(form, 'type').value !== 'directory'; }); save.refresh(); };
+  form.onchange = form.oninput;
+}
+
+function editSource(source) {
+  S.editSource = source;
+  const form = $('#lahde-lomake');
+  field(form, 'id').value = source.source_id;
+  field(form, 'id').readOnly = true;
+  field(form, 'type').value = source.type;
+  field(form, 'type').disabled = true;
+  field(form, 'name').value = source.display_name || '';
+  field(form, 'location').value = '';
+  field(form, 'location').placeholder = `${source.location || ''} (tyhjä = ei muutosta)`;
+  field(form, 'owner').value = source.owner || '';
+  field(form, 'classification').value = source.classification || '';
+  renderSourceForm();
+  $('#lahde-lomake-otsikko').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetSourceForm() {
+  S.editSource = null;
+  const form = $('#lahde-lomake');
+  form.reset();
+  field(form, 'id').readOnly = false;
+  field(form, 'type').disabled = false;
+  field(form, 'location').placeholder = '/mnt/yhteiset/asiakasportaali/maarittelyt';
+  renderSourceForm();
 }
 
 // --- Agenttiajot ------------------------------------------------------------
@@ -831,7 +1007,7 @@ function renderSettings() {
 async function loadTrash() {
   let entries = [];
   try { entries = (await api('/trash')).entries; } catch (error) { setStatus(error.message, false); return; }
-  const kinds = { project: 'projekti', channel: 'kanava', interface: 'integraatio', guidance: 'ohjaus', export: 'vienti' };
+  const kinds = { project: 'projekti', channel: 'kanava', interface: 'integraatio', guidance: 'ohjaus', export: 'vienti', source: 'lähde' };
   fill($('#roskakori-sisalto'),
     entries.length ? el('div', { class: 'table-wrap' }, el('table', {},
       el('thead', {}, el('tr', {}, ...['Kohde', 'Laji', 'Poistettu', ''].map((h) => el('th', {}, h)))),
@@ -944,6 +1120,7 @@ async function refresh() {
   const active = $('#tabs button.active')?.dataset.tab;
   if (active === 'asetukset') renderSettings();
   if (active === 'vienti') await loadExports();
+  if (active === 'lahteet') await loadSources();
 }
 
 async function start() {

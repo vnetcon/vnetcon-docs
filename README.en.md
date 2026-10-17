@@ -146,6 +146,7 @@ have separate checkouts, documentation workspaces, and releases.
 - [Suomenkielinen käyttöohje](dist/tyokalut/mcp/README.md)
 - [Architecture and implementation specification (Finnish)](dist/tyokalut/mcp/docs/arkkitehtuuri.md)
 - [Export: documentation as files when MCP cannot be used](dist/tyokalut/mcp/docs/export.md)
+- [Source materials: Word, PowerPoint and Excel documents as a source of their own](dist/tyokalut/mcp/docs/sources.md)
 
 The current version uses local filesystem storage and supports both stdio and
 Streamable HTTP. HTTP offers an open local mode, bearer tokens, username and
@@ -156,7 +157,9 @@ maintenance without the command line. AWS storage belongs to a later phase. A he
 prints the Secure MCP Tunnel commands needed for a private ChatGPT connection.
 When MCP cannot be used, an export package can be created from a published
 channel: files and ready-made instructions for, e.g., a ChatGPT project
-(`vnetcon-ai mcp export`).
+(`vnetcon-ai mcp export`). Organisation Word, PowerPoint and Excel documents can
+be brought into MCP as a source of their own (`vnetcon-ai mcp source`): they are
+approved before publication and always labelled as not verified against the code.
 
 ## How it is used
 
